@@ -1,0 +1,130 @@
+:root {
+  /* =========================================================
+     M3 EXPRESSIVE DYNAMIC SEED PALETTE (OKLCH Color Science)
+     ========================================================= */
+  --seed-hue: 275;       /* Dynamic degree (0° - 360°) */
+  --seed-chroma: 0.16;   /* Rich chromatic saturation */
+
+  --secondary-hue: calc(var(--seed-hue) + 10);
+  --tertiary-hue: calc(var(--seed-hue) + 65);
+  --error-hue: 25;       /* Warm alert red/coral */
+
+  /* =========================================================
+     LIGHT THEME (Modo Claro - Oficial M3)
+     ========================================================= */
+  /* Surfaces & Containers */
+  --md-sys-color-surface: oklch(98% 0.005 var(--seed-hue));
+  --md-sys-color-surface-dim: oklch(90% 0.015 var(--seed-hue));
+  --md-sys-color-surface-bright: oklch(99% 0.003 var(--seed-hue));
+  --md-sys-color-surface-container-lowest: oklch(100% 0 0);
+  --md-sys-color-surface-container-low: oklch(96% 0.008 var(--seed-hue));
+  --md-sys-color-surface-container: oklch(93% 0.012 var(--seed-hue));
+  --md-sys-color-surface-container-high: oklch(90% 0.018 var(--seed-hue));
+  --md-sys-color-surface-container-highest: oklch(86% 0.022 var(--seed-hue));
+
+  /* Role: Primary */
+  --md-sys-color-primary: oklch(42% var(--seed-chroma) var(--seed-hue));
+  --md-sys-color-on-primary: oklch(100% 0 0);
+  --md-sys-color-primary-container: oklch(90% 0.06 var(--seed-hue));
+  --md-sys-color-on-primary-container: oklch(20% 0.08 var(--seed-hue));
+
+  /* Role: Secondary */
+  --md-sys-color-secondary: oklch(45% 0.05 var(--secondary-hue));
+  --md-sys-color-on-secondary: oklch(100% 0 0);
+  --md-sys-color-secondary-container: oklch(88% 0.04 var(--secondary-hue));
+  --md-sys-color-on-secondary-container: oklch(22% 0.04 var(--secondary-hue));
+
+  /* Role: Tertiary */
+  --md-sys-color-tertiary: oklch(45% 0.12 var(--tertiary-hue));
+  --md-sys-color-on-tertiary: oklch(100% 0 0);
+  --md-sys-color-tertiary-container: oklch(90% 0.08 var(--tertiary-hue));
+  --md-sys-color-on-tertiary-container: oklch(22% 0.08 var(--tertiary-hue));
+
+  /* Role: Error */
+  --md-sys-color-error: oklch(50% 0.22 var(--error-hue));
+  --md-sys-color-on-error: oklch(100% 0 0);
+  --md-sys-color-error-container: oklch(92% 0.07 var(--error-hue));
+  --md-sys-color-on-error-container: oklch(28% 0.18 var(--error-hue));
+
+  /* Text, Outlines & Overlays */
+  --md-sys-color-on-surface: oklch(18% 0.015 var(--seed-hue));
+  --md-sys-color-on-surface-variant: oklch(42% 0.02 var(--seed-hue));
+  --md-sys-color-outline: oklch(60% 0.02 var(--seed-hue));
+  --md-sys-color-outline-variant: oklch(82% 0.015 var(--seed-hue));
+
+  /* Inverse Roles */
+  --md-sys-color-inverse-surface: oklch(20% 0.015 var(--seed-hue));
+  --md-sys-color-inverse-on-surface: oklch(95% 0.005 var(--seed-hue));
+  --md-sys-color-inverse-primary: oklch(78% var(--seed-chroma) var(--seed-hue));
+
+  /* Scrim & Shadow */
+  --md-sys-color-shadow: oklch(0% 0 0 / 0.25);
+  --md-sys-color-scrim: oklch(0% 0 0 / 0.35);
+
+  /* Expressive Hero Radial Glow */
+  --md-sys-hero-glow: oklch(72% 0.15 var(--seed-hue) / 0.22);
+
+  /* M3 State Layer Opacities */
+  --md-sys-state-hover-opacity: 0.08;
+  --md-sys-state-focus-opacity: 0.10;
+  --md-sys-state-pressed-opacity: 0.12;
+  --md-sys-state-dragged-opacity: 0.16;
+}
+
+/* =========================================================
+   DARK THEME (Modo Oscuro - .dark o [data-theme="dark"])
+   ========================================================= */
+.dark,
+[data-theme="dark"] {
+  /* Surfaces & Containers */
+  --md-sys-color-surface: oklch(12% 0.016 var(--seed-hue));
+  --md-sys-color-surface-dim: oklch(10% 0.014 var(--seed-hue));
+  --md-sys-color-surface-bright: oklch(20% 0.020 var(--seed-hue));
+  --md-sys-color-surface-container-lowest: oklch(8% 0.012 var(--seed-hue));
+  --md-sys-color-surface-container-low: oklch(15% 0.018 var(--seed-hue));
+  --md-sys-color-surface-container: oklch(18% 0.022 var(--seed-hue));
+  --md-sys-color-surface-container-high: oklch(22% 0.026 var(--seed-hue));
+  --md-sys-color-surface-container-highest: oklch(27% 0.030 var(--seed-hue));
+
+  /* Role: Primary */
+  --md-sys-color-primary: oklch(78% var(--seed-chroma) var(--seed-hue));
+  --md-sys-color-on-primary: oklch(16% 0.06 var(--seed-hue));
+  --md-sys-color-primary-container: oklch(30% 0.10 var(--seed-hue));
+  --md-sys-color-on-primary-container: oklch(92% 0.04 var(--seed-hue));
+
+  /* Role: Secondary */
+  --md-sys-color-secondary: oklch(80% 0.05 var(--secondary-hue));
+  --md-sys-color-on-secondary: oklch(18% 0.04 var(--secondary-hue));
+  --md-sys-color-secondary-container: oklch(26% 0.05 var(--secondary-hue));
+  --md-sys-color-on-secondary-container: oklch(90% 0.03 var(--secondary-hue));
+
+  /* Role: Tertiary */
+  --md-sys-color-tertiary: oklch(80% 0.13 var(--tertiary-hue));
+  --md-sys-color-on-tertiary: oklch(18% 0.06 var(--tertiary-hue));
+  --md-sys-color-tertiary-container: oklch(30% 0.09 var(--tertiary-hue));
+  --md-sys-color-on-tertiary-container: oklch(92% 0.04 var(--tertiary-hue));
+
+  /* Role: Error */
+  --md-sys-color-error: oklch(78% 0.16 var(--error-hue));
+  --md-sys-color-on-error: oklch(18% 0.08 var(--error-hue));
+  --md-sys-color-error-container: oklch(34% 0.12 var(--error-hue));
+  --md-sys-color-on-error-container: oklch(92% 0.05 var(--error-hue));
+
+  /* Text, Outlines & Overlays */
+  --md-sys-color-on-surface: oklch(94% 0.01 var(--seed-hue));
+  --md-sys-color-on-surface-variant: oklch(72% 0.02 var(--seed-hue));
+  --md-sys-color-outline: oklch(55% 0.02 var(--seed-hue));
+  --md-sys-color-outline-variant: oklch(28% 0.02 var(--seed-hue));
+
+  /* Inverse Roles */
+  --md-sys-color-inverse-surface: oklch(90% 0.015 var(--seed-hue));
+  --md-sys-color-inverse-on-surface: oklch(16% 0.015 var(--seed-hue));
+  --md-sys-color-inverse-primary: oklch(42% var(--seed-chroma) var(--seed-hue));
+
+  /* Scrim & Shadow */
+  --md-sys-color-shadow: oklch(0% 0 0 / 0.65);
+  --md-sys-color-scrim: oklch(0% 0 0 / 0.55);
+
+  /* Expressive Hero Radial Glow */
+  --md-sys-hero-glow: oklch(58% 0.18 var(--seed-hue) / 0.35);
+}

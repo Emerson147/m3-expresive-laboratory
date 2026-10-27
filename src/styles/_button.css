@@ -1,0 +1,181 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: BUTTONS
+   m3.material.io/components/all-buttons/specs
+   ========================================================= */
+
+/* --- BASE M3 BUTTON FOUNDATION --- */
+.m3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  border: none;
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size, 0.875rem);
+  font-weight: var(--md-sys-typescale-label-large-weight, 500);
+  line-height: var(--md-sys-typescale-label-large-line-height, 1.25rem);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking, 0.1px);
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  transition: 
+    background-color 200ms var(--md-sys-motion-easing-standard),
+    box-shadow 200ms var(--md-sys-motion-easing-standard),
+    border-radius 200ms var(--md-sys-motion-easing-emphasized-decelerate),
+    transform 150ms var(--md-sys-motion-easing-spring);
+}
+
+/* SIZES */
+.m3-btn-sm {
+  height: 32px;
+  padding: 0 16px;
+  font-size: var(--md-sys-typescale-label-medium-size, 0.75rem);
+  gap: 6px;
+}
+.m3-btn-sm.has-icon-leading {
+  padding-left: 12px;
+}
+.m3-btn-sm.has-icon-trailing {
+  padding-right: 12px;
+}
+
+.m3-btn-md {
+  height: 40px;
+  padding: 0 24px;
+}
+.m3-btn-md.has-icon-leading {
+  padding-left: 16px;
+}
+.m3-btn-md.has-icon-trailing {
+  padding-right: 16px;
+}
+
+.m3-btn-lg {
+  height: 48px;
+  padding: 0 28px;
+  font-size: var(--md-sys-typescale-title-small-size, 0.875rem);
+  gap: 10px;
+}
+.m3-btn-lg.has-icon-leading {
+  padding-left: 20px;
+}
+.m3-btn-lg.has-icon-trailing {
+  padding-right: 20px;
+}
+
+/* ICON-ONLY BUTTON VARIATION */
+.m3-btn-icon-sm {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+.m3-btn-icon-md {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+.m3-btn-icon-lg {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+}
+
+/* --- THE 5 CANONICAL VARIANTS --- */
+
+/* 1. FILLED BUTTON (High Emphasis) */
+.m3-btn-filled {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  box-shadow: none;
+}
+.m3-btn-filled:hover {
+  box-shadow: var(--md-sys-elevation-level-1);
+}
+.m3-btn-filled:active {
+  box-shadow: none;
+}
+
+/* 2. TONAL BUTTON (Medium-High Emphasis) */
+.m3-btn-tonal {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  box-shadow: none;
+}
+.m3-btn-tonal:hover {
+  box-shadow: var(--md-sys-elevation-level-1);
+}
+.m3-btn-tonal:active {
+  box-shadow: none;
+}
+
+/* 3. ELEVATED BUTTON (Medium Emphasis with Depth) */
+.m3-btn-elevated {
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-primary);
+  box-shadow: var(--md-sys-elevation-level-1);
+}
+.m3-btn-elevated:hover {
+  box-shadow: var(--md-sys-elevation-level-2);
+}
+.m3-btn-elevated:active {
+  box-shadow: var(--md-sys-elevation-level-1);
+}
+
+/* 4. OUTLINED BUTTON (Medium Emphasis with Boundary) */
+.m3-btn-outlined {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline);
+  box-shadow: none;
+}
+.m3-btn-outlined:focus-visible {
+  border-color: var(--md-sys-color-primary);
+}
+
+/* 5. TEXT BUTTON (Low Emphasis) */
+.m3-btn-text {
+  background-color: transparent;
+  color: var(--md-sys-color-primary);
+  padding: 0 12px;
+  box-shadow: none;
+}
+.m3-btn-text.m3-btn-sm {
+  padding: 0 8px;
+}
+.m3-btn-text.m3-btn-lg {
+  padding: 0 16px;
+}
+
+/* DISABLED STATE */
+.m3-btn:disabled,
+.m3-btn[aria-disabled="true"] {
+  opacity: 0.38;
+  pointer-events: none;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+.m3-btn-filled:disabled,
+.m3-btn-tonal:disabled,
+.m3-btn-elevated:disabled {
+  background-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  color: var(--md-sys-color-on-surface);
+}
+
+.m3-btn-outlined:disabled {
+  border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  color: var(--md-sys-color-on-surface);
+}
+
+.m3-btn-text:disabled {
+  color: var(--md-sys-color-on-surface);
+}
+
+/* SHAPE MORPHING CAPABILITY (Expressive M3) */
+.m3-btn-morph:hover {
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+}

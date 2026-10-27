@@ -1,0 +1,22 @@
+:root {
+  /* =========================================================
+     M3 SHAPE SYSTEM (m3.material.io/styles/shape)
+     ========================================================= */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* Aliases for backwards compatibility */
+  --md-sys-shape-none: var(--md-sys-shape-corner-none);
+  --md-sys-shape-extra-small: var(--md-sys-shape-corner-extra-small);
+  --md-sys-shape-small: var(--md-sys-shape-corner-small);
+  --md-sys-shape-medium: var(--md-sys-shape-corner-medium);
+  --md-sys-shape-large: var(--md-sys-shape-corner-large);
+  --md-sys-shape-extra-large: var(--md-sys-shape-corner-extra-large);
+  --md-sys-shape-full: var(--md-sys-shape-corner-full);
+}

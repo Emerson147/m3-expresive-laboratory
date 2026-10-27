@@ -1,0 +1,86 @@
+/* =========================================================
+   M3 FOUNDATIONS: INTERACTION & STATE LAYERS
+   m3.material.io/foundations/interaction
+   ========================================================= */
+
+/* --- 1. UNIVERSAL STATE LAYER ENGINE ---
+   Uses `currentColor` so it automatically adapts to on-primary, 
+   on-secondary, or on-surface without hardcoded colors. */
+.state-layer {
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms var(--md-sys-motion-easing-spring);
+}
+
+.state-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms var(--md-sys-motion-easing-linear);
+}
+
+/* Hover: 8% */
+.state-layer:hover::before {
+  opacity: var(--md-sys-state-hover-opacity);
+}
+
+/* Focus: 10% */
+.state-layer:focus-visible::before {
+  opacity: var(--md-sys-state-focus-opacity);
+}
+
+/* Pressed: 12% + Spring Feedback */
+.state-layer:active {
+  transform: scale(0.975);
+}
+
+.state-layer:active::before {
+  opacity: var(--md-sys-state-pressed-opacity);
+}
+
+/* --- 2. ACCESSIBLE DUAL FOCUS RING ---
+   Ensures WCAG 2.2 AA / AAA compliance across any surface */
+.focus-ring-m3 {
+  outline: none;
+  transition: box-shadow 150ms var(--md-sys-motion-easing-standard);
+}
+
+.focus-ring-m3:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px var(--md-sys-color-surface),
+    0 0 0 4px var(--md-sys-color-primary);
+}
+
+/* --- 3. ACCESSIBLE TOUCH TARGET (48x48dp) ---
+   Guarantees minimum touchable bounds (48x48dp) even on compact buttons (28px).
+   CRITICAL: Must override overflow:hidden so ::after expands outside the container. */
+.touch-target-48 {
+  position: relative;
+  overflow: visible !important;
+}
+
+.touch-target-48::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* Visual inspector for debugging and testing touch targets */
+.touch-target-debug::after {
+  border: 1.5px dashed var(--md-sys-color-primary);
+  background-color: oklch(from var(--md-sys-color-primary) l c h / 0.15);
+}

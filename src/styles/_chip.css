@@ -1,0 +1,93 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: CHIPS
+   m3.material.io/components/chips/specs
+   ========================================================= */
+
+/* --- BASE CHIP CONTAINER --- */
+.m3-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  height: 32px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size, 0.875rem);
+  font-weight: var(--md-sys-typescale-label-large-weight, 500);
+  line-height: var(--md-sys-typescale-label-large-line-height, 1.25rem);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking, 0.1px);
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface-variant);
+  transition: 
+    background-color 200ms var(--md-sys-motion-easing-standard),
+    border-color 200ms var(--md-sys-motion-easing-standard),
+    border-radius 240ms var(--md-sys-motion-easing-emphasized-decelerate),
+    color 200ms var(--md-sys-motion-easing-standard),
+    box-shadow 200ms var(--md-sys-motion-easing-standard),
+    transform 150ms var(--md-sys-motion-easing-spring);
+}
+
+/* LEADING & TRAILING ADJUSTMENTS */
+.m3-chip.has-leading {
+  padding-left: 8px;
+}
+.m3-chip.has-trailing {
+  padding-right: 8px;
+}
+
+/* --- 1. FILTER CHIP --- */
+.m3-chip-filter.is-selected {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: transparent;
+  border-radius: var(--md-sys-shape-corner-medium, 12px); /* M3 Expressive Morphing */
+  font-weight: 600;
+}
+
+/* --- 2. ASSIST CHIP --- */
+.m3-chip-assist {
+  background-color: transparent;
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+}
+
+/* --- 3. INPUT CHIP --- */
+.m3-chip-input {
+  background-color: var(--md-sys-color-surface-container);
+  border-color: transparent;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* --- 4. SUGGESTION CHIP --- */
+.m3-chip-suggestion {
+  background-color: var(--md-sys-color-surface-container-high);
+  border-color: transparent;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* --- DISABLED STATE --- */
+.m3-chip:disabled,
+.m3-chip[aria-disabled="true"] {
+  opacity: 0.38;
+  pointer-events: none;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* COUNTER BADGE */
+.m3-chip-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: color-mix(in srgb, currentColor 12%, transparent);
+}

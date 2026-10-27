@@ -1,0 +1,327 @@
+/* =========================================================
+   M3 EXPRESSIVE TOKENS: MODERN TEXT FIELDS & INPUTS
+   Material 3 Expressive (2025/2026 Sleek Recess Architecture)
+   ========================================================= */
+
+/* --- ROOT TEXT FIELD WRAPPER --- */
+.m3-text-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* --- TEXT FIELD CONTAINER (Stage Recess Surface) --- */
+.m3-text-field-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-height: 58px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: var(--md-sys-shape-corner-large, 16px); /* Unified Expressive 16px curvature */
+  transition:
+    background-color 200ms var(--md-sys-motion-easing-standard),
+    border-color 200ms var(--md-sys-motion-easing-standard),
+    box-shadow 220ms var(--md-sys-motion-easing-standard),
+    transform 150ms var(--md-sys-motion-easing-spring);
+}
+
+/* --- 1. FILLED VARIANT (Subtle Tonal Recess) --- */
+.m3-text-field-filled .m3-text-field-container {
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 5%, transparent);
+}
+
+/* Hover state on filled */
+.m3-text-field-filled:not(.is-disabled) .m3-text-field-container:hover {
+  background-color: var(--md-sys-color-surface-container);
+  border-color: color-mix(in srgb, var(--md-sys-color-outline) 60%, var(--md-sys-color-outline-variant));
+}
+
+/* Focus glow on filled */
+.m3-text-field-filled.is-focused .m3-text-field-container {
+  background-color: var(--md-sys-color-surface-container-lowest);
+  border-color: var(--md-sys-color-primary);
+  box-shadow:
+    0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent),
+    inset 0 1px 1px color-mix(in srgb, var(--md-sys-color-shadow) 3%, transparent);
+}
+
+/* --- 2. OUTLINED VARIANT (Sleek Structured Boundary) --- */
+.m3-text-field-outlined .m3-text-field-container {
+  background-color: transparent;
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+}
+
+/* Hover state on outlined */
+.m3-text-field-outlined:not(.is-disabled) .m3-text-field-container:hover {
+  background-color: color-mix(in srgb, var(--md-sys-color-surface-container-low) 40%, transparent);
+  border-color: var(--md-sys-color-outline);
+}
+
+/* Focus glow on outlined */
+.m3-text-field-outlined.is-focused .m3-text-field-container {
+  background-color: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 70%, transparent);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
+}
+
+/* --- INPUT & CONTENT AREA --- */
+.m3-text-field-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.m3-text-field-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  /* 14px compact modern scale */
+  font-weight: 500;
+  line-height: 1.25rem;
+  color: var(--md-sys-color-on-surface);
+  box-sizing: border-box;
+  caret-color: var(--md-sys-color-primary);
+  padding: 22px 18px 8px 18px; /* Comfortable breathing room */
+}
+
+.m3-text-field-input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.45;
+  /* Subtle and unobtrusive */
+}
+
+/* Leading & Trailing icon padding adjustments */
+.m3-text-field.has-leading .m3-text-field-input {
+  padding-left: 8px; /* Unasphyxiated, generous space from leading icon */
+}
+
+.m3-text-field.has-trailing .m3-text-field-input {
+  padding-right: 8px;
+}
+
+/* --- INTEGRATED FLOATING LABEL (100% Internal, No Cutout) --- */
+.m3-text-field-label {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  font-family: inherit;
+  color: var(--md-sys-color-on-surface-variant);
+  transition:
+    top 180ms var(--md-sys-motion-easing-emphasized),
+    font-size 180ms var(--md-sys-motion-easing-emphasized),
+    font-weight 180ms var(--md-sys-motion-easing-standard),
+    color 180ms var(--md-sys-motion-easing-standard),
+    opacity 180ms var(--md-sys-motion-easing-standard),
+    transform 180ms var(--md-sys-motion-easing-emphasized);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 28px);
+  line-height: 1;
+}
+
+/* Resting position (centered) */
+.m3-text-field-label {
+  top: 50%;
+  transform: translateY(-50%);
+  left: 18px;
+  font-size: 0.875rem;
+  /* 14px */
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.m3-text-field.has-leading .m3-text-field-label {
+  left: 8px; /* Perfectly aligned with input text */
+}
+
+/* Floated position (tucked neatly at the top inside container) */
+.m3-text-field.is-floated .m3-text-field-label {
+  top: 8px;
+  transform: translateY(0);
+  font-size: 0.6875rem;
+  /* 11px micro-scale */
+  font-weight: 600;
+  letter-spacing: 0.35px;
+  opacity: 0.85;
+}
+
+/* Focused label color */
+.m3-text-field.is-focused .m3-text-field-label {
+  color: var(--md-sys-color-primary);
+  opacity: 1;
+}
+
+/* --- LEADING & TRAILING ICONS --- */
+.m3-text-field-leading,
+.m3-text-field-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: color 150ms var(--md-sys-motion-easing-standard);
+}
+
+.m3-text-field-leading {
+  margin-left: 6px;
+  margin-right: 4px; /* Separation from input area */
+}
+
+.m3-text-field-trailing {
+  margin-right: 6px;
+}
+
+.m3-text-field.is-focused .m3-text-field-leading {
+  color: var(--md-sys-color-primary);
+}
+
+.m3-text-field-trailing button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  transition:
+    background-color 150ms var(--md-sys-motion-easing-standard),
+    transform 120ms var(--md-sys-motion-easing-spring);
+}
+
+.m3-text-field-trailing button:hover {
+  background-color: color-mix(in srgb, currentColor 12%, transparent);
+  transform: scale(1.05);
+}
+
+.m3-text-field-trailing button:active {
+  transform: scale(0.95);
+}
+
+/* --- MULTILINE / TEXTAREA ADJUSTMENT --- */
+.m3-text-field-multiline .m3-text-field-container {
+  min-height: 110px;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.m3-text-field-multiline .m3-text-field-input {
+  min-height: 76px;
+  resize: vertical;
+  padding-top: 24px;
+}
+
+.m3-text-field-multiline .m3-text-field-leading,
+.m3-text-field-multiline .m3-text-field-trailing {
+  height: 40px;
+  margin-top: 4px;
+}
+
+.m3-text-field-multiline:not(.is-floated) .m3-text-field-label {
+  top: 18px;
+  transform: translateY(0);
+}
+
+/* --- SUPPORTING TEXT & CHARACTER COUNTER --- */
+.m3-text-field-supporting {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 5px 16px 0 16px;
+  font-size: var(--md-sys-typescale-body-small-size, 0.75rem);
+  line-height: var(--md-sys-typescale-body-small-line-height, 1rem);
+  color: var(--md-sys-color-on-surface-variant);
+  min-height: 18px;
+}
+
+.m3-text-field-helper {
+  flex: 1;
+}
+
+.m3-text-field-counter {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* --- ERROR STATE --- */
+.m3-text-field.is-error .m3-text-field-label,
+.m3-text-field.is-error .m3-text-field-supporting,
+.m3-text-field.is-error .m3-text-field-helper,
+.m3-text-field.is-error .m3-text-field-trailing,
+.m3-text-field.is-error .m3-text-field-leading {
+  color: var(--md-sys-color-error);
+}
+
+.m3-text-field.is-error .m3-text-field-container {
+  border-color: var(--md-sys-color-error) !important;
+}
+
+.m3-text-field.is-error.is-focused .m3-text-field-container {
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-error) 22%, transparent) !important;
+}
+
+/* --- DISABLED STATE --- */
+.m3-text-field.is-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   M3 EXPRESSIVE SELECT FIELD STYLING
+   ========================================================= */
+.m3-select-field {
+  appearance: none;
+  width: 100%;
+  min-height: 54px;
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-medium, 14px);
+  padding: 12px 38px 12px 18px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 5%, transparent);
+  transition:
+    border-color 180ms var(--md-sys-motion-easing-standard),
+    box-shadow 180ms var(--md-sys-motion-easing-standard),
+    background-color 180ms var(--md-sys-motion-easing-standard);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 -960 960 960' width='20' fill='%23777'%3E%3Cpath d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.m3-select-field:hover {
+  background-color: var(--md-sys-color-surface-container);
+  border-color: var(--md-sys-color-outline);
+}
+
+.m3-select-field:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-surface-container-lowest);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
+}
