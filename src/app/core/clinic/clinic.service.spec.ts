@@ -104,4 +104,44 @@ describe('ClinicService', () => {
     expect(updatedBed?.status).toBe('cleaning');
     expect(updatedBed?.patientId).toBeNull();
   });
+
+  it('should compute NEWS2 score and detect high risk triggers', () => {
+    const criticalVitals = {
+      heartRate: 135,
+      bloodPressureSys: 85,
+      bloodPressureDia: 50,
+      oxygenSat: 88,
+      temperature: 39.4,
+      painScale: 9
+    };
+    const news2 = ClinicService.computeNews2(criticalVitals);
+    expect(news2.score).toBeGreaterThanOrEqual(7);
+    expect(news2.riskLevel).toBe('high');
+    expect(news2.triggers.length).toBeGreaterThanOrEqual(2);
+
+    const normalVitals = {
+      heartRate: 72,
+      bloodPressureSys: 120,
+      bloodPressureDia: 80,
+      oxygenSat: 99,
+      temperature: 36.6,
+      painScale: 0
+    };
+    const normalNews2 = ClinicService.computeNews2(normalVitals);
+    expect(normalNews2.score).toBe(0);
+    expect(normalNews2.riskLevel).toBe('low');
+  });
+
+  it('should assign a bed immediately via 1-click Shock Trauma action', () => {
+    const unassignedPatient = service.patients().find(p => !p.bedAssignedId);
+    expect(unassignedPatient).toBeTruthy();
+    if (!unassignedPatient) return;
+
+    const assigned = service.assignImmediateShockTrauma(unassignedPatient.id);
+    expect(assigned).toBe(true);
+
+    const updated = service.patients().find(p => p.id === unassignedPatient.id);
+    expect(updated?.bedAssignedId).toBeTruthy();
+    expect(updated?.status).toBe('in_observation');
+  });
 });

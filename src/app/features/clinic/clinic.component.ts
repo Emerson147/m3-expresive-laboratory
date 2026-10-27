@@ -2,7 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClinicService } from '../../core/clinic/clinic.service';
-import { BedStatus, EmergencyBed, PatientTriageRecord, TriageFilter, TriageLevel } from '../../core/clinic/clinic.models';
+import {
+  BedStatus,
+  EmergencyBed,
+  News2RiskLevel,
+  PatientTriageRecord,
+  TriageFilter,
+  TriageLevel
+} from '../../core/clinic/clinic.models';
 
 type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
@@ -11,14 +18,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-full flex flex-col gap-2.5 min-h-0 overflow-hidden select-none">
+    <div class="h-full flex flex-col gap-2 min-h-0 overflow-hidden select-none">
 
       <!-- =====================================================================
-           1. TOP HEADER & OPERATIONAL BAR
+           1. TOP HEADER & CLINICAL DECISION SUPPORT BAR
            ===================================================================== -->
-      <header class="shrink-0 p-3 rounded-2xl bg-surface-box border border-outline-sub shadow-xs flex items-center justify-between flex-wrap gap-2.5">
+      <header class="shrink-0 p-2.5 sm:p-3 rounded-2xl bg-surface-box border border-outline-sub shadow-xs flex items-center justify-between flex-wrap gap-2">
         
-        <!-- Left: Branding & Status -->
+        <!-- Left: Station Branding & Manchester Protocol -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-10 h-10 rounded-xl bg-rose-500 text-white grid place-items-center shadow-xs shrink-0">
             <span class="material-symbols-rounded text-xl">local_hospital</span>
@@ -31,9 +38,12 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
               <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 uppercase tracking-wider font-mono">
                 MTS Manchester
               </span>
+              <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-box text-on-primary-box uppercase tracking-wider font-mono">
+                NEWS2 Activo
+              </span>
             </div>
             <p class="text-xs text-muted truncate">
-              Monitoreo Vital Continuo • Capacidad de Shock Trauma & Observación
+              Soporte a la Decisión Clínica • Monitoreo Hemodinámico en Tiempo Real
             </p>
           </div>
         </div>
@@ -44,7 +54,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             <span class="material-symbols-rounded absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-base">search</span>
             <input
               type="text"
-              placeholder="Buscar paciente o ticket..."
+              placeholder="Buscar paciente, código o cama..."
               [ngModel]="clinicService.searchQuery()"
               (ngModelChange)="clinicService.setSearchQuery($event)"
               class="w-full pl-8 pr-3 py-1.5 rounded-full text-xs bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:border-primary transition-all"
@@ -67,14 +77,16 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       <section class="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-2">
         
         <!-- KPI 1: Casos Críticos (N1 & N2) -->
-        <div class="p-3 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
           <div>
             <span class="text-[11px] font-semibold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
               <span class="text-xl sm:text-2xl font-black text-rose-500 font-mono">{{ clinicService.kpiSummary().criticalCases }}</span>
               <span class="text-xs text-muted">pacientes</span>
             </div>
-            <span class="text-[10px] text-muted block mt-0.5">Atención Inmediata / Shock Trauma</span>
+            <span class="text-[10px] text-rose-500/80 font-medium block mt-0.5">
+              {{ clinicService.kpiSummary().highRiskNews2Count }} con NEWS2 Crítico (≥ 7)
+            </span>
           </div>
           <div class="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-500 grid place-items-center">
             <span class="material-symbols-rounded text-lg">emergency</span>
@@ -82,7 +94,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         </div>
 
         <!-- KPI 2: Casos Urgentes (N3) -->
-        <div class="p-3 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
           <div>
             <span class="text-[11px] font-semibold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -97,7 +109,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         </div>
 
         <!-- KPI 3: Espera Promedio -->
-        <div class="p-3 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
           <div>
             <span class="text-[11px] font-semibold text-primary uppercase tracking-wider block">Espera Promedio</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -112,7 +124,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         </div>
 
         <!-- KPI 4: Ocupación de Camas -->
-        <div class="p-3 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
           <div>
             <span class="text-[11px] font-semibold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -131,7 +143,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       <!-- =====================================================================
            3. MAIN ASYMMETRIC BENTO GRID (Left: 7 Cols, Right: 5 Cols)
            ===================================================================== -->
-      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 overflow-hidden">
+      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
         
         <!-- ===================================================================
              COLUMNA IZQUIERDA: COLA ACTIVA DE TRIAJE (7 / 12)
@@ -139,7 +151,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         <section class="lg:col-span-7 flex flex-col min-h-0 rounded-2xl bg-surface-box border border-outline-sub overflow-hidden shadow-xs">
           
           <!-- Triage Filter Bar -->
-          <div class="p-2.5 border-b border-outline-sub shrink-0 flex items-center justify-between gap-2 overflow-x-auto">
+          <div class="p-2 border-b border-outline-sub shrink-0 flex items-center justify-between gap-1.5 overflow-x-auto bg-surface-low">
             <div class="flex items-center gap-1.5 text-xs">
               <span class="font-bold text-main px-1 text-xs shrink-0 flex items-center gap-1">
                 <span class="material-symbols-rounded text-sm text-primary">format_list_bulleted</span>
@@ -200,19 +212,34 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           </div>
 
-          <!-- Patients List Scroll Area -->
-          <div class="flex-1 overflow-y-auto p-2.5 space-y-2">
+          <!-- Patients List Scroll Area (Micro-compact ergonomics) -->
+          <div class="flex-1 overflow-y-auto p-2 space-y-2">
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               <div
                 (click)="onSelectPatient(patient)"
                 [class.border-primary]="clinicService.selectedPatient()?.id === patient.id"
                 [class.bg-surface-high]="clinicService.selectedPatient()?.id === patient.id"
                 [class.bg-surface-low]="clinicService.selectedPatient()?.id !== patient.id"
-                class="p-3 rounded-xl border border-outline-sub hover:border-outline cursor-pointer transition-all duration-150 relative">
+                class="p-2.5 rounded-xl border border-outline-sub hover:border-outline cursor-pointer transition-all duration-150 relative">
 
-                <!-- Patient Top Line: Manchester Tag + Ticket + Patient Info -->
+                <!-- Active Protocol Bar (Door-to-Balloon / Door-to-Needle) if patient has active code -->
+                @if (patient.activeCode) {
+                  <div class="mb-2 p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="material-symbols-rounded text-rose-500 text-sm shrink-0">crisis_alert</span>
+                      <span class="font-bold text-rose-500 truncate">{{ patient.activeCode.title }}</span>
+                      <span class="text-[10px] text-muted truncate">• {{ patient.activeCode.windowLabel }}</span>
+                    </div>
+                    <div class="shrink-0 flex items-center gap-1 font-mono font-bold text-[11px] text-rose-500">
+                      <span class="material-symbols-rounded text-xs">timer</span>
+                      <span>{{ patient.activeCode.remainingMinutes }} min restantes</span>
+                    </div>
+                  </div>
+                }
+
+                <!-- Patient Top Line: Manchester Tag + Ticket + Name + NEWS2 Score -->
                 <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
                     
                     <!-- Manchester Level Badge -->
                     <span [class]="getTriageBadgeClass(patient.triageLevel)" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
@@ -220,60 +247,71 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     </span>
 
                     <span class="font-mono font-bold text-xs text-main">{{ patient.ticketCode }}</span>
-                    <span class="font-bold text-sm text-main truncate">{{ patient.fullName }}</span>
-                    <span class="text-xs text-muted">({{ patient.age }}a • {{ patient.gender }})</span>
+                    <span class="font-bold text-xs sm:text-sm text-main truncate">{{ patient.fullName }}</span>
+                    <span class="text-[11px] text-muted">({{ patient.age }}a • {{ patient.gender }})</span>
+
+                    <!-- NEWS2 Score Badge -->
+                    <span
+                      [class]="getNews2BadgeClass(patient.news2.riskLevel)"
+                      class="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-black">
+                      NEWS2: {{ patient.news2.score }}
+                    </span>
                   </div>
 
-                  <div class="flex items-center gap-2 shrink-0 text-xs">
-                    <span class="text-muted font-mono">{{ patient.admissionTime }}</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-main">
+                  <div class="flex items-center gap-1.5 shrink-0 text-xs">
+                    <span class="text-muted font-mono text-[11px]">{{ patient.admissionTime }}</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-main">
                       {{ patient.waitingMinutes }} min
                     </span>
                   </div>
                 </div>
 
                 <!-- Chief Complaint -->
-                <p class="text-xs font-medium text-main mt-1.5 leading-relaxed">
+                <p class="text-xs font-medium text-main mt-1 leading-snug">
                   {{ patient.chiefComplaint }}
                 </p>
 
-                <!-- Vitals Pills Bar (Non-annoying, pure semantic high-contrast) -->
-                <div class="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-outline-sub/50 text-[11px]">
+                <!-- Vitals Row with Physiological Semantics -->
+                <div class="flex items-center gap-1.5 flex-wrap mt-2 pt-1.5 border-t border-outline-sub/50 text-[11px]">
                   
                   <!-- Heart Rate -->
-                  <div [class]="patient.vitals.heartRate > 100 ? 'bg-rose-500/10 text-rose-500 font-bold' : 'bg-surface-highest text-main'"
-                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
+                  <div
+                    [class]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50 ? 'bg-rose-500/10 text-rose-500 font-bold' : 'bg-surface-highest text-main'"
+                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono text-[11px]">
                     <span class="material-symbols-rounded text-xs">favorite</span>
                     <span>{{ patient.vitals.heartRate }} bpm</span>
                   </div>
 
                   <!-- Blood Pressure -->
-                  <div [class]="patient.vitals.bloodPressureSys > 140 ? 'bg-amber-500/10 text-amber-500 font-bold' : 'bg-surface-highest text-main'"
-                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
+                  <div
+                    [class]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90 ? 'bg-amber-500/10 text-amber-500 font-bold' : 'bg-surface-highest text-main'"
+                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono text-[11px]">
                     <span class="material-symbols-rounded text-xs">speed</span>
                     <span>{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}</span>
                   </div>
 
                   <!-- SpO2 -->
-                  <div [class]="patient.vitals.oxygenSat < 94 ? 'bg-rose-500/10 text-rose-500 font-bold' : 'bg-surface-highest text-main'"
-                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
+                  <div
+                    [class]="patient.vitals.oxygenSat < 94 ? 'bg-rose-500/10 text-rose-500 font-bold' : 'bg-surface-highest text-main'"
+                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono text-[11px]">
                     <span class="material-symbols-rounded text-xs">air</span>
                     <span>{{ patient.vitals.oxygenSat }}% SpO2</span>
                   </div>
 
                   <!-- Temp -->
-                  <div [class]="patient.vitals.temperature >= 38.0 ? 'bg-amber-500/10 text-amber-500 font-bold' : 'bg-surface-highest text-main'"
-                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono">
+                  <div
+                    [class]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5 ? 'bg-amber-500/10 text-amber-500 font-bold' : 'bg-surface-highest text-main'"
+                    class="px-2 py-0.5 rounded-md flex items-center gap-1 font-mono text-[11px]">
                     <span class="material-symbols-rounded text-xs">device_thermostat</span>
                     <span>{{ patient.vitals.temperature }}°C</span>
                   </div>
 
-                  <!-- Pain Scale EVA -->
-                  <div class="px-2 py-0.5 rounded-md bg-surface-highest text-muted flex items-center gap-1 font-mono">
+                  <!-- EVA Pain -->
+                  <div class="px-2 py-0.5 rounded-md bg-surface-highest text-muted flex items-center gap-1 font-mono text-[11px]">
                     <span>EVA {{ patient.vitals.painScale }}/10</span>
                   </div>
 
-                  <!-- Bed Tag or Waiting indicator -->
+                  <!-- Bed Tag or Status -->
                   <div class="ml-auto flex items-center gap-1">
                     @if (patient.bedAssignedId) {
                       <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-box text-on-primary-box flex items-center gap-1">
@@ -288,36 +326,49 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   </div>
                 </div>
 
-                <!-- Fast Inline Actions -->
+                <!-- Emergency Action & Quick Controls -->
                 <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-outline-sub/30 text-xs">
-                  <div class="flex items-center gap-1">
-                    <span class="text-[10px] text-muted uppercase">Re-triaje:</span>
+                  
+                  <!-- Left: 1-Click Shock Trauma Action if Critical and unassigned -->
+                  @if (!patient.bedAssignedId && (patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency' || patient.news2.riskLevel === 'high')) {
                     <button
                       type="button"
-                      (click)="onQuickRetriage(patient.id, 'resuscitation', $event)"
-                      title="Elevar a Resucitación (Rojo)"
-                      class="w-4 h-4 rounded-full bg-rose-600 hover:scale-125 transition-transform cursor-pointer">
+                      (click)="onImmediateShockTrauma(patient.id, $event)"
+                      class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1 shadow-xs cursor-pointer transition-colors">
+                      <span class="material-symbols-rounded text-xs">bolt</span>
+                      <span>Asignar Shock Trauma Inmediato</span>
                     </button>
-                    <button
-                      type="button"
-                      (click)="onQuickRetriage(patient.id, 'emergency', $event)"
-                      title="Elevar a Emergencia (Naranja)"
-                      class="w-4 h-4 rounded-full bg-orange-500 hover:scale-125 transition-transform cursor-pointer">
-                    </button>
-                    <button
-                      type="button"
-                      (click)="onQuickRetriage(patient.id, 'urgent', $event)"
-                      title="Asignar Urgente (Amarillo)"
-                      class="w-4 h-4 rounded-full bg-amber-400 hover:scale-125 transition-transform cursor-pointer">
-                    </button>
-                    <button
-                      type="button"
-                      (click)="onQuickRetriage(patient.id, 'standard', $event)"
-                      title="Asignar Estándar (Verde)"
-                      class="w-4 h-4 rounded-full bg-emerald-600 hover:scale-125 transition-transform cursor-pointer">
-                    </button>
-                  </div>
+                  } @else {
+                    <div class="flex items-center gap-1">
+                      <span class="text-[10px] text-muted uppercase">Re-triaje:</span>
+                      <button
+                        type="button"
+                        (click)="onQuickRetriage(patient.id, 'resuscitation', $event)"
+                        title="Elevar a Resucitación (Rojo)"
+                        class="w-4 h-4 rounded-full bg-rose-600 hover:scale-125 transition-transform cursor-pointer">
+                      </button>
+                      <button
+                        type="button"
+                        (click)="onQuickRetriage(patient.id, 'emergency', $event)"
+                        title="Elevar a Emergencia (Naranja)"
+                        class="w-4 h-4 rounded-full bg-orange-500 hover:scale-125 transition-transform cursor-pointer">
+                      </button>
+                      <button
+                        type="button"
+                        (click)="onQuickRetriage(patient.id, 'urgent', $event)"
+                        title="Asignar Urgente (Amarillo)"
+                        class="w-4 h-4 rounded-full bg-amber-400 hover:scale-125 transition-transform cursor-pointer">
+                      </button>
+                      <button
+                        type="button"
+                        (click)="onQuickRetriage(patient.id, 'standard', $event)"
+                        title="Asignar Estándar (Verde)"
+                        class="w-4 h-4 rounded-full bg-emerald-600 hover:scale-125 transition-transform cursor-pointer">
+                      </button>
+                    </div>
+                  }
 
+                  <!-- Right: Bed Assignment / Discharge -->
                   <div class="flex items-center gap-1.5">
                     @if (!patient.bedAssignedId) {
                       <button
@@ -377,7 +428,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.text-muted]="activeTab() !== 'detail'"
                 class="flex-1 py-1 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-rounded text-sm">clinical_notes</span>
-                <span>Ficha</span>
+                <span>Ficha & NEWS2</span>
               </button>
 
               <button
@@ -396,7 +447,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
           <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS -->
           @if (activeTab() === 'beds') {
-            <div class="flex-1 overflow-y-auto p-3 space-y-3">
+            <div class="flex-1 overflow-y-auto p-2.5 space-y-2.5">
               
               <!-- Shock Trauma Unit -->
               <div>
@@ -511,7 +562,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-xs font-bold text-main uppercase tracking-wider flex items-center gap-1">
                     <span class="material-symbols-rounded text-sm text-primary">healing</span>
-                    <span>Sala de Procedimientos & Sutura</span>
+                    <span>Sala de Procedimientos</span>
                   </span>
                   <span class="text-[10px] text-muted font-mono">2 Box</span>
                 </div>
@@ -558,11 +609,44 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           }
 
-          <!-- TAB 2: DETALLE DE FICHA MÉDICA -->
+          <!-- TAB 2: DETALLE DE FICHA MÉDICA & SOPORTE A LA DECISIÓN CLÍNICA -->
           @if (activeTab() === 'detail') {
             @if (clinicService.selectedPatient(); as patient) {
-              <div class="flex-1 overflow-y-auto p-3 space-y-3">
+              <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
                 
+                <!-- Active Emergency Code Hero Alert -->
+                @if (patient.activeCode) {
+                  <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-black text-rose-500 flex items-center gap-1.5">
+                        <span class="material-symbols-rounded text-base">emergency</span>
+                        <span>{{ patient.activeCode.title }}</span>
+                      </span>
+                      <span class="font-mono font-black text-rose-500 text-xs">
+                        {{ patient.activeCode.remainingMinutes }} min restantes
+                      </span>
+                    </div>
+
+                    <p class="text-xs text-main font-semibold mt-1">
+                      {{ patient.activeCode.protocolAction }}
+                    </p>
+
+                    <!-- Therapeutic Window Progress Track -->
+                    <div class="mt-2">
+                      <div class="flex justify-between text-[10px] text-muted mb-1 font-mono">
+                        <span>Transcurrido: {{ patient.activeCode.elapsedMinutes }} min</span>
+                        <span>Meta Puerta-Balón: ≤ {{ patient.activeCode.targetMinutes }} min</span>
+                      </div>
+                      <div class="w-full h-2 rounded-full bg-surface-highest overflow-hidden">
+                        <div
+                          class="h-full bg-rose-500 rounded-full transition-all duration-300"
+                          [style.width.%]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Patient Header Card -->
                 <div class="p-3 rounded-xl bg-surface-high border border-outline-sub">
                   <div class="flex items-center justify-between">
@@ -581,32 +665,73 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   </div>
                 </div>
 
-                <!-- Signos Vitales Detallados -->
+                <!-- National Early Warning Score 2 (NEWS2) Analysis -->
+                <div class="p-3 rounded-xl bg-surface-low border border-outline-sub text-xs">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="font-bold text-main flex items-center gap-1.5">
+                      <span class="material-symbols-rounded text-sm text-primary">analytics</span>
+                      <span>Índice Clínico NEWS2</span>
+                    </span>
+                    <span [class]="getNews2BadgeClass(patient.news2.riskLevel)" class="px-2 py-0.5 rounded-md font-mono font-black text-xs">
+                      Score: {{ patient.news2.score }} / 20
+                    </span>
+                  </div>
+
+                  <p class="text-xs font-medium text-main mt-1">{{ patient.news2.recommendation }}</p>
+
+                  @if (patient.news2.triggers.length > 0) {
+                    <div class="mt-2 pt-2 border-t border-outline-sub/40">
+                      <span class="text-[10px] font-bold text-rose-500 uppercase block mb-1">Criterios de Alerta Detectados:</span>
+                      <ul class="space-y-0.5">
+                        @for (trigger of patient.news2.triggers; track trigger) {
+                          <li class="flex items-center gap-1 text-[11px] text-rose-500 font-semibold">
+                            <span class="material-symbols-rounded text-xs">warning</span>
+                            <span>{{ trigger }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+
+                <!-- Signos Vitales con Rangos Fisiológicos -->
                 <div class="p-3 rounded-xl bg-surface-low border border-outline-sub">
                   <span class="text-xs font-bold text-main uppercase tracking-wider block mb-2 flex items-center gap-1">
                     <span class="material-symbols-rounded text-sm text-primary">vital_signs</span>
-                    <span>Signos Vitales al Triaje</span>
+                    <span>Signos Vitales y Rangos</span>
                   </span>
 
                   <div class="grid grid-cols-2 gap-2 text-xs">
                     <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
-                      <span class="text-[10px] text-muted block">Frecuencia Cardíaca</span>
-                      <span class="text-base font-mono font-bold text-main">{{ patient.vitals.heartRate }} bpm</span>
+                      <div class="flex justify-between items-center text-[10px] text-muted">
+                        <span>Frecuencia Cardíaca</span>
+                        <span>60 - 100 bpm</span>
+                      </div>
+                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.heartRate }} bpm</span>
                     </div>
 
                     <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
-                      <span class="text-[10px] text-muted block">Presión Arterial</span>
-                      <span class="text-base font-mono font-bold text-main">{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }} mmHg</span>
+                      <div class="flex justify-between items-center text-[10px] text-muted">
+                        <span>Presión Arterial</span>
+                        <span>120 / 80</span>
+                      </div>
+                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}</span>
                     </div>
 
                     <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
-                      <span class="text-[10px] text-muted block">Saturación SpO2</span>
-                      <span class="text-base font-mono font-bold text-main">{{ patient.vitals.oxygenSat }}%</span>
+                      <div class="flex justify-between items-center text-[10px] text-muted">
+                        <span>Saturación SpO2</span>
+                        <span>≥ 95%</span>
+                      </div>
+                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.oxygenSat }}%</span>
                     </div>
 
                     <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
-                      <span class="text-[10px] text-muted block">Temperatura Axilar</span>
-                      <span class="text-base font-mono font-bold text-main">{{ patient.vitals.temperature }}°C</span>
+                      <div class="flex justify-between items-center text-[10px] text-muted">
+                        <span>Temperatura</span>
+                        <span>36.5 - 37.5°C</span>
+                      </div>
+                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.temperature }}°C</span>
                     </div>
                   </div>
 
@@ -643,12 +768,21 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                 <!-- Patient Actions CTA -->
                 <div class="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    (click)="activeTab.set('beds')"
-                    class="flex-1 py-2 rounded-xl text-xs font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs">
-                    {{ patient.bedAssignedId ? 'Cambiar Cama' : 'Asignar Cama' }}
-                  </button>
+                  @if (!patient.bedAssignedId) {
+                    <button
+                      type="button"
+                      (click)="onImmediateShockTrauma(patient.id)"
+                      class="flex-1 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs transition-colors">
+                      ⚡ Asignar a Shock Trauma Inmediato
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="activeTab.set('beds')"
+                      class="flex-1 py-2 rounded-xl text-xs font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs">
+                      Cambiar Cama
+                    </button>
+                  }
 
                   <button
                     type="button"
@@ -663,7 +797,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
               <div class="h-48 grid place-items-center text-center p-6 text-muted">
                 <div>
                   <span class="material-symbols-rounded text-3xl mb-1 text-muted">person_search</span>
-                  <p class="text-xs font-semibold">Selecciona un paciente para ver su ficha clínica</p>
+                  <p class="text-xs font-semibold">Selecciona un paciente para ver su ficha clínica y NEWS2</p>
                 </div>
               </div>
             }
@@ -671,7 +805,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
           <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA -->
           @if (activeTab() === 'admit') {
-            <div class="flex-1 overflow-y-auto p-3 space-y-2.5 text-xs">
+            <div class="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
               
               <div class="flex items-center justify-between pb-1 border-b border-outline-sub">
                 <span class="font-bold text-main">Ingreso Rápido a Triaje</span>
@@ -848,6 +982,11 @@ export class ClinicComponent {
     this.activeTab.set('beds');
   }
 
+  onImmediateShockTrauma(patientId: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.clinicService.assignImmediateShockTrauma(patientId);
+  }
+
   onDischarge(patientId: string, event?: Event): void {
     if (event) event.stopPropagation();
     this.clinicService.dischargePatient(patientId);
@@ -872,7 +1011,6 @@ export class ClinicComponent {
       }
     });
 
-    // Reset form and switch to patient detail
     this.newPatientName = '';
     this.newPatientComplaint = '';
     this.activeTab.set('detail');
@@ -905,6 +1043,19 @@ export class ClinicComponent {
         return 'N4 • Poco Urgente';
       case 'non_urgent':
         return 'N5 • No Urgente';
+    }
+  }
+
+  getNews2BadgeClass(risk: News2RiskLevel): string {
+    switch (risk) {
+      case 'high':
+        return 'bg-rose-500/15 text-rose-500 border border-rose-500/30';
+      case 'medium':
+        return 'bg-orange-500/15 text-orange-500 border border-orange-500/30';
+      case 'low_medium':
+        return 'bg-amber-500/15 text-amber-500 border border-amber-500/30';
+      case 'low':
+        return 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30';
     }
   }
 

@@ -10,6 +10,25 @@ export type PatientStatus =
 export type BedArea = 'shock_trauma' | 'observation' | 'procedure';
 export type BedStatus = 'available' | 'occupied' | 'cleaning';
 
+export type News2RiskLevel = 'low' | 'low_medium' | 'medium' | 'high';
+
+export interface News2Assessment {
+  score: number;
+  riskLevel: News2RiskLevel;
+  recommendation: string;
+  triggers: string[];
+}
+
+export interface EmergencyCode {
+  type: 'code_stemi' | 'code_stroke' | 'code_sepsis' | 'code_trauma';
+  title: string;
+  windowLabel: string;
+  targetMinutes: number;
+  elapsedMinutes: number;
+  remainingMinutes: number;
+  protocolAction: string;
+}
+
 export interface PatientVitals {
   heartRate: number;        // bpm
   bloodPressureSys: number; // mmHg
@@ -40,6 +59,8 @@ export interface PatientTriageRecord {
   admissionTime: string;
   waitingMinutes: number;
   vitals: PatientVitals;
+  news2: News2Assessment;
+  activeCode?: EmergencyCode;
   bedAssignedId?: string;
   status: PatientStatus;
   allergies?: string[];
@@ -52,9 +73,11 @@ export interface ClinicKpiSummary {
   totalActivePatients: number;
   criticalCases: number;     // Resuscitation + Emergency
   urgentCases: number;       // Urgent
+  highRiskNews2Count: number; // NEWS2 >= 7
   avgWaitMinutes: number;
   occupiedBeds: number;
   totalBeds: number;
   bedOccupancyPercent: number;
   shockTraumaOccupancy: string;
+  availableShockTraumaBeds: number;
 }

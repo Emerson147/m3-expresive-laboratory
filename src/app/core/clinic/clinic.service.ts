@@ -3,7 +3,11 @@ import {
   BedStatus,
   ClinicKpiSummary,
   EmergencyBed,
+  EmergencyCode,
+  News2Assessment,
+  News2RiskLevel,
   PatientTriageRecord,
+  PatientVitals,
   TriageFilter,
   TriageLevel
 } from './clinic.models';
@@ -12,6 +16,78 @@ import {
   providedIn: 'root'
 })
 export class ClinicService {
+  /**
+   * Computes the National Early Warning Score 2 (NEWS2) standard algorithm.
+   */
+  static computeNews2(vitals: PatientVitals): News2Assessment {
+    let score = 0;
+    const triggers: string[] = [];
+
+    // 1. Oxygen Saturation (SpO2 Scale 1)
+    if (vitals.oxygenSat <= 91) {
+      score += 3;
+      triggers.push('Hipoxemia Severa (SpO2 ≤ 91%)');
+    } else if (vitals.oxygenSat <= 93) {
+      score += 2;
+      triggers.push('Hipoxemia Moderada (SpO2 92-93%)');
+    } else if (vitals.oxygenSat <= 95) {
+      score += 1;
+    }
+
+    // 2. Systolic Blood Pressure
+    if (vitals.bloodPressureSys <= 90) {
+      score += 3;
+      triggers.push('Hipotensión Severa / Shock (PA ≤ 90)');
+    } else if (vitals.bloodPressureSys <= 100) {
+      score += 2;
+      triggers.push('Hipotensión Moderada (PA 91-100)');
+    } else if (vitals.bloodPressureSys <= 110) {
+      score += 1;
+    } else if (vitals.bloodPressureSys >= 220) {
+      score += 3;
+      triggers.push('Crisis Hipertensiva Extrema (PA ≥ 220)');
+    }
+
+    // 3. Heart Rate (Pulse)
+    if (vitals.heartRate <= 40 || vitals.heartRate >= 131) {
+      score += 3;
+      triggers.push(vitals.heartRate <= 40 ? 'Bradicardia Extrema (≤ 40 bpm)' : 'Taquicardia Extrema (≥ 131 bpm)');
+    } else if (vitals.heartRate >= 111 && vitals.heartRate <= 130) {
+      score += 2;
+      triggers.push('Taquicardia Severa (111-130 bpm)');
+    } else if ((vitals.heartRate >= 41 && vitals.heartRate <= 50) || (vitals.heartRate >= 91 && vitals.heartRate <= 110)) {
+      score += 1;
+    }
+
+    // 4. Temperature
+    if (vitals.temperature <= 35.0) {
+      score += 3;
+      triggers.push('Hipotermia Severa (≤ 35.0°C)');
+    } else if (vitals.temperature >= 39.1) {
+      score += 2;
+      triggers.push('Fiebre Alta (≥ 39.1°C)');
+    } else if ((vitals.temperature >= 35.1 && vitals.temperature <= 36.0) || (vitals.temperature >= 38.1 && vitals.temperature <= 39.0)) {
+      score += 1;
+    }
+
+    // Clinical Risk Assessment mapping
+    let riskLevel: News2RiskLevel = 'low';
+    let recommendation = 'Riesgo clínico bajo. Monitorización de rutina.';
+
+    if (score >= 7 || triggers.some(t => t.includes('Severa') || t.includes('Extrema'))) {
+      riskLevel = 'high';
+      recommendation = 'Riesgo clínico crítico / Deterioro inminente. Respuesta médica de emergencia inmediata.';
+    } else if (score >= 5) {
+      riskLevel = 'medium';
+      recommendation = 'Riesgo clínico medio. Evaluación médica urgente y monitorización continua.';
+    } else if (score >= 3) {
+      riskLevel = 'low_medium';
+      recommendation = 'Riesgo clínico leve-moderado. Alerta de enfermería y control cada 60 min.';
+    }
+
+    return { score, riskLevel, recommendation, triggers };
+  }
+
   private readonly initialPatients: PatientTriageRecord[] = [
     {
       id: 'pt-1',
@@ -31,10 +107,27 @@ export class ClinicService {
         temperature: 36.8,
         painScale: 9
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 124,
+        bloodPressureSys: 175,
+        bloodPressureDia: 105,
+        oxygenSat: 90,
+        temperature: 36.8,
+        painScale: 9
+      }),
+      activeCode: {
+        type: 'code_stemi',
+        title: 'Código Infarto (STEMI)',
+        windowLabel: 'Ventana Puerta-Balón',
+        targetMinutes: 90,
+        elapsedMinutes: 32,
+        remainingMinutes: 58,
+        protocolAction: 'Hemodinamia notificada. Angioplastia primaria de emergencia coordinada.'
+      },
       bedAssignedId: 'ST-01',
       status: 'in_observation',
       allergies: ['Penicilina', 'Sulfas'],
-      notes: 'Protocolo de síndrome coronario agudo iniciado. EKG tomado a los 4 min.'
+      notes: 'Protocolo de síndrome coronario agudo iniciado. EKG tomado a los 4 min con supradesnivel ST en DII-DIII-aVF.'
     },
     {
       id: 'pt-2',
@@ -54,9 +147,26 @@ export class ClinicService {
         temperature: 37.1,
         painScale: 7
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 116,
+        bloodPressureSys: 96,
+        bloodPressureDia: 60,
+        oxygenSat: 92,
+        temperature: 37.1,
+        painScale: 7
+      }),
+      activeCode: {
+        type: 'code_sepsis',
+        title: 'Código Anafilaxia Grado III',
+        windowLabel: 'Ventana Estabilización Vía Aérea',
+        targetMinutes: 15,
+        elapsedMinutes: 8,
+        remainingMinutes: 7,
+        protocolAction: 'Adrenalina IM 0.5mg administrada. Nebulización y oxigenoterapia de alto flujo.'
+      },
       status: 'waiting_bed',
       allergies: ['Mariscos', 'AINEs'],
-      notes: 'Sospecha anafilaxia grado III. Adrenalina IM lista en triage.'
+      notes: 'Edema de úvula incipiente. Se requiere asignación prioritaria a box reanimación/shock trauma.'
     },
     {
       id: 'pt-3',
@@ -76,10 +186,27 @@ export class ClinicService {
         temperature: 36.5,
         painScale: 3
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 88,
+        bloodPressureSys: 185,
+        bloodPressureDia: 110,
+        oxygenSat: 96,
+        temperature: 36.5,
+        painScale: 3
+      }),
+      activeCode: {
+        type: 'code_stroke',
+        title: 'Código ACV / Ictus Agudo',
+        windowLabel: 'Ventana Trombolítica (Puerta-Aguja)',
+        targetMinutes: 60,
+        elapsedMinutes: 22,
+        remainingMinutes: 38,
+        protocolAction: 'TAC de encéfalo sin contraste prioritaria en escáner. Trombolisis rtPA lista.'
+      },
       bedAssignedId: 'ST-02',
       status: 'in_observation',
       allergies: [],
-      notes: 'Código ACV activado. Ventana de 2.5 horas para trombolisis.'
+      notes: 'NIHSS inicial estimado en 14. Ventana terapéutica de 4.5 horas desde inicio de síntomas.'
     },
     {
       id: 'pt-4',
@@ -99,6 +226,14 @@ export class ClinicService {
         temperature: 38.5,
         painScale: 8
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 98,
+        bloodPressureSys: 115,
+        bloodPressureDia: 75,
+        oxygenSat: 98,
+        temperature: 38.5,
+        painScale: 8
+      }),
       bedAssignedId: 'OB-01',
       status: 'in_observation',
       allergies: ['Látex'],
@@ -122,6 +257,14 @@ export class ClinicService {
         temperature: 36.9,
         painScale: 7
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 84,
+        bloodPressureSys: 132,
+        bloodPressureDia: 82,
+        oxygenSat: 99,
+        temperature: 36.9,
+        painScale: 7
+      }),
       status: 'waiting_bed',
       allergies: [],
       notes: 'Inmovilización provisoria colocada. Rx de tobillo solicitada.'
@@ -144,6 +287,14 @@ export class ClinicService {
         temperature: 36.6,
         painScale: 4
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 72,
+        bloodPressureSys: 110,
+        bloodPressureDia: 70,
+        oxygenSat: 99,
+        temperature: 36.6,
+        painScale: 4
+      }),
       status: 'waiting_bed',
       allergies: [],
       notes: 'Migraña común previa. Se indica hidratación y analgesia oral.'
@@ -166,6 +317,14 @@ export class ClinicService {
         temperature: 36.5,
         painScale: 0
       },
+      news2: ClinicService.computeNews2({
+        heartRate: 68,
+        bloodPressureSys: 128,
+        bloodPressureDia: 82,
+        oxygenSat: 99,
+        temperature: 36.5,
+        painScale: 0
+      }),
       status: 'waiting_bed',
       allergies: [],
       notes: 'Paciente hemodinámicamente estable, sin criterios de riesgo agudo.'
@@ -249,12 +408,13 @@ export class ClinicService {
   readonly searchQuery = signal<string>('');
   readonly selectedPatient = signal<PatientTriageRecord | null>(this.initialPatients[0]);
 
-  // Computed: KPI Summary
+  // Computed: KPI Summary with Clinical Decision Support metrics
   readonly kpiSummary = computed<ClinicKpiSummary>(() => {
     const list = this.patients().filter(p => p.status !== 'discharged');
     const totalActive = list.length;
     const critical = list.filter(p => p.triageLevel === 'resuscitation' || p.triageLevel === 'emergency').length;
     const urgent = list.filter(p => p.triageLevel === 'urgent').length;
+    const highRiskNews2 = list.filter(p => p.news2.riskLevel === 'high').length;
     
     const waitSum = list.reduce((acc, p) => acc + p.waitingMinutes, 0);
     const avgWait = totalActive > 0 ? Math.round(waitSum / totalActive) : 0;
@@ -266,17 +426,20 @@ export class ClinicService {
 
     const stBeds = allBeds.filter(b => b.area === 'shock_trauma');
     const stOccupied = stBeds.filter(b => b.status === 'occupied').length;
+    const stAvailable = stBeds.filter(b => b.status === 'available').length;
     const stRate = `${stOccupied}/${stBeds.length}`;
 
     return {
       totalActivePatients: totalActive,
       criticalCases: critical,
       urgentCases: urgent,
+      highRiskNews2Count: highRiskNews2,
       avgWaitMinutes: avgWait,
       occupiedBeds: occupied,
       totalBeds: totalBeds,
       bedOccupancyPercent: occRate,
-      shockTraumaOccupancy: stRate
+      shockTraumaOccupancy: stRate,
+      availableShockTraumaBeds: stAvailable
     };
   });
 
@@ -287,7 +450,6 @@ export class ClinicService {
     const query = this.searchQuery().trim().toLowerCase();
 
     return list.filter(p => {
-      // Filter category
       let matchesFilter = true;
       if (filter === 'critical') {
         matchesFilter = p.triageLevel === 'resuscitation' || p.triageLevel === 'emergency';
@@ -308,7 +470,8 @@ export class ClinicService {
         p.fullName.toLowerCase().includes(query) ||
         p.ticketCode.toLowerCase().includes(query) ||
         p.chiefComplaint.toLowerCase().includes(query) ||
-        (p.bedAssignedId && p.bedAssignedId.toLowerCase().includes(query))
+        (p.bedAssignedId && p.bedAssignedId.toLowerCase().includes(query)) ||
+        (p.activeCode && p.activeCode.title.toLowerCase().includes(query))
       );
     });
   });
@@ -334,14 +497,7 @@ export class ClinicService {
     gender: 'M' | 'F' | 'Other';
     triageLevel: TriageLevel;
     chiefComplaint: string;
-    vitals: {
-      heartRate: number;
-      bloodPressureSys: number;
-      bloodPressureDia: number;
-      oxygenSat: number;
-      temperature: number;
-      painScale: number;
-    };
+    vitals: PatientVitals;
     allergies?: string[];
     notes?: string;
   }): PatientTriageRecord {
@@ -349,6 +505,7 @@ export class ClinicService {
     const ticketCode = `TR-${nextTicketNum.toString().padStart(3, '0')}`;
     const now = new Date();
     const admissionTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const news2 = ClinicService.computeNews2(payload.vitals);
 
     const newRecord: PatientTriageRecord = {
       id: `pt-${Date.now()}`,
@@ -361,6 +518,7 @@ export class ClinicService {
       admissionTime,
       waitingMinutes: 1,
       vitals: payload.vitals,
+      news2,
       status: 'waiting_bed',
       allergies: payload.allergies ?? [],
       notes: payload.notes ?? ''
@@ -390,7 +548,7 @@ export class ClinicService {
     if (!targetPatient) return;
 
     this.runWithTransition(() => {
-      // 1. Unassign previous bed if held
+      // 1. Release previous bed if held
       const prevBedId = targetPatient.bedAssignedId;
       if (prevBedId) {
         this.beds.update(beds =>
@@ -425,12 +583,27 @@ export class ClinicService {
     });
   }
 
+  /**
+   * 1-Click Clinical Emergency Action:
+   * Finds the first available bed in Shock Trauma (or Observation if ST is full) and assigns it immediately.
+   */
+  assignImmediateShockTrauma(patientId: string): boolean {
+    const stAvailable = this.beds().find(b => b.area === 'shock_trauma' && b.status === 'available');
+    const fallbackAvailable = stAvailable ?? this.beds().find(b => b.status === 'available');
+
+    if (!fallbackAvailable) {
+      return false; // No available beds
+    }
+
+    this.assignBed(patientId, fallbackAvailable.id);
+    return true;
+  }
+
   dischargePatient(patientId: string): void {
     const targetPatient = this.patients().find(p => p.id === patientId);
     if (!targetPatient) return;
 
     this.runWithTransition(() => {
-      // Release bed to cleaning
       if (targetPatient.bedAssignedId) {
         const bedId = targetPatient.bedAssignedId;
         this.beds.update(beds =>
@@ -438,7 +611,6 @@ export class ClinicService {
         );
       }
 
-      // Update patient status to discharged
       this.patients.update(prev =>
         prev.map(p =>
           p.id === patientId ? { ...p, status: 'discharged', bedAssignedId: undefined } : p

@@ -71,4 +71,21 @@ describe('ClinicComponent', () => {
     const updated = clinicService.patients().find(p => p.id === pt.id);
     expect(updated?.triageLevel).toBe('resuscitation');
   });
+
+  it('should render NEWS2 clinical risk indicators and active code information', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('NEWS2');
+    expect(compiled.textContent).toContain('Código Infarto');
+  });
+
+  it('should assign Shock Trauma bed immediately via 1-click action from component', () => {
+    const unassignedCritical = clinicService.patients().find(p => !p.bedAssignedId && (p.triageLevel === 'emergency' || p.triageLevel === 'resuscitation'));
+    expect(unassignedCritical).toBeTruthy();
+    if (!unassignedCritical) return;
+
+    component.onImmediateShockTrauma(unassignedCritical.id);
+    const updated = clinicService.patients().find(p => p.id === unassignedCritical.id);
+    expect(updated?.bedAssignedId).toBeTruthy();
+    expect(updated?.status).toBe('in_observation');
+  });
 });
