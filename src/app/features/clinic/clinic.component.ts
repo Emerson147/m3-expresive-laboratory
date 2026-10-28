@@ -18,27 +18,27 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="h-full flex flex-col gap-2 min-h-0 overflow-hidden select-none">
+    <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none bg-surface text-main">
 
       <!-- =====================================================================
-           1. TOP HEADER & OPERATIONAL BAR
+           1. TOP HEADER & OPERATIONAL BAR (Clean M3 Filled Surface)
            ===================================================================== -->
-      <header class="shrink-0 p-2.5 sm:p-3 rounded-2xl bg-surface-box border border-outline-sub shadow-xs flex items-center justify-between flex-wrap gap-2">
+      <header class="shrink-0 p-3 sm:p-4 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between flex-wrap gap-3">
         
         <!-- Left: Branding & Status -->
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-xl bg-surface-high border border-outline-sub text-primary grid place-items-center shadow-xs shrink-0">
-            <span class="material-symbols-rounded text-xl">local_hospital</span>
+          <div class="w-11 h-11 rounded-2xl bg-primary-box text-on-primary-box grid place-items-center shadow-2xs shrink-0">
+            <span class="material-symbols-rounded text-2xl">local_hospital</span>
           </div>
           <div class="min-w-0">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <h1 class="text-base sm:text-lg font-black tracking-tight text-main truncate">
                 Estación de Emergencias & Triaje
               </h1>
-              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono border border-outline-sub">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono">
                 MTS Manchester
               </span>
-              <span class="hidden sm:inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono border border-outline-sub">
+              <span class="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono">
                 NEWS2 Activo
               </span>
             </div>
@@ -50,21 +50,21 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
         <!-- Center/Right: Quick Search & New Admission CTA -->
         <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <div class="relative w-44 sm:w-56">
-            <span class="material-symbols-rounded absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-base">search</span>
+          <div class="relative w-48 sm:w-60">
+            <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted text-base pointer-events-none">search</span>
             <input
               type="text"
               placeholder="Buscar paciente, código o cama..."
               [ngModel]="clinicService.searchQuery()"
               (ngModelChange)="clinicService.setSearchQuery($event)"
-              class="w-full pl-8 pr-3 py-1.5 rounded-full text-xs bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:border-primary transition-all"
+              class="w-full pl-9 pr-3 py-2 rounded-full text-xs bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-2xs"
             />
           </div>
 
           <button
             type="button"
             (click)="activeTab.set('admit')"
-            class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
+            class="btn-m3 px-4 py-2 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95">
             <span class="material-symbols-rounded text-base">person_add</span>
             <span>+ Nueva Admisión</span>
           </button>
@@ -72,69 +72,69 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       </header>
 
       <!-- =====================================================================
-           2. TOP BENTO KPI RIBBON (Sober & High Contrast)
+           2. TOP BENTO KPI RIBBON (M3 Filled Cards, Zero Border Clutter)
            ===================================================================== -->
-      <section class="shrink-0 grid grid-cols-2 md:grid-cols-4 gap-2">
+      <section class="shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-3">
         
         <!-- KPI 1: Casos Críticos (N1 & N2) -->
-        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
-            <span class="text-[11px] font-semibold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
+            <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-xl sm:text-2xl font-black text-rose-500 font-mono">{{ clinicService.kpiSummary().criticalCases }}</span>
+              <span class="text-2xl sm:text-3xl font-black text-rose-500 font-mono">{{ clinicService.kpiSummary().criticalCases }}</span>
               <span class="text-xs text-muted">pacientes</span>
             </div>
             <span class="text-[10px] text-muted block mt-0.5">
               {{ clinicService.kpiSummary().highRiskNews2Count }} con NEWS2 Crítico (≥ 7)
             </span>
           </div>
-          <div class="w-9 h-9 rounded-xl bg-surface-high border border-outline-sub text-rose-500 grid place-items-center">
-            <span class="material-symbols-rounded text-lg">emergency</span>
+          <div class="w-10 h-10 rounded-2xl bg-rose-500/12 text-rose-500 grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-xl">emergency</span>
           </div>
         </div>
 
         <!-- KPI 2: Casos Urgentes (N3) -->
-        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
-            <span class="text-[11px] font-semibold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
+            <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-xl sm:text-2xl font-black text-main font-mono">{{ clinicService.kpiSummary().urgentCases }}</span>
+              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().urgentCases }}</span>
               <span class="text-xs text-muted">pacientes</span>
             </div>
             <span class="text-[10px] text-muted block mt-0.5">Ventana de atención: ≤ 60 min</span>
           </div>
-          <div class="w-9 h-9 rounded-xl bg-surface-high border border-outline-sub text-amber-500 grid place-items-center">
-            <span class="material-symbols-rounded text-lg">warning</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/12 text-amber-500 grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-xl">warning</span>
           </div>
         </div>
 
         <!-- KPI 3: Espera Promedio -->
-        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
-            <span class="text-[11px] font-semibold text-muted uppercase tracking-wider block">Espera Promedio</span>
+            <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Espera Promedio</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-xl sm:text-2xl font-black text-main font-mono">{{ clinicService.kpiSummary().avgWaitMinutes }}</span>
+              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().avgWaitMinutes }}</span>
               <span class="text-xs text-muted">minutos</span>
             </div>
             <span class="text-[10px] text-muted block mt-0.5">Meta asistencial: &lt; 30 min</span>
           </div>
-          <div class="w-9 h-9 rounded-xl bg-surface-high border border-outline-sub text-primary grid place-items-center">
-            <span class="material-symbols-rounded text-lg">timer</span>
+          <div class="w-10 h-10 rounded-2xl bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-xl">timer</span>
           </div>
         </div>
 
         <!-- KPI 4: Ocupación de Camas -->
-        <div class="p-2.5 rounded-2xl bg-surface-box border border-outline-sub flex items-center justify-between">
+        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
-            <span class="text-[11px] font-semibold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
+            <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-xl sm:text-2xl font-black text-main font-mono">{{ clinicService.kpiSummary().occupiedBeds }}/{{ clinicService.kpiSummary().totalBeds }}</span>
+              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().occupiedBeds }}/{{ clinicService.kpiSummary().totalBeds }}</span>
               <span class="text-xs font-bold text-muted">({{ clinicService.kpiSummary().bedOccupancyPercent }}%)</span>
             </div>
             <span class="text-[10px] text-muted block mt-0.5">Shock Trauma: {{ clinicService.kpiSummary().shockTraumaOccupancy }} ocupadas</span>
           </div>
-          <div class="w-9 h-9 rounded-xl bg-surface-high border border-outline-sub text-muted grid place-items-center">
-            <span class="material-symbols-rounded text-lg">bed</span>
+          <div class="w-10 h-10 rounded-2xl bg-surface-highest text-muted grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-xl">bed</span>
           </div>
         </div>
 
@@ -143,34 +143,34 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       <!-- =====================================================================
            3. MAIN ASYMMETRIC BENTO GRID (Left: 7 Cols, Right: 5 Cols)
            ===================================================================== -->
-      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
+      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden">
         
         <!-- ===================================================================
              COLUMNA IZQUIERDA: COLA ACTIVA DE TRIAJE (7 / 12)
              =================================================================== -->
-        <section class="lg:col-span-7 flex flex-col min-h-0 rounded-2xl bg-surface-box border border-outline-sub overflow-hidden shadow-xs">
+        <section class="lg:col-span-7 flex flex-col min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
           
-          <!-- Triage Filter Bar -->
-          <div class="p-2 border-b border-outline-sub shrink-0 flex items-center justify-between gap-1.5 overflow-x-auto bg-surface-low scrollbar-none">
+          <!-- Triage Filter Bar (Clean Filled Chips) -->
+          <div class="p-3 bg-surface-low/60 shrink-0 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
             <div class="flex items-center gap-1.5 text-xs">
               <span class="font-bold text-main px-1 text-xs shrink-0 flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm text-primary">format_list_bulleted</span>
+                <span class="material-symbols-rounded text-base text-primary">format_list_bulleted</span>
                 <span>Pacientes</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-high border border-outline-sub text-muted">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-high text-muted">
                   {{ clinicService.filteredPatients().length }}
                 </span>
               </span>
 
-              <!-- Filter Chips (Expressive Tonal Buttons) -->
+              <!-- Filter Chips (M3 Filled Tonal Pills) -->
               <button
                 type="button"
                 (click)="clinicService.setFilter('all')"
                 [class.bg-primary]="clinicService.activeFilter() === 'all'"
                 [class.text-on-primary]="clinicService.activeFilter() === 'all'"
                 [class.font-bold]="clinicService.activeFilter() === 'all'"
-                [class.bg-surface-box]="clinicService.activeFilter() !== 'all'"
+                [class.bg-surface-high]="clinicService.activeFilter() !== 'all'"
                 [class.text-muted]="clinicService.activeFilter() !== 'all'"
-                class="px-2.5 py-1 rounded-xl text-xs border border-outline-sub/60 hover:text-main cursor-pointer transition-all shadow-2xs flex items-center gap-1">
+                class="px-3 py-1.5 rounded-full text-xs hover:text-main cursor-pointer transition-all shadow-2xs flex items-center gap-1">
                 <span>Todos</span>
               </button>
               
@@ -180,9 +180,9 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-rose-600]="clinicService.activeFilter() === 'critical'"
                 [class.text-white]="clinicService.activeFilter() === 'critical'"
                 [class.font-bold]="clinicService.activeFilter() === 'critical'"
-                [class.bg-surface-box]="clinicService.activeFilter() !== 'critical'"
+                [class.bg-surface-high]="clinicService.activeFilter() !== 'critical'"
                 [class.text-rose-500]="clinicService.activeFilter() !== 'critical'"
-                class="px-2.5 py-1 rounded-xl text-xs border border-outline-sub/60 hover:text-rose-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
+                class="px-3 py-1.5 rounded-full text-xs hover:text-rose-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 <span>Críticos (N1/N2)</span>
               </button>
@@ -193,9 +193,9 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-amber-500]="clinicService.activeFilter() === 'urgent'"
                 [class.text-zinc-950]="clinicService.activeFilter() === 'urgent'"
                 [class.font-bold]="clinicService.activeFilter() === 'urgent'"
-                [class.bg-surface-box]="clinicService.activeFilter() !== 'urgent'"
+                [class.bg-surface-high]="clinicService.activeFilter() !== 'urgent'"
                 [class.text-amber-500]="clinicService.activeFilter() !== 'urgent'"
-                class="px-2.5 py-1 rounded-xl text-xs border border-outline-sub/60 hover:text-amber-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
+                class="px-3 py-1.5 rounded-full text-xs hover:text-amber-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                 <span>Urgentes (N3)</span>
               </button>
@@ -206,9 +206,9 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-emerald-600]="clinicService.activeFilter() === 'standard'"
                 [class.text-white]="clinicService.activeFilter() === 'standard'"
                 [class.font-bold]="clinicService.activeFilter() === 'standard'"
-                [class.bg-surface-box]="clinicService.activeFilter() !== 'standard'"
+                [class.bg-surface-high]="clinicService.activeFilter() !== 'standard'"
                 [class.text-emerald-500]="clinicService.activeFilter() !== 'standard'"
-                class="px-2.5 py-1 rounded-xl text-xs border border-outline-sub/60 hover:text-emerald-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
+                class="px-3 py-1.5 rounded-full text-xs hover:text-emerald-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>Menores (N4/N5)</span>
               </button>
@@ -219,37 +219,37 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-primary]="clinicService.activeFilter() === 'waiting'"
                 [class.text-on-primary]="clinicService.activeFilter() === 'waiting'"
                 [class.font-bold]="clinicService.activeFilter() === 'waiting'"
-                [class.bg-surface-box]="clinicService.activeFilter() !== 'waiting'"
+                [class.bg-surface-high]="clinicService.activeFilter() !== 'waiting'"
                 [class.text-muted]="clinicService.activeFilter() !== 'waiting'"
-                class="px-2.5 py-1 rounded-xl text-xs border border-outline-sub/60 hover:text-main cursor-pointer transition-all shadow-2xs">
+                class="px-3 py-1.5 rounded-full text-xs hover:text-main cursor-pointer transition-all shadow-2xs">
                 <span>En Espera</span>
               </button>
             </div>
           </div>
 
-          <!-- Patients List Scroll Area (M3 Expressive Triage Feed) -->
-          <div class="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-3 m3-scrollbar">
+          <!-- Patients List Scroll Area (M3 Expressive Filled Cards Feed) -->
+          <div class="flex-1 overflow-y-auto p-3 space-y-3 m3-scrollbar">
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
 
               <div
                 (click)="onSelectPatient(patient)"
                 [class]="getPatientCardBorderClass(patient)"
-                class="group relative rounded-2xl bg-surface-box border border-outline-sub hover:border-outline hover:shadow-md transition-all duration-200 cursor-pointer select-none overflow-hidden p-3 sm:p-3.5 space-y-2.5 active:scale-[0.99]">
+                class="group relative rounded-3xl p-4 space-y-3 transition-all duration-200 cursor-pointer select-none active:scale-[0.99]">
 
-                <!-- 1. PRIORITY HEADER STRIP (MANCHESTER LEVEL + TICKET + ARRIVAL + BED TAG) -->
+                <!-- 1. PRIORITY HEADER STRIP (Filled Tonal Containers) -->
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                   
                   <!-- Left: Manchester Level Tonal Container + Ticket Code -->
                   <div class="flex items-center gap-2">
                     <span
                       [class]="getTriageBadgeContainerClass(patient.triageLevel)"
-                      class="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
+                      class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                       <span class="w-2 h-2 rounded-full" [class]="getTriageDotClass(patient.triageLevel)"></span>
                       <span>{{ getTriageBadgeLabel(patient.triageLevel) }}</span>
                     </span>
 
-                    <span class="px-2 py-0.5 rounded-lg text-[11px] font-mono font-bold bg-surface-high border border-outline-sub text-muted shadow-2xs">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-surface-highest text-muted">
                       {{ patient.ticketCode }}
                     </span>
                   </div>
@@ -257,43 +257,43 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   <!-- Right: Bed Status & Elapsed Wait Latency -->
                   <div class="flex items-center gap-2 ml-auto text-xs">
                     @if (patient.bedAssignedId) {
-                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-surface-high text-main border border-outline-sub flex items-center gap-1 shadow-2xs">
+                      <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-surface-highest text-main flex items-center gap-1.5">
                         <span class="material-symbols-rounded text-sm text-primary">bed</span>
                         <span>{{ patient.bedAssignedId }}</span>
                       </span>
                     } @else {
                       <span
-                        [class]="isCritical ? 'text-rose-500 bg-rose-500/10 border-rose-500/25 font-black' : 'text-amber-500 bg-amber-500/10 border-amber-500/25 font-bold'"
-                        class="px-2.5 py-0.5 rounded-full text-[10px] font-mono border flex items-center gap-1 shadow-2xs">
+                        [class]="isCritical ? 'text-rose-500 bg-rose-500/15 font-black' : 'text-amber-500 bg-amber-500/15 font-bold'"
+                        class="px-2.5 py-0.5 rounded-full text-[11px] font-mono flex items-center gap-1">
                         <span class="material-symbols-rounded text-xs">error</span>
                         <span>Sin Cama</span>
                       </span>
                     }
 
-                    <span class="px-2 py-0.5 rounded-lg text-[11px] font-mono text-muted bg-surface-low border border-outline-sub/40 flex items-center gap-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono text-muted bg-surface-low flex items-center gap-1">
                       <span class="material-symbols-rounded text-xs">schedule</span>
                       <span>{{ patient.admissionTime }} ({{ patient.waitingMinutes }}m)</span>
                     </span>
                   </div>
                 </div>
 
-                <!-- 2. ACTIVE CLINICAL CODE PROTOCOL BANNER (Door-to-Balloon / Door-to-Needle) -->
+                <!-- 2. ACTIVE CLINICAL CODE PROTOCOL BANNER (Filled Urgent Tonal Surface) -->
                 @if (patient.activeCode) {
-                  <div class="p-2.5 rounded-xl bg-surface-high/80 border border-rose-500/25 flex flex-col gap-1.5 shadow-2xs">
+                  <div class="p-3 rounded-2xl bg-rose-500/12 flex flex-col gap-2">
                     <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
                         <span class="font-black text-xs text-main truncate tracking-tight">{{ patient.activeCode.title }}</span>
-                        <span class="text-[11px] text-muted truncate hidden sm:inline">• {{ patient.activeCode.windowLabel }}</span>
+                        <span class="text-xs text-muted truncate hidden sm:inline">• {{ patient.activeCode.windowLabel }}</span>
                       </div>
-                      <div class="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-[11px] shadow-xs">
+                      <div class="shrink-0 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-xs shadow-xs">
                         <span class="material-symbols-rounded text-xs">timer</span>
                         <span>{{ patient.activeCode.remainingMinutes }} min restantes</span>
                       </div>
                     </div>
                     
                     <!-- Progress track of critical protocol window -->
-                    <div class="w-full h-1.5 rounded-full bg-surface-highest overflow-hidden">
+                    <div class="w-full h-1.5 rounded-full bg-rose-500/20 overflow-hidden">
                       <div
                         class="h-full bg-rose-500 rounded-full transition-all duration-300"
                         [style.width.%]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100">
@@ -303,10 +303,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 }
 
                 <!-- 3. PATIENT IDENTITY & CHIEF COMPLAINT -->
-                <div>
+                <div class="space-y-1.5">
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-baseline gap-2 min-w-0">
-                      <h3 class="text-sm sm:text-base font-black text-main tracking-tight truncate group-hover:text-primary transition-colors">
+                      <h3 class="text-base font-black text-main tracking-tight truncate group-hover:text-primary transition-colors">
                         {{ patient.fullName }}
                       </h3>
                       <span class="text-xs text-muted font-medium shrink-0">
@@ -317,34 +317,34 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     <!-- NEWS2 Score Chip -->
                     <span
                       [class]="getNews2PillClass(patient.news2.riskLevel)"
-                      class="px-2 py-0.5 rounded-full text-[11px] font-mono font-black shrink-0 shadow-2xs flex items-center gap-1">
+                      class="px-2.5 py-0.5 rounded-full text-xs font-mono font-black shrink-0 flex items-center gap-1">
                       <span class="material-symbols-rounded text-xs">analytics</span>
                       <span>NEWS2: {{ patient.news2.score }}</span>
                     </span>
                   </div>
 
-                  <!-- Chief Complaint Quote Box -->
-                  <div class="mt-1.5 px-2.5 py-1.5 rounded-xl bg-surface-low border border-outline-sub/50 text-xs text-main flex items-start gap-2">
-                    <span class="material-symbols-rounded text-sm text-primary shrink-0 mt-0.5">stethoscope</span>
-                    <p class="leading-snug font-medium line-clamp-2">
+                  <!-- Chief Complaint Quote Box (Clean Filled Container, No Border) -->
+                  <div class="px-3 py-2 rounded-2xl bg-surface-low text-xs text-main flex items-start gap-2">
+                    <span class="material-symbols-rounded text-base text-primary shrink-0 mt-0.5">stethoscope</span>
+                    <p class="leading-relaxed font-medium">
                       {{ patient.chiefComplaint }}
                     </p>
                   </div>
                 </div>
 
-                <!-- 4. BIOMETRIC TELEMETRY STRIP (ENGINEERED 5-CELL VITAL GAUGES) -->
-                <div class="grid grid-cols-5 gap-1.5 pt-1">
+                <!-- 4. BIOMETRIC TELEMETRY STRIP (5 Smooth Filled Tiles, Zero Cages) -->
+                <div class="grid grid-cols-5 gap-2">
                   
                   <!-- Cell 1: Heart Rate -->
                   <div
-                    [class]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50 ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-surface-low border-outline-sub/60 text-main'"
-                    class="p-2 rounded-xl border flex flex-col justify-between transition-colors shadow-2xs">
+                    [class]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
+                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">FC</span>
                       <span class="material-symbols-rounded text-xs" [class.text-rose-500]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50">favorite</span>
                     </div>
                     <div class="mt-1">
-                      <div class="text-xs sm:text-sm font-mono font-black tracking-tight leading-none">
+                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
                         {{ patient.vitals.heartRate }}
                       </div>
                       <span class="text-[9px] text-muted font-mono block mt-0.5">bpm</span>
@@ -353,8 +353,8 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                   <!-- Cell 2: Blood Pressure -->
                   <div
-                    [class]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-surface-low border-outline-sub/60 text-main'"
-                    class="p-2 rounded-xl border flex flex-col justify-between transition-colors shadow-2xs">
+                    [class]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
+                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">PA</span>
                       <span class="material-symbols-rounded text-xs" [class.text-amber-500]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90">speed</span>
@@ -369,14 +369,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                   <!-- Cell 3: SpO2 -->
                   <div
-                    [class]="patient.vitals.oxygenSat < 94 ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-surface-low border-outline-sub/60 text-main'"
-                    class="p-2 rounded-xl border flex flex-col justify-between transition-colors shadow-2xs">
+                    [class]="patient.vitals.oxygenSat < 94 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
+                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">SpO2</span>
                       <span class="material-symbols-rounded text-xs" [class.text-rose-500]="patient.vitals.oxygenSat < 94">air</span>
                     </div>
                     <div class="mt-1">
-                      <div class="text-xs sm:text-sm font-mono font-black tracking-tight leading-none">
+                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
                         {{ patient.vitals.oxygenSat }}%
                       </div>
                       <span class="text-[9px] text-muted font-mono block mt-0.5">sat</span>
@@ -385,14 +385,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                   <!-- Cell 4: Temperature -->
                   <div
-                    [class]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-surface-low border-outline-sub/60 text-main'"
-                    class="p-2 rounded-xl border flex flex-col justify-between transition-colors shadow-2xs">
+                    [class]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
+                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">Temp</span>
                       <span class="material-symbols-rounded text-xs" [class.text-amber-500]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5">device_thermostat</span>
                     </div>
                     <div class="mt-1">
-                      <div class="text-xs sm:text-sm font-mono font-black tracking-tight leading-none">
+                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
                         {{ patient.vitals.temperature }}°
                       </div>
                       <span class="text-[9px] text-muted font-mono block mt-0.5">C</span>
@@ -401,14 +401,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                   <!-- Cell 5: EVA Pain Scale -->
                   <div
-                    [class]="patient.vitals.painScale >= 7 ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-surface-low border-outline-sub/60 text-main'"
-                    class="p-2 rounded-xl border flex flex-col justify-between transition-colors shadow-2xs">
+                    [class]="patient.vitals.painScale >= 7 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
+                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">EVA</span>
                       <span class="material-symbols-rounded text-xs">sentiment_dissatisfied</span>
                     </div>
                     <div class="mt-1">
-                      <div class="text-xs sm:text-sm font-mono font-black tracking-tight leading-none">
+                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
                         {{ patient.vitals.painScale }}<span class="text-[10px] font-normal text-muted">/10</span>
                       </div>
                       <span class="text-[9px] text-muted font-mono block mt-0.5">dolor</span>
@@ -417,50 +417,50 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                 </div>
 
-                <!-- 5. TACTILE ACTION BAR (M3 SPRINGS & COMMITMENT) -->
-                <div class="pt-2 border-t border-outline-sub/40 flex items-center justify-between gap-2 flex-wrap text-xs">
+                <!-- 5. TACTILE ACTION BAR (Filled M3 Buttons, No Border Dividers) -->
+                <div class="pt-1 flex items-center justify-between gap-2 flex-wrap text-xs">
                   
                   <!-- Left: Immediate Critical Bed CTA or Reclassify Selector -->
                   @if (!patient.bedAssignedId && (patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency' || patient.news2.riskLevel === 'high')) {
                     <button
                       type="button"
                       (click)="onImmediateShockTrauma(patient.id, $event)"
-                      class="btn-m3 py-1.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95">
-                      <span class="material-symbols-rounded text-sm">bolt</span>
+                      class="btn-m3 py-2 px-4 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95">
+                      <span class="material-symbols-rounded text-base">bolt</span>
                       <span>Asignar Shock Trauma Inmediato</span>
                     </button>
                   } @else {
                     <div class="relative">
                       @if (activeRetriageId() === patient.id) {
-                        <div class="flex items-center gap-1 p-1 rounded-xl bg-surface-high border border-outline-sub shadow-sm animate-in zoom-in-95">
+                        <div class="flex items-center gap-1 p-1 rounded-full bg-surface-highest shadow-sm animate-in zoom-in-95">
                           <button
                             type="button"
                             (click)="applyRetriage(patient.id, 'resuscitation', $event)"
-                            class="px-2 py-0.5 rounded-lg text-[10px] font-black text-rose-500 hover:bg-surface-highest transition-colors">
+                            class="px-2.5 py-1 rounded-full text-xs font-black text-rose-500 hover:bg-surface-box transition-colors">
                             N1
                           </button>
                           <button
                             type="button"
                             (click)="applyRetriage(patient.id, 'emergency', $event)"
-                            class="px-2 py-0.5 rounded-lg text-[10px] font-black text-orange-500 hover:bg-surface-highest transition-colors">
+                            class="px-2.5 py-1 rounded-full text-xs font-black text-orange-500 hover:bg-surface-box transition-colors">
                             N2
                           </button>
                           <button
                             type="button"
                             (click)="applyRetriage(patient.id, 'urgent', $event)"
-                            class="px-2 py-0.5 rounded-lg text-[10px] font-black text-amber-500 hover:bg-surface-highest transition-colors">
+                            class="px-2.5 py-1 rounded-full text-xs font-black text-amber-500 hover:bg-surface-box transition-colors">
                             N3
                           </button>
                           <button
                             type="button"
                             (click)="applyRetriage(patient.id, 'standard', $event)"
-                            class="px-2 py-0.5 rounded-lg text-[10px] font-black text-emerald-500 hover:bg-surface-highest transition-colors">
+                            class="px-2.5 py-1 rounded-full text-xs font-black text-emerald-500 hover:bg-surface-box transition-colors">
                             N4
                           </button>
                           <button
                             type="button"
                             (click)="activeRetriageId.set(null)"
-                            class="material-symbols-rounded text-sm text-muted hover:text-main px-1">
+                            class="material-symbols-rounded text-sm text-muted hover:text-main px-1.5">
                             close
                           </button>
                         </div>
@@ -468,7 +468,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                         <button
                           type="button"
                           (click)="toggleRetriage(patient.id, $event)"
-                          class="btn-m3 py-1 px-2.5 rounded-xl text-xs font-semibold text-muted hover:text-main bg-surface-low hover:bg-surface-high border border-outline-sub/60 flex items-center gap-1 cursor-pointer transition-all active:scale-95">
+                          class="btn-m3 py-1.5 px-3 rounded-full text-xs font-semibold text-muted hover:text-main bg-surface-low hover:bg-surface-high flex items-center gap-1 cursor-pointer transition-all active:scale-95">
                           <span class="material-symbols-rounded text-sm text-primary">swap_vert</span>
                           <span>Reclasificar</span>
                           <span class="material-symbols-rounded text-xs text-muted">expand_more</span>
@@ -478,12 +478,12 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   }
 
                   <!-- Right: Bed Assignment / Discharge Buttons -->
-                  <div class="flex items-center gap-1.5 ml-auto">
+                  <div class="flex items-center gap-2 ml-auto">
                     @if (!patient.bedAssignedId) {
                       <button
                         type="button"
                         (click)="openBedAssignment(patient, $event)"
-                        class="btn-m3 py-1 px-3 rounded-xl text-xs font-bold bg-surface-high hover:bg-surface-highest text-main border border-outline-sub flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-2xs">
+                        class="btn-m3 py-1.5 px-4 rounded-full text-xs font-bold bg-surface-highest hover:bg-surface-low text-main flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs">
                         <span class="material-symbols-rounded text-sm text-primary">bed</span>
                         <span>Asignar Cama</span>
                       </button>
@@ -491,7 +491,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     <button
                       type="button"
                       (click)="onDischarge(patient.id, $event)"
-                      class="btn-m3 py-1 px-2.5 rounded-xl text-xs font-semibold bg-surface-low hover:bg-surface-high text-muted hover:text-main border border-outline-sub/50 cursor-pointer transition-all active:scale-95">
+                      class="btn-m3 py-1.5 px-3 rounded-full text-xs font-semibold text-muted hover:text-main bg-transparent hover:bg-surface-highest cursor-pointer transition-all active:scale-95">
                       Alta Médica
                     </button>
                   </div>
@@ -512,19 +512,20 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         <!-- ===================================================================
              COLUMNA DERECHA: MATRIZ DE CAMAS & FICHA CLÍNICA / ADMISIÓN (5 / 12)
              =================================================================== -->
-        <section class="lg:col-span-5 flex flex-col min-h-0 rounded-2xl bg-surface-box border border-outline-sub overflow-hidden shadow-xs">
+        <section class="lg:col-span-5 flex flex-col min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
           
-          <!-- Segmented Tab Header -->
-          <div class="p-2 border-b border-outline-sub shrink-0 flex items-center justify-between gap-1 bg-surface-low">
-            <div class="p-1 rounded-xl bg-surface-box border border-outline-sub flex items-center gap-1 w-full">
+          <!-- Segmented Tab Header (Clean M3 Pill Switcher) -->
+          <div class="p-3 bg-surface-low/60 shrink-0">
+            <div class="p-1 rounded-full bg-surface-high flex items-center gap-1 w-full shadow-2xs">
               <button
                 type="button"
                 (click)="activeTab.set('beds')"
                 [class.bg-primary]="activeTab() === 'beds'"
                 [class.text-on-primary]="activeTab() === 'beds'"
                 [class.font-bold]="activeTab() === 'beds'"
+                [class.shadow-xs]="activeTab() === 'beds'"
                 [class.text-muted]="activeTab() !== 'beds'"
-                class="flex-1 py-1 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-rounded text-sm">bed</span>
                 <span>Camas</span>
               </button>
@@ -535,8 +536,9 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-primary]="activeTab() === 'detail'"
                 [class.text-on-primary]="activeTab() === 'detail'"
                 [class.font-bold]="activeTab() === 'detail'"
+                [class.shadow-xs]="activeTab() === 'detail'"
                 [class.text-muted]="activeTab() !== 'detail'"
-                class="flex-1 py-1 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-rounded text-sm">clinical_notes</span>
                 <span>Ficha & NEWS2</span>
               </button>
@@ -547,26 +549,27 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 [class.bg-primary]="activeTab() === 'admit'"
                 [class.text-on-primary]="activeTab() === 'admit'"
                 [class.font-bold]="activeTab() === 'admit'"
+                [class.shadow-xs]="activeTab() === 'admit'"
                 [class.text-muted]="activeTab() !== 'admit'"
-                class="flex-1 py-1 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-rounded text-sm">add</span>
                 <span>Admisión</span>
               </button>
             </div>
           </div>
 
-          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Expressive Bay Architecture) -->
+          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Filled Cards, Clean Surfaces) -->
           @if (activeTab() === 'beds') {
-            <div class="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-3 m3-scrollbar">
+            <div class="flex-1 overflow-y-auto p-3 space-y-4 m3-scrollbar">
               
               <!-- Shock Trauma Unit -->
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-xs shadow-rose-500/50"></span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
                     <span>Shock Trauma Bay</span>
                   </span>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/12 text-rose-500">
                     Alta Complejidad
                   </span>
                 </div>
@@ -574,7 +577,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   @for (bed of shockTraumaBeds(); track bed.id) {
                     <div
-                      class="p-3 rounded-2xl border border-outline-sub bg-surface-box hover:border-outline shadow-2xs hover:shadow-xs transition-all text-xs flex flex-col justify-between space-y-2.5">
+                      class="p-3.5 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-black text-sm text-main flex items-center gap-1.5">
@@ -583,41 +586,41 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                           </span>
                           
                           <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/12 text-rose-500 border border-rose-500/25' : (bed.status === 'cleaning' ? 'bg-amber-500/12 text-amber-500 border border-amber-500/25' : 'bg-emerald-500/12 text-emerald-500 border border-emerald-500/25')"
-                            class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-2xs">
+                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
+                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                             {{ getBedStatusLabel(bed.status) }}
                           </span>
                         </div>
                         <p class="font-bold text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Disponible para ingreso' }}</p>
                         <div class="flex items-center gap-1 flex-wrap mt-1">
                           @for (eq of bed.equipment; track eq) {
-                            <span class="px-1.5 py-0.5 rounded-md bg-surface-high border border-outline-sub text-[9px] font-mono text-muted">
+                            <span class="px-2 py-0.5 rounded-full bg-surface-box text-[9px] font-mono text-muted">
                               {{ eq }}
                             </span>
                           }
                         </div>
                       </div>
 
-                      <div class="pt-2 border-t border-outline-sub/40 flex items-center justify-between">
+                      <div class="pt-1 flex items-center justify-between">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
                           <button
                             type="button"
                             (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-1.5 rounded-xl text-xs font-black bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs active:scale-95">
+                            class="btn-m3 w-full py-2 rounded-full text-xs font-black bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs active:scale-95">
                             Asignar Paciente
                           </button>
                         } @else if (bed.status === 'cleaning') {
                           <button
                             type="button"
                             (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-1.5 rounded-xl text-xs font-bold bg-surface-high hover:bg-surface-highest text-main border border-outline-sub cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-2 rounded-full text-xs font-bold bg-surface-highest hover:bg-surface-box text-main cursor-pointer active:scale-95">
                             Habilitar Cama
                           </button>
                         } @else if (bed.status === 'occupied') {
                           <button
                             type="button"
                             (click)="clinicService.setBedStatus(bed.id, 'cleaning')"
-                            class="btn-m3 w-full py-1.5 rounded-xl text-[11px] font-semibold bg-surface-low hover:bg-surface-high text-muted hover:text-main border border-outline-sub/60 cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-2 rounded-full text-xs font-semibold bg-surface-low hover:bg-surface-box text-muted hover:text-main cursor-pointer active:scale-95">
                             Liberar para Limpieza
                           </button>
                         } @else {
@@ -633,44 +636,44 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
               </div>
 
               <!-- Observación Rápida -->
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-primary"></span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
                     <span>Observación Rápida</span>
                   </span>
                   <span class="text-[10px] text-muted font-mono font-bold">4 Camas</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of observationBeds(); track bed.id) {
                     <div
-                      class="p-2.5 rounded-2xl border border-outline-sub bg-surface-box hover:border-outline shadow-2xs hover:shadow-xs transition-all text-xs flex flex-col justify-between space-y-2">
+                      class="p-3 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-2.5 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-bold text-xs text-main">{{ bed.id }}</span>
                           <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : (bed.status === 'cleaning' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20')"
-                            class="px-1.5 py-0.5 rounded-full text-[9px] font-bold border uppercase">
+                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
+                            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
                             {{ getBedStatusLabel(bed.status) }}
                           </span>
                         </div>
                         <p class="font-bold text-main mt-1 truncate">{{ bed.patientName ?? 'Disponible' }}</p>
                       </div>
 
-                      <div class="pt-2 border-t border-outline-sub/30">
+                      <div class="pt-1">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
                           <button
                             type="button"
                             (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-1 rounded-lg text-[10px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95 shadow-xs">
                             Asignar
                           </button>
                         } @else if (bed.status === 'cleaning') {
                           <button
                             type="button"
                             (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-1 rounded-lg text-[10px] font-medium bg-surface-high text-main border border-outline-sub cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-medium bg-surface-highest text-main cursor-pointer active:scale-95">
                             Habilitar
                           </button>
                         } @else {
@@ -685,44 +688,44 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
               </div>
 
               <!-- Procedimientos & Sutura -->
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-muted"></span>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-muted"></span>
                     <span>Sala de Procedimientos</span>
                   </span>
                   <span class="text-[10px] text-muted font-mono font-bold">2 Box</span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of procedureBeds(); track bed.id) {
                     <div
-                      class="p-2.5 rounded-2xl border border-outline-sub bg-surface-box hover:border-outline shadow-2xs hover:shadow-xs transition-all text-xs flex flex-col justify-between space-y-2">
+                      class="p-3 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-2.5 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-bold text-xs text-main">{{ bed.id }}</span>
                           <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : (bed.status === 'cleaning' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20')"
-                            class="px-1.5 py-0.5 rounded-full text-[9px] font-bold border uppercase">
+                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
+                            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
                             {{ getBedStatusLabel(bed.status) }}
                           </span>
                         </div>
                         <p class="font-bold text-main mt-1 truncate">{{ bed.patientName ?? 'Disponible' }}</p>
                       </div>
 
-                      <div class="pt-2 border-t border-outline-sub/30">
+                      <div class="pt-1">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
                           <button
                             type="button"
                             (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-1 rounded-lg text-[10px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95 shadow-xs">
                             Asignar
                           </button>
                         } @else if (bed.status === 'cleaning') {
                           <button
                             type="button"
                             (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-1 rounded-lg text-[10px] font-medium bg-surface-high text-main border border-outline-sub cursor-pointer active:scale-95">
+                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-medium bg-surface-highest text-main cursor-pointer active:scale-95">
                             Habilitar
                           </button>
                         } @else {
@@ -737,35 +740,35 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           }
 
-          <!-- TAB 2: DETALLE DE FICHA MÉDICA & SOPORTE A LA DECISIÓN CLÍNICA -->
+          <!-- TAB 2: DETALLE DE FICHA MÉDICA & SOPORTE A LA DECISIÓN CLÍNICA (Filled Surfaces) -->
           @if (activeTab() === 'detail') {
             @if (clinicService.selectedPatient(); as patient) {
-              <div class="flex-1 overflow-y-auto p-3 space-y-2.5">
+              <div class="flex-1 overflow-y-auto p-3.5 space-y-3 m3-scrollbar">
                 
                 <!-- Active Emergency Code Hero Alert -->
                 @if (patient.activeCode) {
-                  <div class="p-3 rounded-xl bg-surface-high border-l-4 border-l-rose-500 border border-outline-sub text-xs">
+                  <div class="p-4 rounded-3xl bg-rose-500/12 shadow-2xs text-xs space-y-2">
                     <div class="flex items-center justify-between">
-                      <span class="font-black text-main flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                        <span>{{ patient.activeCode.title }}</span>
+                      <span class="font-black text-main flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span class="text-sm">{{ patient.activeCode.title }}</span>
                       </span>
-                      <span class="font-mono font-bold text-rose-500 text-xs">
+                      <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-xs shadow-xs">
                         {{ patient.activeCode.remainingMinutes }} min restantes
                       </span>
                     </div>
 
-                    <p class="text-xs text-muted font-normal mt-1">
+                    <p class="text-xs text-muted font-normal">
                       {{ patient.activeCode.protocolAction }}
                     </p>
 
                     <!-- Therapeutic Window Progress Track -->
-                    <div class="mt-2">
+                    <div>
                       <div class="flex justify-between text-[10px] text-muted mb-1 font-mono">
                         <span>Transcurrido: {{ patient.activeCode.elapsedMinutes }} min</span>
                         <span>Meta: ≤ {{ patient.activeCode.targetMinutes }} min</span>
                       </div>
-                      <div class="w-full h-1.5 rounded-full bg-surface-highest overflow-hidden">
+                      <div class="w-full h-2 rounded-full bg-rose-500/20 overflow-hidden">
                         <div
                           class="h-full bg-rose-500 rounded-full transition-all duration-300"
                           [style.width.%]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100">
@@ -776,44 +779,44 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 }
 
                 <!-- Patient Header Card -->
-                <div class="p-3 rounded-xl bg-surface-high border border-outline-sub">
+                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-2">
                   <div class="flex items-center justify-between">
-                    <span [class]="getTriageTextClass(patient.triageLevel)" class="text-xs font-black uppercase">
+                    <span [class]="getTriageBadgeContainerClass(patient.triageLevel)" class="px-3 py-1 rounded-full text-xs font-black uppercase">
                       {{ getTriageBadgeLabel(patient.triageLevel) }}
                     </span>
                     <span class="font-mono font-bold text-xs text-muted">Ingreso: {{ patient.admissionTime }} ({{ patient.waitingMinutes }} min)</span>
                   </div>
 
-                  <h3 class="text-base font-black text-main mt-1">{{ patient.fullName }}</h3>
+                  <h3 class="text-lg font-black text-main">{{ patient.fullName }}</h3>
                   <p class="text-xs text-muted">{{ patient.ticketCode }} • {{ patient.age }} años • Sexo {{ patient.gender }}</p>
 
-                  <div class="mt-2 pt-2 border-t border-outline-sub/50">
-                    <span class="text-[10px] font-bold text-muted uppercase block">Motivo de Consulta Principal:</span>
-                    <p class="text-xs text-main mt-0.5">{{ patient.chiefComplaint }}</p>
+                  <div class="pt-2">
+                    <span class="text-[10px] font-bold text-muted uppercase block mb-1">Motivo de Consulta Principal:</span>
+                    <p class="text-xs text-main bg-surface-low p-3 rounded-2xl leading-relaxed">{{ patient.chiefComplaint }}</p>
                   </div>
                 </div>
 
                 <!-- National Early Warning Score 2 (NEWS2) Analysis -->
-                <div class="p-3 rounded-xl bg-surface-low border border-outline-sub text-xs">
-                  <div class="flex items-center justify-between mb-1.5">
+                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs text-xs space-y-2">
+                  <div class="flex items-center justify-between">
                     <span class="font-bold text-main flex items-center gap-1.5">
-                      <span class="material-symbols-rounded text-sm text-primary">analytics</span>
-                      <span>Índice Clínico NEWS2</span>
+                      <span class="material-symbols-rounded text-base text-primary">analytics</span>
+                      <span class="text-xs font-black uppercase tracking-wider">Índice Clínico NEWS2</span>
                     </span>
-                    <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-surface-highest text-main border border-outline-sub" [class.text-rose-500]="patient.news2.riskLevel === 'high'">
+                    <span class="px-3 py-1 rounded-full font-mono font-black text-xs shadow-2xs" [class]="getNews2PillClass(patient.news2.riskLevel)">
                       Score: {{ patient.news2.score }} / 20
                     </span>
                   </div>
 
-                  <p class="text-xs text-muted mt-1">{{ patient.news2.recommendation }}</p>
+                  <p class="text-xs text-muted">{{ patient.news2.recommendation }}</p>
 
                   @if (patient.news2.triggers.length > 0) {
-                    <div class="mt-2 pt-2 border-t border-outline-sub/40">
+                    <div class="pt-1">
                       <span class="text-[10px] font-bold text-rose-500 uppercase block mb-1">Criterios de Alerta Detectados:</span>
-                      <ul class="space-y-0.5">
+                      <ul class="space-y-1">
                         @for (trigger of patient.news2.triggers; track trigger) {
-                          <li class="flex items-center gap-1 text-[11px] text-rose-500 font-medium">
-                            <span class="material-symbols-rounded text-xs">warning</span>
+                          <li class="flex items-center gap-1.5 text-xs text-rose-500 font-medium bg-rose-500/10 px-2.5 py-1 rounded-xl">
+                            <span class="material-symbols-rounded text-sm">warning</span>
                             <span>{{ trigger }}</span>
                           </li>
                         }
@@ -823,60 +826,60 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 </div>
 
                 <!-- Signos Vitales con Rangos Fisiológicos -->
-                <div class="p-3 rounded-xl bg-surface-low border border-outline-sub">
-                  <span class="text-xs font-bold text-main uppercase tracking-wider block mb-2 flex items-center gap-1">
-                    <span class="material-symbols-rounded text-sm text-primary">vital_signs</span>
+                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-3">
+                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="material-symbols-rounded text-base text-primary">vital_signs</span>
                     <span>Signos Vitales y Rangos</span>
                   </span>
 
-                  <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
+                  <div class="grid grid-cols-2 gap-2.5 text-xs">
+                    <div class="p-3 rounded-2xl bg-surface-low">
                       <div class="flex justify-between items-center text-[10px] text-muted">
                         <span>Frecuencia Cardíaca</span>
                         <span>60 - 100 bpm</span>
                       </div>
-                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.heartRate }} bpm</span>
+                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.heartRate }} bpm</span>
                     </div>
 
-                    <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
+                    <div class="p-3 rounded-2xl bg-surface-low">
                       <div class="flex justify-between items-center text-[10px] text-muted">
                         <span>Presión Arterial</span>
                         <span>120 / 80</span>
                       </div>
-                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}</span>
+                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}</span>
                     </div>
 
-                    <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
+                    <div class="p-3 rounded-2xl bg-surface-low">
                       <div class="flex justify-between items-center text-[10px] text-muted">
                         <span>Saturación SpO2</span>
                         <span>≥ 95%</span>
                       </div>
-                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.oxygenSat }}%</span>
+                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.oxygenSat }}%</span>
                     </div>
 
-                    <div class="p-2 rounded-lg bg-surface-box border border-outline-sub">
+                    <div class="p-3 rounded-2xl bg-surface-low">
                       <div class="flex justify-between items-center text-[10px] text-muted">
                         <span>Temperatura</span>
                         <span>36.5 - 37.5°C</span>
                       </div>
-                      <span class="text-base font-mono font-bold text-main block mt-0.5">{{ patient.vitals.temperature }}°C</span>
+                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.temperature }}°C</span>
                     </div>
                   </div>
 
-                  <div class="mt-2 p-2 rounded-lg bg-surface-box border border-outline-sub flex items-center justify-between text-xs">
-                    <span class="text-[10px] text-muted">Escala de Dolor (EVA):</span>
-                    <span class="font-mono font-bold text-main">{{ patient.vitals.painScale }} / 10</span>
+                  <div class="p-3 rounded-2xl bg-surface-low flex items-center justify-between text-xs">
+                    <span class="text-xs text-muted font-medium">Escala de Dolor (EVA):</span>
+                    <span class="font-mono font-black text-main text-sm">{{ patient.vitals.painScale }} / 10</span>
                   </div>
                 </div>
 
                 <!-- Alergias & Notas -->
-                <div class="p-3 rounded-xl bg-surface-low border border-outline-sub space-y-2 text-xs">
+                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-2 text-xs">
                   <div>
                     <span class="text-[10px] font-bold text-muted uppercase block mb-1">Alergias Documentadas:</span>
                     @if (patient.allergies && patient.allergies.length > 0) {
-                      <div class="flex items-center gap-1 flex-wrap">
+                      <div class="flex items-center gap-1.5 flex-wrap">
                         @for (allergy of patient.allergies; track allergy) {
-                          <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-surface-highest text-main border border-outline-sub">
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-highest text-main">
                             {{ allergy }}
                           </span>
                         }
@@ -887,27 +890,27 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   </div>
 
                   @if (patient.notes) {
-                    <div class="pt-2 border-t border-outline-sub/40">
-                      <span class="text-[10px] font-bold text-muted uppercase block">Evolución / Indicaciones Clínicas:</span>
-                      <p class="text-xs text-muted mt-0.5 italic">{{ patient.notes }}</p>
+                    <div class="pt-2">
+                      <span class="text-[10px] font-bold text-muted uppercase block mb-1">Evolución / Indicaciones Clínicas:</span>
+                      <p class="text-xs text-muted italic bg-surface-low p-3 rounded-2xl">{{ patient.notes }}</p>
                     </div>
                   }
                 </div>
 
                 <!-- Patient Actions CTA -->
-                <div class="flex items-center gap-2 pt-1">
+                <div class="flex items-center gap-2 pt-2">
                   @if (!patient.bedAssignedId) {
                     <button
                       type="button"
                       (click)="onImmediateShockTrauma(patient.id)"
-                      class="flex-1 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs transition-colors">
+                      class="btn-m3 flex-1 py-3 rounded-full text-xs font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs transition-all active:scale-95">
                       ⚡ Asignar a Shock Trauma Inmediato
                     </button>
                   } @else {
                     <button
                       type="button"
                       (click)="activeTab.set('beds')"
-                      class="flex-1 py-2 rounded-xl text-xs font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs">
+                      class="btn-m3 flex-1 py-3 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs transition-all active:scale-95">
                       Cambiar Cama
                     </button>
                   }
@@ -915,7 +918,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   <button
                     type="button"
                     (click)="onDischarge(patient.id)"
-                    class="py-2 px-3 rounded-xl text-xs font-bold bg-surface-high hover:bg-surface-highest text-main border border-outline-sub cursor-pointer">
+                    class="btn-m3 py-3 px-4 rounded-full text-xs font-bold bg-surface-high hover:bg-surface-highest text-main cursor-pointer transition-all active:scale-95">
                     Alta Médica
                   </button>
                 </div>
@@ -924,20 +927,20 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             } @else {
               <div class="h-48 grid place-items-center text-center p-6 text-muted">
                 <div>
-                  <span class="material-symbols-rounded text-3xl mb-1 text-muted">person_search</span>
+                  <span class="material-symbols-rounded text-4xl mb-1 text-muted">person_search</span>
                   <p class="text-xs font-semibold">Selecciona un paciente para ver su ficha clínica y NEWS2</p>
                 </div>
               </div>
             }
           }
 
-          <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA -->
+          <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA (Clean Filled Inputs) -->
           @if (activeTab() === 'admit') {
-            <div class="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+            <div class="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs m3-scrollbar">
               
-              <div class="flex items-center justify-between pb-1 border-b border-outline-sub">
-                <span class="font-bold text-main">Ingreso Rápido a Triaje</span>
-                <span class="text-[10px] text-muted">MTS Protocol</span>
+              <div class="flex items-center justify-between pb-1">
+                <span class="font-black text-sm text-main">Ingreso Rápido a Triaje</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-highest text-muted">MTS Protocol</span>
               </div>
 
               <!-- Full Name -->
@@ -947,26 +950,26 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   type="text"
                   [(ngModel)]="newPatientName"
                   placeholder="Ej: Marcelo Quiroga"
-                  class="w-full px-3 py-1.5 rounded-lg bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:border-primary"
+                  class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                 />
               </div>
 
               <!-- Age & Gender -->
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-2 gap-2.5">
                 <div>
                   <label class="block text-[11px] font-semibold text-muted mb-1">Edad (años):</label>
                   <input
                     type="number"
                     [(ngModel)]="newPatientAge"
                     placeholder="42"
-                    class="w-full px-3 py-1.5 rounded-lg bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:border-primary"
+                    class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                   />
                 </div>
                 <div>
                   <label class="block text-[11px] font-semibold text-muted mb-1">Sexo:</label>
                   <select
                     [(ngModel)]="newPatientGender"
-                    class="w-full px-2.5 py-1.5 rounded-lg bg-surface-high border border-outline-sub text-main focus:outline-none focus:border-primary">
+                    class="w-full px-3 py-2 rounded-2xl bg-surface-high text-main focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs">
                     <option value="M">Masculino</option>
                     <option value="F">Femenino</option>
                     <option value="Other">Otro</option>
@@ -976,41 +979,41 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
               <!-- Manchester Triage Level -->
               <div>
-                <label class="block text-[11px] font-semibold text-muted mb-1">Prioridad Manchester:</label>
-                <div class="grid grid-cols-5 gap-1">
+                <label class="block text-[11px] font-semibold text-muted mb-1.5">Prioridad Manchester:</label>
+                <div class="grid grid-cols-5 gap-1.5">
                   <button
                     type="button"
                     (click)="newPatientLevel = 'resuscitation'"
                     [class.ring-2]="newPatientLevel === 'resuscitation'"
-                    class="py-1 rounded-md text-[10px] font-bold text-rose-500 bg-surface-high border border-outline-sub cursor-pointer ring-rose-400">
+                    class="py-2 rounded-2xl text-xs font-black text-rose-500 bg-surface-high cursor-pointer ring-rose-400 shadow-2xs">
                     N1
                   </button>
                   <button
                     type="button"
                     (click)="newPatientLevel = 'emergency'"
                     [class.ring-2]="newPatientLevel === 'emergency'"
-                    class="py-1 rounded-md text-[10px] font-bold text-orange-500 bg-surface-high border border-outline-sub cursor-pointer ring-orange-400">
+                    class="py-2 rounded-2xl text-xs font-black text-orange-500 bg-surface-high cursor-pointer ring-orange-400 shadow-2xs">
                     N2
                   </button>
                   <button
                     type="button"
                     (click)="newPatientLevel = 'urgent'"
                     [class.ring-2]="newPatientLevel === 'urgent'"
-                    class="py-1 rounded-md text-[10px] font-bold text-amber-500 bg-surface-high border border-outline-sub cursor-pointer ring-amber-300">
+                    class="py-2 rounded-2xl text-xs font-black text-amber-500 bg-surface-high cursor-pointer ring-amber-300 shadow-2xs">
                     N3
                   </button>
                   <button
                     type="button"
                     (click)="newPatientLevel = 'standard'"
                     [class.ring-2]="newPatientLevel === 'standard'"
-                    class="py-1 rounded-md text-[10px] font-bold text-emerald-500 bg-surface-high border border-outline-sub cursor-pointer ring-emerald-400">
+                    class="py-2 rounded-2xl text-xs font-black text-emerald-500 bg-surface-high cursor-pointer ring-emerald-400 shadow-2xs">
                     N4
                   </button>
                   <button
                     type="button"
                     (click)="newPatientLevel = 'non_urgent'"
                     [class.ring-2]="newPatientLevel === 'non_urgent'"
-                    class="py-1 rounded-md text-[10px] font-bold text-sky-500 bg-surface-high border border-outline-sub cursor-pointer ring-sky-400">
+                    class="py-2 rounded-2xl text-xs font-black text-sky-500 bg-surface-high cursor-pointer ring-sky-400 shadow-2xs">
                     N5
                   </button>
                 </div>
@@ -1023,23 +1026,23 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   [(ngModel)]="newPatientComplaint"
                   rows="2"
                   placeholder="Descripción de síntomas agudos y tiempo de evolución..."
-                  class="w-full px-3 py-1.5 rounded-lg bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:border-primary resize-none">
+                  class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none shadow-2xs">
                 </textarea>
               </div>
 
               <!-- Quick Vitals Inputs -->
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-0.5">FC (bpm):</label>
-                  <input type="number" [(ngModel)]="newVitalsHR" class="w-full px-2 py-1 rounded-md bg-surface-high border border-outline-sub text-main" />
+                  <label class="block text-[10px] font-semibold text-muted mb-1">FC (bpm):</label>
+                  <input type="number" [(ngModel)]="newVitalsHR" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-0.5">PA Sistólica:</label>
-                  <input type="number" [(ngModel)]="newVitalsSys" class="w-full px-2 py-1 rounded-md bg-surface-high border border-outline-sub text-main" />
+                  <label class="block text-[10px] font-semibold text-muted mb-1">PA Sistólica:</label>
+                  <input type="number" [(ngModel)]="newVitalsSys" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
                 </div>
                 <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-0.5">SpO2 (%):</label>
-                  <input type="number" [(ngModel)]="newVitalsSpO2" class="w-full px-2 py-1 rounded-md bg-surface-high border border-outline-sub text-main" />
+                  <label class="block text-[10px] font-semibold text-muted mb-1">SpO2 (%):</label>
+                  <input type="number" [(ngModel)]="newVitalsSpO2" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
                 </div>
               </div>
 
@@ -1048,7 +1051,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   type="button"
                   (click)="submitAdmission()"
                   [disabled]="!newPatientName.trim() || !newPatientComplaint.trim()"
-                  class="w-full py-2.5 rounded-xl text-xs font-bold bg-primary text-on-primary hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-xs">
+                  class="btn-m3 w-full py-3 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-xs active:scale-95">
                   Admitir Paciente a Triaje
                 </button>
               </div>
@@ -1159,40 +1162,30 @@ export class ClinicComponent {
   getPatientCardBorderClass(patient: PatientTriageRecord): string {
     const isSelected = this.clinicService.selectedPatient()?.id === patient.id;
     if (isSelected) {
-      return 'ring-2 ring-primary border-primary bg-primary/[0.04] shadow-md';
+      return 'ring-2 ring-primary bg-primary-box/25 shadow-xs';
     }
-
-    switch (patient.triageLevel) {
-      case 'resuscitation':
-        return 'border-rose-500/40 hover:border-rose-500/70 shadow-2xs hover:shadow-md';
-      case 'emergency':
-        return 'border-orange-500/30 hover:border-orange-500/60 shadow-2xs hover:shadow-md';
-      case 'urgent':
-        return 'border-amber-500/20 hover:border-amber-500/50 shadow-2xs hover:shadow-md';
-      default:
-        return 'border-outline-sub hover:border-outline shadow-2xs hover:shadow-md';
-    }
+    return 'bg-surface-high hover:bg-surface-highest shadow-2xs';
   }
 
   getTriageBadgeContainerClass(level: TriageLevel): string {
     switch (level) {
       case 'resuscitation':
-        return 'bg-rose-500/12 text-rose-500 border border-rose-500/25';
+        return 'bg-rose-500/15 text-rose-500';
       case 'emergency':
-        return 'bg-orange-500/12 text-orange-500 border border-orange-500/25';
+        return 'bg-orange-500/15 text-orange-500';
       case 'urgent':
-        return 'bg-amber-500/12 text-amber-500 border border-amber-500/25';
+        return 'bg-amber-500/15 text-amber-500';
       case 'standard':
-        return 'bg-emerald-500/12 text-emerald-500 border border-emerald-500/25';
+        return 'bg-emerald-500/15 text-emerald-500';
       case 'non_urgent':
-        return 'bg-sky-500/12 text-sky-500 border border-sky-500/25';
+        return 'bg-sky-500/15 text-sky-500';
     }
   }
 
   getTriageDotClass(level: TriageLevel): string {
     switch (level) {
       case 'resuscitation':
-        return 'bg-rose-500 animate-pulse shadow-xs shadow-rose-500/50';
+        return 'bg-rose-500 animate-pulse';
       case 'emergency':
         return 'bg-orange-500';
       case 'urgent':
@@ -1239,9 +1232,9 @@ export class ClinicComponent {
       return 'bg-rose-600 text-white font-mono font-black shadow-xs';
     }
     if (risk === 'medium') {
-      return 'bg-amber-500/15 text-amber-500 border border-amber-500/30 font-mono font-black';
+      return 'bg-amber-500/20 text-amber-500 font-mono font-black';
     }
-    return 'bg-surface-high text-muted border border-outline-sub font-mono font-semibold';
+    return 'bg-surface-highest text-muted font-mono font-semibold';
   }
 
   getBedDotClass(status: BedStatus): string {
