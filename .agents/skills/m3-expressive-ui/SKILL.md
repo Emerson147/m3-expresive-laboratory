@@ -16,11 +16,21 @@ M3 Expressive departs from rigid, sterile enterprise layouts through:
 2. **Spring Physics & Expressive Motion**: Non-linear physics (`cubic-bezier(0.05, 0.7, 0.1, 1)` and spring curves) instead of generic linear/ease transitions.
 3. **Fluid Shape Morphing**: Elements dynamically transition between sharp and squircle radii (`rounded-full` $\leftrightarrow$ `rounded-2xl` $\leftrightarrow$ `rounded-md`) based on active state.
 4. **Bento Grid Hierarchy**: Asymmetric modular cards prioritizing content density and focal points over uniform repetition.
-5. **Depth via Stage Recess**: Modal dialogs do not simply cover content with a dark scrim; the entire underlying stage scales down and blurs into a recess layer.
+6. **Color Discipline & Chromatic Hierarchy**: Color is a precious currency. If spent everywhere across cards and badges, visual hierarchy collapses into cognitive exhaustion (The "Christmas Tree" anti-pattern). High-density operational dashboards must maintain a 90/10 ratio: 90% calm neutral surfaces and typography, 10% intentional chromatic signaling.
 
 ---
 
 ## 2. Color Tokens & OKLCH Dynamic Theming
+
+### 2.1 Color Discipline: Preventing the Christmas Tree Anti-Pattern
+A common trap in enterprise and medical UI is turning every tag, status, and button into a saturated colored pill (red, green, orange, blue, yellow all competing on a single card). This creates severe visual fatigue.
+
+**Architectural Rules for Color Discipline:**
+1. **The 90/10 Rule**: 90% of layout area must consist of neutral surfaces (`surface-box`, `surface-high`) and high-contrast typography (`text-main`, `text-muted`). Only 10% may carry saturated hues for critical focal points.
+2. **Leading Border Strip over Solid Badges**: Instead of wrapping cards in solid saturated boxes (`bg-red-500 text-white`), anchor priority with a crisp 3px–4px vertical left border (`border-l-4 border-rose-500`) paired with subtle, quiet typography.
+3. **Monochrome by Default, Deviation on Alert**: Metrics, telemetry readings, and physiological vitals must remain neutral/monochrome by default. Only genuine pathological deviations (e.g. SpO2 < 92%) receive colored text, without flooding the container with neon background fills.
+4. **No "Skittle Rows"**: Never repeat rows of multi-colored dots/circles across every card. Secondary actions belong in clean contextual controls (`Reclasificar ▾`), not rainbow icon clusters.
+5. **Bed & Infrastructure Neutrality**: Room and bed statuses should use a calm 6px status dot and muted typography, avoiding saturated neon fill buttons.
 
 ### Why OKLCH?
 Standard HSL and RGB suffer from perceptual non-uniformity: Hue 60° (Yellow) appears much brighter than Hue 240° (Blue) at identical lightness percentages. OKLCH guarantees constant perceived luminance:
