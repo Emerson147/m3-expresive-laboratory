@@ -10,13 +10,24 @@ import {
   TriageFilter,
   TriageLevel
 } from '../../core/clinic/clinic.models';
+import { M3ButtonComponent } from '../../shared/components/button/button.component';
+import { M3CardComponent } from '../../shared/components/card/card.component';
+import { M3ChipComponent } from '../../shared/components/chip/chip.component';
+import { M3LinearProgressComponent } from '../../shared/components/progress';
 
 type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
 @Component({
   selector: 'app-clinic-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    M3ButtonComponent,
+    M3CardComponent,
+    M3ChipComponent,
+    M3LinearProgressComponent
+  ],
   template: `
     <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none bg-surface text-main">
 
@@ -61,23 +72,27 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             />
           </div>
 
-          <button
-            type="button"
-            (click)="activeTab.set('admit')"
-            class="btn-m3 px-4 py-2 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95">
-            <span class="material-symbols-rounded text-base">person_add</span>
-            <span>+ Nueva Admisión</span>
-          </button>
+          <m3-button
+            variant="filled"
+            size="sm"
+            icon="person_add"
+            (action)="activeTab.set('admit')">
+            + Nueva Admisión
+          </m3-button>
         </div>
       </header>
 
       <!-- =====================================================================
-           2. TOP BENTO KPI RIBBON (M3 Filled Cards, Zero Border Clutter)
+           2. TOP BENTO KPI RIBBON (M3 Canonical Filled Cards)
            ===================================================================== -->
       <section class="shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-3">
         
         <!-- KPI 1: Casos Críticos (N1 & N2) -->
-        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
+        <m3-card
+          variant="filled"
+          padding="md"
+          shape="xl"
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
             <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -91,10 +106,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           <div class="w-10 h-10 rounded-2xl bg-rose-500/12 text-rose-500 grid place-items-center shrink-0">
             <span class="material-symbols-rounded text-xl">emergency</span>
           </div>
-        </div>
+        </m3-card>
 
         <!-- KPI 2: Casos Urgentes (N3) -->
-        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
+        <m3-card
+          variant="filled"
+          padding="md"
+          shape="xl"
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
             <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -106,10 +125,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           <div class="w-10 h-10 rounded-2xl bg-amber-500/12 text-amber-500 grid place-items-center shrink-0">
             <span class="material-symbols-rounded text-xl">warning</span>
           </div>
-        </div>
+        </m3-card>
 
         <!-- KPI 3: Espera Promedio -->
-        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
+        <m3-card
+          variant="filled"
+          padding="md"
+          shape="xl"
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
             <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Espera Promedio</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -121,10 +144,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           <div class="w-10 h-10 rounded-2xl bg-primary-box text-on-primary-box grid place-items-center shrink-0">
             <span class="material-symbols-rounded text-xl">timer</span>
           </div>
-        </div>
+        </m3-card>
 
         <!-- KPI 4: Ocupación de Camas -->
-        <div class="p-3.5 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between transition-all hover:bg-surface-high">
+        <m3-card
+          variant="filled"
+          padding="md"
+          shape="xl"
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
           <div>
             <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -136,7 +163,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           <div class="w-10 h-10 rounded-2xl bg-surface-highest text-muted grid place-items-center shrink-0">
             <span class="material-symbols-rounded text-xl">bed</span>
           </div>
-        </div>
+        </m3-card>
 
       </section>
 
@@ -150,7 +177,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
              =================================================================== -->
         <section class="lg:col-span-7 flex flex-col min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
           
-          <!-- Triage Filter Bar (Clean Filled Chips) -->
+          <!-- Triage Filter Bar (M3 Canonical Filter Chips) -->
           <div class="p-3 bg-surface-low/60 shrink-0 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
             <div class="flex items-center gap-1.5 text-xs">
               <span class="font-bold text-main px-1 text-xs shrink-0 flex items-center gap-1.5">
@@ -161,69 +188,45 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 </span>
               </span>
 
-              <!-- Filter Chips (M3 Filled Tonal Pills) -->
-              <button
-                type="button"
-                (click)="clinicService.setFilter('all')"
-                [class.bg-primary]="clinicService.activeFilter() === 'all'"
-                [class.text-on-primary]="clinicService.activeFilter() === 'all'"
-                [class.font-bold]="clinicService.activeFilter() === 'all'"
-                [class.bg-surface-high]="clinicService.activeFilter() !== 'all'"
-                [class.text-muted]="clinicService.activeFilter() !== 'all'"
-                class="px-3 py-1.5 rounded-full text-xs hover:text-main cursor-pointer transition-all shadow-2xs flex items-center gap-1">
-                <span>Todos</span>
-              </button>
-              
-              <button
-                type="button"
-                (click)="clinicService.setFilter('critical')"
-                [class.bg-rose-600]="clinicService.activeFilter() === 'critical'"
-                [class.text-white]="clinicService.activeFilter() === 'critical'"
-                [class.font-bold]="clinicService.activeFilter() === 'critical'"
-                [class.bg-surface-high]="clinicService.activeFilter() !== 'critical'"
-                [class.text-rose-500]="clinicService.activeFilter() !== 'critical'"
-                class="px-3 py-1.5 rounded-full text-xs hover:text-rose-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                <span>Críticos (N1/N2)</span>
-              </button>
+              <!-- Filter Chips (M3 Shared Component) -->
+              <m3-chip
+                type="filter"
+                [selected]="clinicService.activeFilter() === 'all'"
+                [count]="clinicService.patients().length"
+                (action)="clinicService.setFilter('all')">
+                Todos
+              </m3-chip>
 
-              <button
-                type="button"
-                (click)="clinicService.setFilter('urgent')"
-                [class.bg-amber-500]="clinicService.activeFilter() === 'urgent'"
-                [class.text-zinc-950]="clinicService.activeFilter() === 'urgent'"
-                [class.font-bold]="clinicService.activeFilter() === 'urgent'"
-                [class.bg-surface-high]="clinicService.activeFilter() !== 'urgent'"
-                [class.text-amber-500]="clinicService.activeFilter() !== 'urgent'"
-                class="px-3 py-1.5 rounded-full text-xs hover:text-amber-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                <span>Urgentes (N3)</span>
-              </button>
+              <m3-chip
+                type="filter"
+                [selected]="clinicService.activeFilter() === 'critical'"
+                [count]="clinicService.kpiSummary().criticalCases"
+                (action)="clinicService.setFilter('critical')">
+                Críticos (N1/N2)
+              </m3-chip>
 
-              <button
-                type="button"
-                (click)="clinicService.setFilter('standard')"
-                [class.bg-emerald-600]="clinicService.activeFilter() === 'standard'"
-                [class.text-white]="clinicService.activeFilter() === 'standard'"
-                [class.font-bold]="clinicService.activeFilter() === 'standard'"
-                [class.bg-surface-high]="clinicService.activeFilter() !== 'standard'"
-                [class.text-emerald-500]="clinicService.activeFilter() !== 'standard'"
-                class="px-3 py-1.5 rounded-full text-xs hover:text-emerald-400 cursor-pointer transition-all shadow-2xs flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Menores (N4/N5)</span>
-              </button>
+              <m3-chip
+                type="filter"
+                [selected]="clinicService.activeFilter() === 'urgent'"
+                [count]="clinicService.kpiSummary().urgentCases"
+                (action)="clinicService.setFilter('urgent')">
+                Urgentes (N3)
+              </m3-chip>
 
-              <button
-                type="button"
-                (click)="clinicService.setFilter('waiting')"
-                [class.bg-primary]="clinicService.activeFilter() === 'waiting'"
-                [class.text-on-primary]="clinicService.activeFilter() === 'waiting'"
-                [class.font-bold]="clinicService.activeFilter() === 'waiting'"
-                [class.bg-surface-high]="clinicService.activeFilter() !== 'waiting'"
-                [class.text-muted]="clinicService.activeFilter() !== 'waiting'"
-                class="px-3 py-1.5 rounded-full text-xs hover:text-main cursor-pointer transition-all shadow-2xs">
-                <span>En Espera</span>
-              </button>
+              <m3-chip
+                type="filter"
+                [selected]="clinicService.activeFilter() === 'standard'"
+                (action)="clinicService.setFilter('standard')">
+                Menores (N4/N5)
+              </m3-chip>
+
+              <m3-chip
+                type="filter"
+                [selected]="clinicService.activeFilter() === 'waiting'"
+                [count]="waitingCount()"
+                (action)="clinicService.setFilter('waiting')">
+                En Espera
+              </m3-chip>
             </div>
           </div>
 
@@ -232,10 +235,13 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
 
-              <div
-                (click)="onSelectPatient(patient)"
-                [class]="getPatientCardBorderClass(patient)"
-                class="group relative rounded-3xl p-4 space-y-3 transition-all duration-200 cursor-pointer select-none active:scale-[0.99]">
+              <m3-card
+                variant="filled"
+                [interactive]="true"
+                padding="md"
+                shape="xl"
+                [customClass]="getPatientCardBorderClass(patient) + ' group relative space-y-3 cursor-pointer select-none'"
+                (action)="onSelectPatient(patient)">
 
                 <!-- 1. PRIORITY HEADER STRIP (Filled Tonal Containers) -->
                 <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -292,13 +298,13 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                       </div>
                     </div>
                     
-                    <!-- Progress track of critical protocol window -->
-                    <div class="w-full h-1.5 rounded-full bg-rose-500/20 overflow-hidden">
-                      <div
-                        class="h-full bg-rose-500 rounded-full transition-all duration-300"
-                        [style.width.%]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100">
-                      </div>
-                    </div>
+                    <!-- M3 Linear Progress Engine for acute window -->
+                    <m3-linear-progress
+                      [value]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100"
+                      [wavy]="false"
+                      color="error"
+                      size="sm">
+                    </m3-linear-progress>
                   </div>
                 }
 
@@ -318,49 +324,44 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     <span
                       [class]="getNews2PillClass(patient.news2.riskLevel)"
                       class="px-2.5 py-0.5 rounded-full text-xs font-mono font-black shrink-0 flex items-center gap-1">
-                      <span class="material-symbols-rounded text-xs">analytics</span>
-                      <span>NEWS2: {{ patient.news2.score }}</span>
+                      NEWS2 {{ patient.news2.score }}
                     </span>
                   </div>
 
-                  <!-- Chief Complaint Quote Box (Clean Filled Container, No Border) -->
-                  <div class="px-3 py-2 rounded-2xl bg-surface-low text-xs text-main flex items-start gap-2">
-                    <span class="material-symbols-rounded text-base text-primary shrink-0 mt-0.5">stethoscope</span>
-                    <p class="leading-relaxed font-medium">
-                      {{ patient.chiefComplaint }}
-                    </p>
-                  </div>
+                  <p class="text-xs text-muted leading-relaxed line-clamp-2">
+                    <span class="font-bold text-main/80">Motivo:</span> {{ patient.chiefComplaint }}
+                  </p>
                 </div>
 
-                <!-- 4. BIOMETRIC TELEMETRY STRIP (5 Smooth Filled Tiles, Zero Cages) -->
-                <div class="grid grid-cols-5 gap-2">
+                <!-- 4. BIOMETRIC VITALS STRIP (5 Smooth Filled Containers) -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
                   
-                  <!-- Cell 1: Heart Rate -->
+                  <!-- Cell 1: HR -->
                   <div
-                    [class]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
+                    [class]="patient.vitals.heartRate > 110 || patient.vitals.heartRate < 50 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
                     class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">FC</span>
-                      <span class="material-symbols-rounded text-xs" [class.text-rose-500]="patient.vitals.heartRate > 100 || patient.vitals.heartRate < 50">favorite</span>
+                      <span class="material-symbols-rounded text-xs">favorite</span>
                     </div>
                     <div class="mt-1">
                       <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.heartRate }}
+                        {{ patient.vitals.heartRate }} <span class="text-[10px] font-normal text-muted">bpm</span>
                       </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">bpm</span>
+                      <span class="text-[9px] text-muted font-mono block mt-0.5">pulso</span>
                     </div>
                   </div>
 
-                  <!-- Cell 2: Blood Pressure -->
+                  <!-- Cell 2: BP -->
                   <div
-                    [class]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
+                    [class]="patient.vitals.bloodPressureSys > 160 || patient.vitals.bloodPressureSys < 90 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
                     class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">PA</span>
-                      <span class="material-symbols-rounded text-xs" [class.text-amber-500]="patient.vitals.bloodPressureSys > 140 || patient.vitals.bloodPressureSys < 90">speed</span>
+                      <span class="material-symbols-rounded text-xs">speed</span>
                     </div>
                     <div class="mt-1">
-                      <div class="text-xs sm:text-sm font-mono font-black tracking-tight leading-none truncate">
+                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
                         {{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}
                       </div>
                       <span class="text-[9px] text-muted font-mono block mt-0.5">mmHg</span>
@@ -369,33 +370,33 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                   <!-- Cell 3: SpO2 -->
                   <div
-                    [class]="patient.vitals.oxygenSat < 94 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
+                    [class]="patient.vitals.oxygenSat < 93 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
                     class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
                       <span class="font-bold">SpO2</span>
-                      <span class="material-symbols-rounded text-xs" [class.text-rose-500]="patient.vitals.oxygenSat < 94">air</span>
+                      <span class="material-symbols-rounded text-xs">air</span>
                     </div>
                     <div class="mt-1">
                       <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.oxygenSat }}%
+                        {{ patient.vitals.oxygenSat }}<span class="text-[10px] font-normal text-muted">%</span>
                       </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">sat</span>
+                      <span class="text-[9px] text-muted font-mono block mt-0.5">oxígeno</span>
                     </div>
                   </div>
 
                   <!-- Cell 4: Temperature -->
                   <div
-                    [class]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
+                    [class]="patient.vitals.temperature >= 38.5 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
                     class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
                     <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">Temp</span>
-                      <span class="material-symbols-rounded text-xs" [class.text-amber-500]="patient.vitals.temperature >= 38.0 || patient.vitals.temperature <= 35.5">device_thermostat</span>
+                      <span class="font-bold">TEMP</span>
+                      <span class="material-symbols-rounded text-xs">device_thermostat</span>
                     </div>
                     <div class="mt-1">
                       <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.temperature }}°
+                        {{ patient.vitals.temperature }}<span class="text-[10px] font-normal text-muted">°C</span>
                       </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">C</span>
+                      <span class="text-[9px] text-muted font-mono block mt-0.5">axilar</span>
                     </div>
                   </div>
 
@@ -417,22 +418,23 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                 </div>
 
-                <!-- 5. TACTILE ACTION BAR (Filled M3 Buttons, No Border Dividers) -->
+                <!-- 5. TACTILE ACTION BAR (M3 Button Shared Components) -->
                 <div class="pt-1 flex items-center justify-between gap-2 flex-wrap text-xs">
                   
                   <!-- Left: Immediate Critical Bed CTA or Reclassify Selector -->
                   @if (!patient.bedAssignedId && (patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency' || patient.news2.riskLevel === 'high')) {
-                    <button
-                      type="button"
-                      (click)="onImmediateShockTrauma(patient.id, $event)"
-                      class="btn-m3 py-2 px-4 rounded-full bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95">
-                      <span class="material-symbols-rounded text-base">bolt</span>
-                      <span>Asignar Shock Trauma Inmediato</span>
-                    </button>
+                    <m3-button
+                      variant="filled"
+                      size="sm"
+                      icon="bolt"
+                      customClass="bg-rose-600 hover:bg-rose-700 text-white font-black"
+                      (action)="onImmediateShockTrauma(patient.id, $event)">
+                      Asignar Shock Trauma Inmediato
+                    </m3-button>
                   } @else {
                     <div class="relative">
                       @if (activeRetriageId() === patient.id) {
-                        <div class="flex items-center gap-1 p-1 rounded-full bg-surface-highest shadow-sm animate-in zoom-in-95">
+                        <div class="flex items-center gap-1 p-1 rounded-full bg-surface-highest shadow-sm animate-in zoom-in-95" (click)="$event.stopPropagation()">
                           <button
                             type="button"
                             (click)="applyRetriage(patient.id, 'resuscitation', $event)"
@@ -459,20 +461,19 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                           </button>
                           <button
                             type="button"
-                            (click)="activeRetriageId.set(null)"
-                            class="material-symbols-rounded text-sm text-muted hover:text-main px-1.5">
+                            (click)="activeRetriageId.set(null); $event.stopPropagation()"
+                            class="material-symbols-rounded text-sm text-muted hover:text-main px-1.5 cursor-pointer">
                             close
                           </button>
                         </div>
                       } @else {
-                        <button
-                          type="button"
-                          (click)="toggleRetriage(patient.id, $event)"
-                          class="btn-m3 py-1.5 px-3 rounded-full text-xs font-semibold text-muted hover:text-main bg-surface-low hover:bg-surface-high flex items-center gap-1 cursor-pointer transition-all active:scale-95">
-                          <span class="material-symbols-rounded text-sm text-primary">swap_vert</span>
-                          <span>Reclasificar</span>
-                          <span class="material-symbols-rounded text-xs text-muted">expand_more</span>
-                        </button>
+                        <m3-button
+                          variant="tonal"
+                          size="sm"
+                          icon="swap_vert"
+                          (action)="toggleRetriage(patient.id, $event)">
+                          Reclasificar
+                        </m3-button>
                       }
                     </div>
                   }
@@ -480,24 +481,24 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   <!-- Right: Bed Assignment / Discharge Buttons -->
                   <div class="flex items-center gap-2 ml-auto">
                     @if (!patient.bedAssignedId) {
-                      <button
-                        type="button"
-                        (click)="openBedAssignment(patient, $event)"
-                        class="btn-m3 py-1.5 px-4 rounded-full text-xs font-bold bg-surface-highest hover:bg-surface-low text-main flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-2xs">
-                        <span class="material-symbols-rounded text-sm text-primary">bed</span>
-                        <span>Asignar Cama</span>
-                      </button>
+                      <m3-button
+                        variant="tonal"
+                        size="sm"
+                        icon="bed"
+                        (action)="openBedAssignment(patient, $event)">
+                        Asignar Cama
+                      </m3-button>
                     }
-                    <button
-                      type="button"
-                      (click)="onDischarge(patient.id, $event)"
-                      class="btn-m3 py-1.5 px-3 rounded-full text-xs font-semibold text-muted hover:text-main bg-transparent hover:bg-surface-highest cursor-pointer transition-all active:scale-95">
+                    <m3-button
+                      variant="text"
+                      size="sm"
+                      (action)="onDischarge(patient.id, $event)">
                       Alta Médica
-                    </button>
+                    </m3-button>
                   </div>
                 </div>
 
-              </div>
+              </m3-card>
             } @empty {
               <div class="h-48 grid place-items-center text-center p-6 text-muted">
                 <div>
@@ -558,7 +559,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           </div>
 
-          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Filled Cards, Clean Surfaces) -->
+          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Filled Cards & Buttons) -->
           @if (activeTab() === 'beds') {
             <div class="flex-1 overflow-y-auto p-3 space-y-4 m3-scrollbar">
               
@@ -576,8 +577,11 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   @for (bed of shockTraumaBeds(); track bed.id) {
-                    <div
-                      class="p-3.5 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
+                    <m3-card
+                      variant="filled"
+                      padding="sm"
+                      shape="xl"
+                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-black text-sm text-main flex items-center gap-1.5">
@@ -603,26 +607,29 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                       <div class="pt-1 flex items-center justify-between">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <button
-                            type="button"
-                            (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-2 rounded-full text-xs font-black bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs active:scale-95">
+                          <m3-button
+                            variant="filled"
+                            size="sm"
+                            customClass="w-full font-black"
+                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
                             Asignar Paciente
-                          </button>
+                          </m3-button>
                         } @else if (bed.status === 'cleaning') {
-                          <button
-                            type="button"
-                            (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-2 rounded-full text-xs font-bold bg-surface-highest hover:bg-surface-box text-main cursor-pointer active:scale-95">
+                          <m3-button
+                            variant="tonal"
+                            size="sm"
+                            customClass="w-full font-bold"
+                            (action)="clinicService.setBedStatus(bed.id, 'available')">
                             Habilitar Cama
-                          </button>
+                          </m3-button>
                         } @else if (bed.status === 'occupied') {
-                          <button
-                            type="button"
-                            (click)="clinicService.setBedStatus(bed.id, 'cleaning')"
-                            class="btn-m3 w-full py-2 rounded-full text-xs font-semibold bg-surface-low hover:bg-surface-box text-muted hover:text-main cursor-pointer active:scale-95">
+                          <m3-button
+                            variant="text"
+                            size="sm"
+                            customClass="w-full font-semibold text-muted hover:text-main"
+                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
                             Liberar para Limpieza
-                          </button>
+                          </m3-button>
                         } @else {
                           <span class="text-[10px] text-muted italic flex items-center gap-1">
                             <span class="material-symbols-rounded text-xs text-emerald-500">check_circle</span>
@@ -630,7 +637,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                           </span>
                         }
                       </div>
-                    </div>
+                    </m3-card>
                   }
                 </div>
               </div>
@@ -647,92 +654,110 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
                 <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of observationBeds(); track bed.id) {
-                    <div
-                      class="p-3 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-2.5 shadow-2xs">
+                    <m3-card
+                      variant="filled"
+                      padding="sm"
+                      shape="xl"
+                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
-                          <span class="font-mono font-bold text-xs text-main">{{ bed.id }}</span>
+                          <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
+                            <span class="material-symbols-rounded text-sm text-primary">bed</span>
+                            <span>{{ bed.id }}</span>
+                          </span>
                           <span
                             [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
                             class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
                             {{ getBedStatusLabel(bed.status) }}
                           </span>
                         </div>
-                        <p class="font-bold text-main mt-1 truncate">{{ bed.patientName ?? 'Disponible' }}</p>
+                        <p class="font-medium text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Libre' }}</p>
                       </div>
 
                       <div class="pt-1">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <button
-                            type="button"
-                            (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95 shadow-xs">
+                          <m3-button
+                            variant="filled"
+                            size="sm"
+                            customClass="w-full font-bold"
+                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
                             Asignar
-                          </button>
+                          </m3-button>
+                        } @else if (bed.status === 'occupied') {
+                          <m3-button
+                            variant="text"
+                            size="sm"
+                            customClass="w-full text-muted hover:text-main"
+                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
+                            Liberar
+                          </m3-button>
                         } @else if (bed.status === 'cleaning') {
-                          <button
-                            type="button"
-                            (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-medium bg-surface-highest text-main cursor-pointer active:scale-95">
-                            Habilitar
-                          </button>
-                        } @else {
-                          <span class="text-[10px] text-muted">
-                            {{ bed.status === 'occupied' ? 'Ocupada' : 'Disponible' }}
-                          </span>
+                          <m3-button
+                            variant="tonal"
+                            size="sm"
+                            customClass="w-full"
+                            (action)="clinicService.setBedStatus(bed.id, 'available')">
+                            Listo
+                          </m3-button>
                         }
                       </div>
-                    </div>
+                    </m3-card>
                   }
                 </div>
               </div>
 
-              <!-- Procedimientos & Sutura -->
+              <!-- Sala de Procedimientos -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-muted"></span>
-                    <span>Sala de Procedimientos</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span>Tópico & Procedimientos</span>
                   </span>
-                  <span class="text-[10px] text-muted font-mono font-bold">2 Box</span>
+                  <span class="text-[10px] text-muted font-mono font-bold">2 Camas</span>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of procedureBeds(); track bed.id) {
-                    <div
-                      class="p-3 rounded-3xl bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-2.5 shadow-2xs">
+                    <m3-card
+                      variant="filled"
+                      padding="sm"
+                      shape="xl"
+                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
                       <div>
                         <div class="flex items-center justify-between">
-                          <span class="font-mono font-bold text-xs text-main">{{ bed.id }}</span>
+                          <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
+                            <span class="material-symbols-rounded text-sm text-primary">healing</span>
+                            <span>{{ bed.id }}</span>
+                          </span>
                           <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
+                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : 'bg-emerald-500/15 text-emerald-500'"
                             class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
                             {{ getBedStatusLabel(bed.status) }}
                           </span>
                         </div>
-                        <p class="font-bold text-main mt-1 truncate">{{ bed.patientName ?? 'Disponible' }}</p>
+                        <p class="font-medium text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Disponible' }}</p>
                       </div>
 
                       <div class="pt-1">
                         @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <button
-                            type="button"
-                            (click)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)"
-                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer active:scale-95 shadow-xs">
+                          <m3-button
+                            variant="filled"
+                            size="sm"
+                            customClass="w-full font-bold"
+                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
                             Asignar
-                          </button>
-                        } @else if (bed.status === 'cleaning') {
-                          <button
-                            type="button"
-                            (click)="clinicService.setBedStatus(bed.id, 'available')"
-                            class="btn-m3 w-full py-1.5 rounded-full text-[11px] font-medium bg-surface-highest text-main cursor-pointer active:scale-95">
-                            Habilitar
-                          </button>
-                        } @else {
-                          <span class="text-[10px] text-muted">Box habilitado</span>
+                          </m3-button>
+                        } @else if (bed.status === 'occupied') {
+                          <m3-button
+                            variant="text"
+                            size="sm"
+                            customClass="w-full text-muted hover:text-main"
+                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
+                            Liberar
+                          </m3-button>
                         }
                       </div>
-                    </div>
+                    </m3-card>
                   }
                 </div>
               </div>
@@ -740,12 +765,12 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           }
 
-          <!-- TAB 2: DETALLE DE FICHA MÉDICA & SOPORTE A LA DECISIÓN CLÍNICA (Filled Surfaces) -->
+          <!-- TAB 2: DETALLE DEL PACIENTE & PROTOCOLOS NEWS2 (M3 Filled Surfaces) -->
           @if (activeTab() === 'detail') {
             @if (clinicService.selectedPatient(); as patient) {
-              <div class="flex-1 overflow-y-auto p-3.5 space-y-3 m3-scrollbar">
+              <div class="flex-1 overflow-y-auto p-4 space-y-4 m3-scrollbar">
                 
-                <!-- Active Emergency Code Hero Alert -->
+                <!-- Acute Protocol Alert Banner -->
                 @if (patient.activeCode) {
                   <div class="p-4 rounded-3xl bg-rose-500/12 shadow-2xs text-xs space-y-2">
                     <div class="flex items-center justify-between">
@@ -763,23 +788,23 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     </p>
 
                     <!-- Therapeutic Window Progress Track -->
-                    <div>
-                      <div class="flex justify-between text-[10px] text-muted mb-1 font-mono">
+                    <div class="space-y-1">
+                      <div class="flex justify-between text-[10px] text-muted font-mono">
                         <span>Transcurrido: {{ patient.activeCode.elapsedMinutes }} min</span>
                         <span>Meta: ≤ {{ patient.activeCode.targetMinutes }} min</span>
                       </div>
-                      <div class="w-full h-2 rounded-full bg-rose-500/20 overflow-hidden">
-                        <div
-                          class="h-full bg-rose-500 rounded-full transition-all duration-300"
-                          [style.width.%]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100">
-                        </div>
-                      </div>
+                      <m3-linear-progress
+                        [value]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100"
+                        [wavy]="false"
+                        color="error"
+                        size="sm">
+                      </m3-linear-progress>
                     </div>
                   </div>
                 }
 
                 <!-- Patient Header Card -->
-                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-2">
+                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high space-y-2 shadow-2xs">
                   <div class="flex items-center justify-between">
                     <span [class]="getTriageBadgeContainerClass(patient.triageLevel)" class="px-3 py-1 rounded-full text-xs font-black uppercase">
                       {{ getTriageBadgeLabel(patient.triageLevel) }}
@@ -794,10 +819,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     <span class="text-[10px] font-bold text-muted uppercase block mb-1">Motivo de Consulta Principal:</span>
                     <p class="text-xs text-main bg-surface-low p-3 rounded-2xl leading-relaxed">{{ patient.chiefComplaint }}</p>
                   </div>
-                </div>
+                </m3-card>
 
                 <!-- National Early Warning Score 2 (NEWS2) Analysis -->
-                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs text-xs space-y-2">
+                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs text-xs space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-main flex items-center gap-1.5">
                       <span class="material-symbols-rounded text-base text-primary">analytics</span>
@@ -823,10 +848,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                       </ul>
                     </div>
                   }
-                </div>
+                </m3-card>
 
                 <!-- Signos Vitales con Rangos Fisiológicos -->
-                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-3">
+                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs space-y-3">
                   <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-base text-primary">vital_signs</span>
                     <span>Signos Vitales y Rangos</span>
@@ -870,10 +895,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                     <span class="text-xs text-muted font-medium">Escala de Dolor (EVA):</span>
                     <span class="font-mono font-black text-main text-sm">{{ patient.vitals.painScale }} / 10</span>
                   </div>
-                </div>
+                </m3-card>
 
                 <!-- Alergias & Notas -->
-                <div class="p-4 rounded-3xl bg-surface-high shadow-2xs space-y-2 text-xs">
+                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs space-y-2 text-xs">
                   <div>
                     <span class="text-[10px] font-bold text-muted uppercase block mb-1">Alergias Documentadas:</span>
                     @if (patient.allergies && patient.allergies.length > 0) {
@@ -895,32 +920,36 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                       <p class="text-xs text-muted italic bg-surface-low p-3 rounded-2xl">{{ patient.notes }}</p>
                     </div>
                   }
-                </div>
+                </m3-card>
 
                 <!-- Patient Actions CTA -->
                 <div class="flex items-center gap-2 pt-2">
                   @if (!patient.bedAssignedId) {
-                    <button
-                      type="button"
-                      (click)="onImmediateShockTrauma(patient.id)"
-                      class="btn-m3 flex-1 py-3 rounded-full text-xs font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs transition-all active:scale-95">
+                    <m3-button
+                      variant="filled"
+                      size="md"
+                      icon="bolt"
+                      customClass="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-black"
+                      (action)="onImmediateShockTrauma(patient.id)">
                       ⚡ Asignar a Shock Trauma Inmediato
-                    </button>
+                    </m3-button>
                   } @else {
-                    <button
-                      type="button"
-                      (click)="activeTab.set('beds')"
-                      class="btn-m3 flex-1 py-3 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 cursor-pointer shadow-xs transition-all active:scale-95">
+                    <m3-button
+                      variant="filled"
+                      size="md"
+                      customClass="flex-1 font-bold"
+                      (action)="activeTab.set('beds')">
                       Cambiar Cama
-                    </button>
+                    </m3-button>
                   }
 
-                  <button
-                    type="button"
-                    (click)="onDischarge(patient.id)"
-                    class="btn-m3 py-3 px-4 rounded-full text-xs font-bold bg-surface-high hover:bg-surface-highest text-main cursor-pointer transition-all active:scale-95">
+                  <m3-button
+                    variant="tonal"
+                    size="md"
+                    customClass="font-bold"
+                    (action)="onDischarge(patient.id)">
                     Alta Médica
-                  </button>
+                  </m3-button>
                 </div>
 
               </div>
@@ -1047,13 +1076,14 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
               </div>
 
               <div class="pt-2">
-                <button
-                  type="button"
-                  (click)="submitAdmission()"
+                <m3-button
+                  variant="filled"
+                  size="md"
+                  customClass="w-full font-bold"
                   [disabled]="!newPatientName.trim() || !newPatientComplaint.trim()"
-                  class="btn-m3 w-full py-3 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-xs active:scale-95">
+                  (action)="submitAdmission()">
                   Admitir Paciente a Triaje
-                </button>
+                </m3-button>
               </div>
 
             </div>
@@ -1083,6 +1113,10 @@ export class ClinicComponent {
 
   readonly procedureBeds = computed(() =>
     this.clinicService.beds().filter(b => b.area === 'procedure')
+  );
+
+  readonly waitingCount = computed(() =>
+    this.clinicService.patients().filter(p => !p.bedAssignedId).length
   );
 
   // Form model for new admission
