@@ -32,7 +32,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
     <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none bg-surface text-main">
 
       <!-- =====================================================================
-           1. TOP HEADER & OPERATIONAL BAR (Clean M3 Filled Surface)
+           1. TOP HEADER & OPERATIONAL BAR (Clean M3 Surface)
            ===================================================================== -->
       <header class="shrink-0 p-3 sm:p-4 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between flex-wrap gap-3">
         
@@ -83,16 +83,16 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       </header>
 
       <!-- =====================================================================
-           2. TOP BENTO KPI RIBBON (M3 Canonical Filled Cards)
+           2. TOP BENTO KPI RIBBON (M3 Canonical Elevated Cards - Bright & Crisp)
            ===================================================================== -->
       <section class="shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-3">
         
         <!-- KPI 1: Casos Críticos (N1 & N2) -->
         <m3-card
-          variant="filled"
+          variant="elevated"
           padding="md"
           shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
           <div>
             <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -110,10 +110,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
         <!-- KPI 2: Casos Urgentes (N3) -->
         <m3-card
-          variant="filled"
+          variant="elevated"
           padding="md"
           shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
           <div>
             <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -129,10 +129,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
         <!-- KPI 3: Espera Promedio -->
         <m3-card
-          variant="filled"
+          variant="elevated"
           padding="md"
           shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
           <div>
             <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Espera Promedio</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -148,10 +148,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
         <!-- KPI 4: Ocupación de Camas -->
         <m3-card
-          variant="filled"
+          variant="elevated"
           padding="md"
           shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high">
+          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
           <div>
             <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
             <div class="flex items-baseline gap-1.5 mt-0.5">
@@ -230,20 +230,20 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           </div>
 
-          <!-- Patients List Scroll Area (M3 Expressive Filled Cards Feed) -->
+          <!-- Patients List Scroll Area (M3 Expressive Elevated Cards Feed) -->
           <div class="flex-1 overflow-y-auto p-3 space-y-3 m3-scrollbar">
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
 
               <m3-card
-                variant="filled"
+                variant="elevated"
                 [interactive]="true"
                 padding="md"
                 shape="xl"
                 [customClass]="getPatientCardBorderClass(patient) + ' group relative space-y-3 cursor-pointer select-none'"
                 (action)="onSelectPatient(patient)">
 
-                <!-- 1. PRIORITY HEADER STRIP (Filled Tonal Containers) -->
+                <!-- 1. PRIORITY HEADER STRIP (Tonal Containers) -->
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                   
                   <!-- Left: Manchester Level Tonal Container + Ticket Code -->
@@ -559,7 +559,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           </div>
 
-          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Filled Cards & Buttons) -->
+          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Elevated Cards & Buttons) -->
           @if (activeTab() === 'beds') {
             <div class="flex-1 overflow-y-auto p-3 space-y-4 m3-scrollbar">
               
@@ -578,10 +578,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   @for (bed of shockTraumaBeds(); track bed.id) {
                     <m3-card
-                      variant="filled"
+                      variant="elevated"
                       padding="sm"
                       shape="xl"
-                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
+                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-black text-sm text-main flex items-center gap-1.5">
@@ -655,10 +655,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of observationBeds(); track bed.id) {
                     <m3-card
-                      variant="filled"
+                      variant="elevated"
                       padding="sm"
                       shape="xl"
-                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
+                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
@@ -719,10 +719,10 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 <div class="grid grid-cols-2 gap-2.5">
                   @for (bed of procedureBeds(); track bed.id) {
                     <m3-card
-                      variant="filled"
+                      variant="elevated"
                       padding="sm"
                       shape="xl"
-                      customClass="bg-surface-high hover:bg-surface-highest transition-all text-xs flex flex-col justify-between space-y-3 shadow-2xs">
+                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
                       <div>
                         <div class="flex items-center justify-between">
                           <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
@@ -765,7 +765,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           }
 
-          <!-- TAB 2: DETALLE DEL PACIENTE & PROTOCOLOS NEWS2 (M3 Filled Surfaces) -->
+          <!-- TAB 2: DETALLE DEL PACIENTE & PROTOCOLOS NEWS2 (M3 Elevated Cards) -->
           @if (activeTab() === 'detail') {
             @if (clinicService.selectedPatient(); as patient) {
               <div class="flex-1 overflow-y-auto p-4 space-y-4 m3-scrollbar">
@@ -804,7 +804,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 }
 
                 <!-- Patient Header Card -->
-                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high space-y-2 shadow-2xs">
+                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-2">
                   <div class="flex items-center justify-between">
                     <span [class]="getTriageBadgeContainerClass(patient.triageLevel)" class="px-3 py-1 rounded-full text-xs font-black uppercase">
                       {{ getTriageBadgeLabel(patient.triageLevel) }}
@@ -822,7 +822,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 </m3-card>
 
                 <!-- National Early Warning Score 2 (NEWS2) Analysis -->
-                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs text-xs space-y-2">
+                <m3-card variant="elevated" padding="md" shape="xl" customClass="text-xs space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-main flex items-center gap-1.5">
                       <span class="material-symbols-rounded text-base text-primary">analytics</span>
@@ -851,7 +851,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 </m3-card>
 
                 <!-- Signos Vitales con Rangos Fisiológicos -->
-                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs space-y-3">
+                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-3">
                   <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-base text-primary">vital_signs</span>
                     <span>Signos Vitales y Rangos</span>
@@ -898,7 +898,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 </m3-card>
 
                 <!-- Alergias & Notas -->
-                <m3-card variant="filled" padding="md" shape="xl" customClass="bg-surface-high shadow-2xs space-y-2 text-xs">
+                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-2 text-xs">
                   <div>
                     <span class="text-[10px] font-bold text-muted uppercase block mb-1">Alergias Documentadas:</span>
                     @if (patient.allergies && patient.allergies.length > 0) {
@@ -963,7 +963,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             }
           }
 
-          <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA (Clean Filled Inputs) -->
+          <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA (Clean Inputs) -->
           @if (activeTab() === 'admit') {
             <div class="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs m3-scrollbar">
               
@@ -1198,7 +1198,7 @@ export class ClinicComponent {
     if (isSelected) {
       return 'ring-2 ring-primary bg-primary-box/25 shadow-xs';
     }
-    return 'bg-surface-high hover:bg-surface-highest shadow-2xs';
+    return 'hover:bg-surface-high/40';
   }
 
   getTriageBadgeContainerClass(level: TriageLevel): string {
