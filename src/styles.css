@@ -471,26 +471,28 @@ html:not(.theme-transition)::view-transition-new(root) {
    ========================================================= */
 .m3-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--md-sys-color-primary) 22%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--md-sys-color-primary) 50%, var(--md-sys-color-outline-variant)) color-mix(in oklch, var(--md-sys-color-surface-container-high) 40%, transparent);
 }
 
 .m3-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 
 .m3-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: color-mix(in oklch, var(--md-sys-color-surface-container-high) 30%, transparent);
+  border-radius: 9999px;
 }
 
 .m3-scrollbar::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--md-sys-color-primary) 22%, transparent);
+  background: color-mix(in oklch, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
   border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--md-sys-color-surface) 60%, transparent);
   transition: background 150ms ease;
 }
 
 .m3-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--md-sys-color-primary) 45%, transparent);
+  background: var(--md-sys-color-primary);
 }
 
 .scrollbar-none {

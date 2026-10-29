@@ -29,7 +29,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
     M3LinearProgressComponent
   ],
   template: `
-    <div class="flex-1 h-full min-h-0 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-4 select-none bg-surface text-main m3-scrollbar">
+    <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none bg-surface text-main">
 
       <!-- =====================================================================
            1. TOP HEADER & OPERATIONAL BAR (Clean M3 Surface)
@@ -170,12 +170,12 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
       <!-- =====================================================================
            3. MAIN ASYMMETRIC BENTO GRID (Left: 7 Cols, Right: 5 Cols)
            ===================================================================== -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch overflow-hidden">
         
         <!-- ===================================================================
              COLUMNA IZQUIERDA: COLA ACTIVA DE TRIAJE (7 / 12)
              =================================================================== -->
-        <section class="lg:col-span-7 flex flex-col rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
+        <section class="lg:col-span-7 flex flex-col h-full min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
           
           <!-- Triage Filter Bar (M3 Canonical Filter Chips) -->
           <div class="p-3 bg-surface-low/60 shrink-0 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
@@ -230,8 +230,8 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
             </div>
           </div>
 
-          <!-- Patients List (M3 Expressive Elevated Cards Feed) -->
-          <div class="p-3 space-y-3">
+          <!-- Patients List Scroll Area (M3 Expressive Elevated Cards Feed) -->
+          <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 m3-scrollbar">
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
 
@@ -241,7 +241,8 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 padding="md"
                 shape="xl"
                 [customClass]="getPatientCardBorderClass(patient) + ' group relative space-y-3 cursor-pointer select-none'"
-                (action)="onSelectPatient(patient)">
+                (action)="onSelectPatient(patient)"
+                (click)="onSelectPatient(patient)">
 
                 <!-- 1. PRIORITY HEADER STRIP (Tonal Containers) -->
                 <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -513,7 +514,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
         <!-- ===================================================================
              COLUMNA DERECHA: MATRIZ DE CAMAS & FICHA CLÍNICA / ADMISIÓN (5 / 12)
              =================================================================== -->
-        <section class="lg:col-span-5 flex flex-col rounded-3xl bg-surface-box shadow-2xs overflow-hidden lg:sticky lg:top-4">
+        <section class="lg:col-span-5 flex flex-col h-full min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
           
           <!-- Segmented Tab Header (Clean M3 Pill Switcher) -->
           <div class="p-3 bg-surface-low/60 shrink-0">
@@ -561,7 +562,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
           <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Elevated Cards & Buttons) -->
           @if (activeTab() === 'beds') {
-            <div class="p-3 space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto m3-scrollbar">
+            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-4 m3-scrollbar">
               
               <!-- Shock Trauma Unit -->
               <div class="space-y-2">
@@ -768,7 +769,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           <!-- TAB 2: DETALLE DEL PACIENTE & PROTOCOLOS NEWS2 (M3 Elevated Cards) -->
           @if (activeTab() === 'detail') {
             @if (clinicService.selectedPatient(); as patient) {
-              <div class="p-4 space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto m3-scrollbar">
+              <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 m3-scrollbar">
                 
                 <!-- Acute Protocol Alert Banner -->
                 @if (patient.activeCode) {
@@ -965,7 +966,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 
           <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA (Clean Inputs) -->
           @if (activeTab() === 'admit') {
-            <div class="p-4 space-y-3.5 text-xs max-h-[calc(100vh-10rem)] overflow-y-auto m3-scrollbar">
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 text-xs m3-scrollbar">
               
               <div class="flex items-center justify-between pb-1">
                 <span class="font-black text-sm text-main">Ingreso Rápido a Triaje</span>
@@ -1099,7 +1100,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
 export class ClinicComponent {
   readonly clinicService = inject(ClinicService);
 
-  readonly activeTab = signal<ClinicRightTab>('beds');
+  readonly activeTab = signal<ClinicRightTab>('detail');
   readonly activeRetriageId = signal<string | null>(null);
 
   // Bed group computed signals
