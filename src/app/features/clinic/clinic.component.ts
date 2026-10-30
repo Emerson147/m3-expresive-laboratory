@@ -231,273 +231,94 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
           </div>
 
           <!-- Patients List Scroll Area (M3 Expressive Elevated Cards Feed) -->
-          <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 m3-scrollbar">
+          <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 m3-scrollbar">
             @for (patient of clinicService.filteredPatients(); track patient.id) {
               @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
 
               <m3-card
                 variant="elevated"
                 [interactive]="true"
-                padding="md"
+                padding="sm"
                 shape="xl"
-                [customClass]="getPatientCardBorderClass(patient) + ' group relative space-y-3 cursor-pointer select-none'"
+                [customClass]="getPatientCardBorderClass(patient) + ' group relative flex flex-col gap-2 cursor-pointer select-none transition-all duration-200'"
                 (action)="onSelectPatient(patient)"
                 (click)="onSelectPatient(patient)">
 
-                <!-- 1. PRIORITY HEADER STRIP (Tonal Containers) -->
-                <div class="flex items-center justify-between gap-2 flex-wrap">
-                  
+                <!-- 1. PRIORITY HEADER ROW (Tonal Badges & Wait Info) -->
+                <div class="flex items-center justify-between gap-2">
                   <!-- Left: Manchester Level Tonal Container + Ticket Code -->
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5 min-w-0">
                     <span
                       [class]="getTriageBadgeContainerClass(patient.triageLevel)"
-                      class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded-full" [class]="getTriageDotClass(patient.triageLevel)"></span>
+                      class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="getTriageDotClass(patient.triageLevel)"></span>
                       <span>{{ getTriageBadgeLabel(patient.triageLevel) }}</span>
                     </span>
 
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-surface-highest text-muted">
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-surface-highest text-muted shrink-0">
                       {{ patient.ticketCode }}
                     </span>
                   </div>
 
                   <!-- Right: Bed Status & Elapsed Wait Latency -->
-                  <div class="flex items-center gap-2 ml-auto text-xs">
+                  <div class="flex items-center gap-1.5 shrink-0 text-xs font-mono">
                     @if (patient.bedAssignedId) {
-                      <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-surface-highest text-main flex items-center gap-1.5">
-                        <span class="material-symbols-rounded text-sm text-primary">bed</span>
+                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface-highest text-main flex items-center gap-1">
+                        <span class="material-symbols-rounded text-xs text-primary">bed</span>
                         <span>{{ patient.bedAssignedId }}</span>
                       </span>
                     } @else {
                       <span
                         [class]="isCritical ? 'text-rose-500 bg-rose-500/15 font-black' : 'text-amber-500 bg-amber-500/15 font-bold'"
-                        class="px-2.5 py-0.5 rounded-full text-[11px] font-mono flex items-center gap-1">
+                        class="px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
                         <span class="material-symbols-rounded text-xs">error</span>
                         <span>Sin Cama</span>
                       </span>
                     }
 
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono text-muted bg-surface-low flex items-center gap-1">
+                    <span class="px-2 py-0.5 rounded-full text-[11px] text-muted bg-surface-low flex items-center gap-1">
                       <span class="material-symbols-rounded text-xs">schedule</span>
-                      <span>{{ patient.admissionTime }} ({{ patient.waitingMinutes }}m)</span>
+                      <span>{{ patient.waitingMinutes }}m</span>
                     </span>
                   </div>
                 </div>
 
-                <!-- 2. ACTIVE CLINICAL CODE PROTOCOL BANNER (Filled Urgent Tonal Surface) -->
-                @if (patient.activeCode) {
-                  <div class="p-3 rounded-2xl bg-rose-500/12 flex flex-col gap-2">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-center gap-2 min-w-0">
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
-                        <span class="font-black text-xs text-main truncate tracking-tight">{{ patient.activeCode.title }}</span>
-                        <span class="text-xs text-muted truncate hidden sm:inline">• {{ patient.activeCode.windowLabel }}</span>
-                      </div>
-                      <div class="shrink-0 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-xs shadow-xs">
-                        <span class="material-symbols-rounded text-xs">timer</span>
-                        <span>{{ patient.activeCode.remainingMinutes }} min restantes</span>
-                      </div>
-                    </div>
-                    
-                    <!-- M3 Linear Progress Engine for acute window -->
-                    <m3-linear-progress
-                      [value]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100"
-                      [wavy]="false"
-                      color="error"
-                      size="sm">
-                    </m3-linear-progress>
-                  </div>
-                }
-
-                <!-- 3. PATIENT IDENTITY & CHIEF COMPLAINT -->
-                <div class="space-y-1.5">
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-baseline gap-2 min-w-0">
-                      <h3 class="text-base font-black text-main tracking-tight truncate group-hover:text-primary transition-colors">
-                        {{ patient.fullName }}
-                      </h3>
-                      <span class="text-xs text-muted font-medium shrink-0">
-                        {{ patient.age }}a • {{ patient.gender === 'M' ? 'Masc.' : (patient.gender === 'F' ? 'Fem.' : 'Otro') }}
-                      </span>
-                    </div>
-
-                    <!-- NEWS2 Score Chip -->
-                    <span
-                      [class]="getNews2PillClass(patient.news2.riskLevel)"
-                      class="px-2.5 py-0.5 rounded-full text-xs font-mono font-black shrink-0 flex items-center gap-1">
-                      NEWS2 {{ patient.news2.score }}
+                <!-- 2. PATIENT IDENTITY & NEWS2 SCORE -->
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2 min-w-0">
+                    <h3 class="text-sm sm:text-base font-black text-main tracking-tight truncate group-hover:text-primary transition-colors">
+                      {{ patient.fullName }}
+                    </h3>
+                    <span class="text-xs text-muted font-medium shrink-0">
+                      {{ patient.age }}a • {{ patient.gender === 'M' ? 'Masc.' : (patient.gender === 'F' ? 'Fem.' : 'Otro') }}
                     </span>
                   </div>
 
-                  <p class="text-xs text-muted leading-relaxed line-clamp-2">
+                  <!-- NEWS2 Score Chip -->
+                  <span
+                    [class]="getNews2PillClass(patient.news2.riskLevel)"
+                    class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black shrink-0 flex items-center gap-1">
+                    NEWS2 {{ patient.news2.score }}
+                  </span>
+                </div>
+
+                <!-- 3. FOOTER ROW: Acute Protocol Alert OR Chief Complaint excerpt -->
+                @if (patient.activeCode) {
+                  <div class="px-3 py-1.5 rounded-2xl bg-rose-500/12 flex items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                      <span class="font-black text-[11px] text-rose-500 truncate tracking-tight">⚡ {{ patient.activeCode.title }}</span>
+                      <span class="text-[10px] text-muted truncate hidden sm:inline">• {{ patient.activeCode.windowLabel }}</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-[10px] shrink-0 shadow-2xs">
+                      {{ patient.activeCode.remainingMinutes }} min restantes
+                    </span>
+                  </div>
+                } @else {
+                  <p class="text-xs text-muted truncate leading-relaxed">
                     <span class="font-bold text-main/80">Motivo:</span> {{ patient.chiefComplaint }}
                   </p>
-                </div>
-
-                <!-- 4. BIOMETRIC VITALS STRIP (5 Smooth Filled Containers) -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-                  
-                  <!-- Cell 1: HR -->
-                  <div
-                    [class]="patient.vitals.heartRate > 110 || patient.vitals.heartRate < 50 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
-                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
-                    <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">FC</span>
-                      <span class="material-symbols-rounded text-xs">favorite</span>
-                    </div>
-                    <div class="mt-1">
-                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.heartRate }} <span class="text-[10px] font-normal text-muted">bpm</span>
-                      </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">pulso</span>
-                    </div>
-                  </div>
-
-                  <!-- Cell 2: BP -->
-                  <div
-                    [class]="patient.vitals.bloodPressureSys > 160 || patient.vitals.bloodPressureSys < 90 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
-                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
-                    <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">PA</span>
-                      <span class="material-symbols-rounded text-xs">speed</span>
-                    </div>
-                    <div class="mt-1">
-                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}
-                      </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">mmHg</span>
-                    </div>
-                  </div>
-
-                  <!-- Cell 3: SpO2 -->
-                  <div
-                    [class]="patient.vitals.oxygenSat < 93 ? 'bg-rose-500/15 text-rose-500' : 'bg-surface-low text-main'"
-                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
-                    <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">SpO2</span>
-                      <span class="material-symbols-rounded text-xs">air</span>
-                    </div>
-                    <div class="mt-1">
-                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.oxygenSat }}<span class="text-[10px] font-normal text-muted">%</span>
-                      </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">oxígeno</span>
-                    </div>
-                  </div>
-
-                  <!-- Cell 4: Temperature -->
-                  <div
-                    [class]="patient.vitals.temperature >= 38.5 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
-                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
-                    <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">TEMP</span>
-                      <span class="material-symbols-rounded text-xs">device_thermostat</span>
-                    </div>
-                    <div class="mt-1">
-                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.temperature }}<span class="text-[10px] font-normal text-muted">°C</span>
-                      </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">axilar</span>
-                    </div>
-                  </div>
-
-                  <!-- Cell 5: EVA Pain Scale -->
-                  <div
-                    [class]="patient.vitals.painScale >= 7 ? 'bg-amber-500/15 text-amber-500' : 'bg-surface-low text-main'"
-                    class="p-2.5 rounded-2xl flex flex-col justify-between transition-colors">
-                    <div class="flex items-center justify-between text-[10px] text-muted">
-                      <span class="font-bold">EVA</span>
-                      <span class="material-symbols-rounded text-xs">sentiment_dissatisfied</span>
-                    </div>
-                    <div class="mt-1">
-                      <div class="text-sm sm:text-base font-mono font-black tracking-tight leading-none">
-                        {{ patient.vitals.painScale }}<span class="text-[10px] font-normal text-muted">/10</span>
-                      </div>
-                      <span class="text-[9px] text-muted font-mono block mt-0.5">dolor</span>
-                    </div>
-                  </div>
-
-                </div>
-
-                <!-- 5. TACTILE ACTION BAR (M3 Button Shared Components) -->
-                <div class="pt-1 flex items-center justify-between gap-2 flex-wrap text-xs">
-                  
-                  <!-- Left: Immediate Critical Bed CTA or Reclassify Selector -->
-                  @if (!patient.bedAssignedId && (patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency' || patient.news2.riskLevel === 'high')) {
-                    <m3-button
-                      variant="filled"
-                      size="sm"
-                      icon="bolt"
-                      customClass="bg-rose-600 hover:bg-rose-700 text-white font-black"
-                      (action)="onImmediateShockTrauma(patient.id, $event)">
-                      Asignar Shock Trauma Inmediato
-                    </m3-button>
-                  } @else {
-                    <div class="relative">
-                      @if (activeRetriageId() === patient.id) {
-                        <div class="flex items-center gap-1 p-1 rounded-full bg-surface-highest shadow-sm animate-in zoom-in-95" (click)="$event.stopPropagation()">
-                          <button
-                            type="button"
-                            (click)="applyRetriage(patient.id, 'resuscitation', $event)"
-                            class="px-2.5 py-1 rounded-full text-xs font-black text-rose-500 hover:bg-surface-box transition-colors">
-                            N1
-                          </button>
-                          <button
-                            type="button"
-                            (click)="applyRetriage(patient.id, 'emergency', $event)"
-                            class="px-2.5 py-1 rounded-full text-xs font-black text-orange-500 hover:bg-surface-box transition-colors">
-                            N2
-                          </button>
-                          <button
-                            type="button"
-                            (click)="applyRetriage(patient.id, 'urgent', $event)"
-                            class="px-2.5 py-1 rounded-full text-xs font-black text-amber-500 hover:bg-surface-box transition-colors">
-                            N3
-                          </button>
-                          <button
-                            type="button"
-                            (click)="applyRetriage(patient.id, 'standard', $event)"
-                            class="px-2.5 py-1 rounded-full text-xs font-black text-emerald-500 hover:bg-surface-box transition-colors">
-                            N4
-                          </button>
-                          <button
-                            type="button"
-                            (click)="activeRetriageId.set(null); $event.stopPropagation()"
-                            class="material-symbols-rounded text-sm text-muted hover:text-main px-1.5 cursor-pointer">
-                            close
-                          </button>
-                        </div>
-                      } @else {
-                        <m3-button
-                          variant="tonal"
-                          size="sm"
-                          icon="swap_vert"
-                          (action)="toggleRetriage(patient.id, $event)">
-                          Reclasificar
-                        </m3-button>
-                      }
-                    </div>
-                  }
-
-                  <!-- Right: Bed Assignment / Discharge Buttons -->
-                  <div class="flex items-center gap-2 ml-auto">
-                    @if (!patient.bedAssignedId) {
-                      <m3-button
-                        variant="tonal"
-                        size="sm"
-                        icon="bed"
-                        (action)="openBedAssignment(patient, $event)">
-                        Asignar Cama
-                      </m3-button>
-                    }
-                    <m3-button
-                      variant="text"
-                      size="sm"
-                      (action)="onDischarge(patient.id, $event)">
-                      Alta Médica
-                    </m3-button>
-                  </div>
-                </div>
+                }
 
               </m3-card>
             } @empty {
@@ -805,7 +626,7 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                 }
 
                 <!-- Patient Header Card -->
-                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-2">
+                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-3">
                   <div class="flex items-center justify-between">
                     <span [class]="getTriageBadgeContainerClass(patient.triageLevel)" class="px-3 py-1 rounded-full text-xs font-black uppercase">
                       {{ getTriageBadgeLabel(patient.triageLevel) }}
@@ -816,7 +637,52 @@ type ClinicRightTab = 'beds' | 'detail' | 'admit';
                   <h3 class="text-lg font-black text-main">{{ patient.fullName }}</h3>
                   <p class="text-xs text-muted">{{ patient.ticketCode }} • {{ patient.age }} años • Sexo {{ patient.gender }}</p>
 
-                  <div class="pt-2">
+                  <!-- Reclassify Priority Segment -->
+                  <div class="flex items-center justify-between p-2.5 rounded-2xl bg-surface-low text-xs">
+                    <span class="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                      <span class="material-symbols-rounded text-sm text-primary">swap_vert</span>
+                      <span>Reclasificar:</span>
+                    </span>
+                    <div class="flex items-center gap-1">
+                      <button
+                        type="button"
+                        (click)="applyRetriage(patient.id, 'resuscitation', $event)"
+                        [class.ring-2]="patient.triageLevel === 'resuscitation'"
+                        class="px-2.5 py-1 rounded-full text-xs font-black text-rose-500 bg-rose-500/15 hover:bg-rose-500/25 transition-all">
+                        N1
+                      </button>
+                      <button
+                        type="button"
+                        (click)="applyRetriage(patient.id, 'emergency', $event)"
+                        [class.ring-2]="patient.triageLevel === 'emergency'"
+                        class="px-2.5 py-1 rounded-full text-xs font-black text-orange-500 bg-orange-500/15 hover:bg-orange-500/25 transition-all">
+                        N2
+                      </button>
+                      <button
+                        type="button"
+                        (click)="applyRetriage(patient.id, 'urgent', $event)"
+                        [class.ring-2]="patient.triageLevel === 'urgent'"
+                        class="px-2.5 py-1 rounded-full text-xs font-black text-amber-500 bg-amber-500/15 hover:bg-amber-500/25 transition-all">
+                        N3
+                      </button>
+                      <button
+                        type="button"
+                        (click)="applyRetriage(patient.id, 'standard', $event)"
+                        [class.ring-2]="patient.triageLevel === 'standard'"
+                        class="px-2.5 py-1 rounded-full text-xs font-black text-emerald-500 bg-emerald-500/15 hover:bg-emerald-500/25 transition-all">
+                        N4
+                      </button>
+                      <button
+                        type="button"
+                        (click)="applyRetriage(patient.id, 'non_urgent', $event)"
+                        [class.ring-2]="patient.triageLevel === 'non_urgent'"
+                        class="px-2.5 py-1 rounded-full text-xs font-black text-sky-500 bg-sky-500/15 hover:bg-sky-500/25 transition-all">
+                        N5
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="pt-1">
                     <span class="text-[10px] font-bold text-muted uppercase block mb-1">Motivo de Consulta Principal:</span>
                     <p class="text-xs text-main bg-surface-low p-3 rounded-2xl leading-relaxed">{{ patient.chiefComplaint }}</p>
                   </div>
@@ -1197,9 +1063,9 @@ export class ClinicComponent {
   getPatientCardBorderClass(patient: PatientTriageRecord): string {
     const isSelected = this.clinicService.selectedPatient()?.id === patient.id;
     if (isSelected) {
-      return 'ring-2 ring-primary bg-primary-box/25 shadow-xs';
+      return 'ring-2 ring-primary/80 bg-primary-box/20 shadow-xs border-primary/30';
     }
-    return 'hover:bg-surface-high/40';
+    return 'hover:bg-surface-high/40 transition-colors';
   }
 
   getTriageBadgeContainerClass(level: TriageLevel): string {
