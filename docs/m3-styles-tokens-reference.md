@@ -55,14 +55,14 @@ M3 Expressive uses 5 strictly ordered container levels plus `surface-dim` and `s
 
 | Role Token | Light Ref (OKLCH $L\%$) | Dark Ref (OKLCH $L\%$) | Usage & Purpose |
 | :--- | :--- | :--- | :--- |
-| `--md-sys-color-surface-dim` | `neutral87` (`88.8%`) | `neutral6` (`18.8%`) | Dimmed app stage / recessed plane |
-| `--md-sys-color-surface` | `neutral98` (`98.3%`) | `neutral6` (`18.8%`) | Default application background |
-| `--md-sys-color-surface-bright` | `neutral98` (`98.3%`) | `neutral24` (`34.5%`) | High-contrast raised panels |
-| `--md-sys-color-surface-container-lowest` | `neutral100` (`100%`) | `neutral4` (`16.4%`) | Lowest visual card layer |
-| `--md-sys-color-surface-container-low` | `neutral96` (`96.6%`) | `neutral10` (`22.4%`) | Navigation Rail / Sidebar background |
-| `--md-sys-color-surface-container` | `neutral94` (`94.8%`) | `neutral12` (`24.1%`) | Default Card & List surface (`bg-surface-box`) |
-| `--md-sys-color-surface-container-high` | `neutral92` (`93.1%`) | `neutral17` (`28.4%`) | Active inputs, hovered items, menus |
-| `--md-sys-color-surface-container-highest`| `neutral90` (`91.4%`) | `neutral22` (`32.8%`) | Promoted dialogs, chips, high emphasis |
+| `--md-sys-color-surface-dim` | `neutral87` (`89.5%`) | `10.8%` | Dimmed app stage / recessed plane |
+| `--md-sys-color-surface` | `neutral98` (`98.5%`) | `neutral6` (`12.5%`) | Default application background |
+| `--md-sys-color-surface-bright` | `neutral98` (`98.5%`) | `neutral24` (`28.5%`) | High-contrast raised panels |
+| `--md-sys-color-surface-container-lowest` | `neutral100` (`100%`) | `neutral4` (`9.5%`) | Lowest visual card layer |
+| `--md-sys-color-surface-container-low` | `neutral96` (`96.8%`) | `neutral10` (`15.5%`) | Navigation Rail / Sidebar background |
+| `--md-sys-color-surface-container` | `neutral94` (`95.2%`) | `neutral12` (`18.5%`) | Default Card & List surface (`bg-surface-box`) |
+| `--md-sys-color-surface-container-high` | `neutral92` (`93.5%`) | `neutral17` (`22.0%`) | Active inputs, hovered items, menus |
+| `--md-sys-color-surface-container-highest`| `neutral90` (`91.8%`) | `neutral22` (`25.5%`) | Promoted dialogs, chips, high emphasis |
 
 ### Accent, Fixed & Extended Semantic Roles
 
