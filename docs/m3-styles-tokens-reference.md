@@ -97,35 +97,58 @@ M3 Expressive uses shape as a semantic state indicator (shape morphing). A butto
 
 ---
 
-## 4. Motion System: Curves & Durations
+## 4. Motion System: Easing, Spring Physics & 16 Durations
 
-### Easing Physics Curves
-Never use CSS `ease` or `linear` for layout transforms. M3 relies on non-linear deceleration:
+Google's M3 docs supply the design specification (`N/A` in CSS for 2-segment `Emphasized`); `src/styles/_motion.css` implements the complete executable web engine with automatic `@media (prefers-reduced-motion: reduce)` fallbacks. **Never write raw `300ms` or `ease-in-out` values in feature code.**
 
+### 4.1 Easing Sets (Emphasized & Standard)
+* **Emphasized Set** (Focal points, container transforms, asymmetric enter/exit):
+  * `--md-sys-motion-easing-emphasized`: 10-stop `linear(...)` curve approximating the 2-segment Android path interpolator.
+  * `--md-sys-motion-easing-emphasized-decelerate`: `cubic-bezier(0.05, 0.7, 0.1, 1)` (Entering surfaces, pair with `medium4` 400ms or `long2` 500ms).
+  * `--md-sys-motion-easing-emphasized-accelerate`: `cubic-bezier(0.3, 0, 0.8, 0.15)` (Exiting surfaces, pair with `short4` 200ms).
+* **Standard Set** (Utilitarian, peer navigation, compact controls):
+  * `--md-sys-motion-easing-standard`: `cubic-bezier(0.2, 0, 0, 1)`
+  * `--md-sys-motion-easing-standard-decelerate`: `cubic-bezier(0, 0, 0, 1)`
+  * `--md-sys-motion-easing-standard-accelerate`: `cubic-bezier(0.3, 0, 1, 1)`
+
+### 4.2 Motion Physics: Spatial vs. Effects Springs
+Material 3 divides spring physics into two disjoint families:
+* **Spatial Family (`damping: 0.9`, underdamped)**: Animates geometry, position, scale, and width/height. Permits natural momentum overshoot.
+* **Effects Family (`damping: 1.0`, critically damped)**: Animates optical properties (opacity, color, borders, elevation). Zero overshoot/bounce to prevent visual flickering.
+
+| Family / Preset | Style | Curve Token (`--md-sys-motion-spring-*`) | Web Curve | Duration |
+| :--- | :--- | :--- | :--- | :--- |
+| **Fast Spatial** | Expressive | `expressive-fast-spatial-curve` | `cubic-bezier(0.42, 1.67, 0.21, 0.9)` | `350ms` |
+| **Default Spatial** | Expressive | `expressive-default-spatial-curve` | `cubic-bezier(0.38, 1.21, 0.22, 1)` | `500ms` |
+| **Slow Spatial** | Expressive | `expressive-slow-spatial-curve` | `cubic-bezier(0.39, 1.29, 0.35, 0.98)` | `650ms` |
+| **Fast / Default / Slow Spatial** | Standard | `standard-*-spatial-curve` | `cubic-bezier(0.27, 1.06, 0.18, 1)` | `350 / 500 / 750ms` |
+| **Fast Effects** | Both | `*-fast-effects-curve` | `cubic-bezier(0.31, 0.94, 0.34, 1)` | `150ms` |
+| **Default Effects** | Both | `*-default-effects-curve` | `cubic-bezier(0.34, 0.8, 0.34, 1)` | `200ms` |
+| **Slow Effects** | Both | `*-slow-effects-curve` | `cubic-bezier(0.34, 0.88, 0.34, 1)` | `300ms` |
+
+> **Architectural Distinction**: Use **Expressive** for focal moments (modals, expanding cards, FABs, celebratory feedback) and **Standard** (`+6%` overshoot) for dense, high-frequency enterprise workflows (POS grids, clinical tables, repeated filters) to prevent user fatigue.
+
+### 4.3 Canonical 16 Duration Scale
 ```css
-/* Flagship Emphasized Decelerate (Used for Container Transform and Dialogs) */
---md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+--md-sys-motion-duration-short1: 50ms;        /* Micro press */
+--md-sys-motion-duration-short2: 100ms;       /* Fast exit cross-fade */
+--md-sys-motion-duration-short3: 150ms;       /* Ripple / fast state layer */
+--md-sys-motion-duration-short4: 200ms;       /* Controls, switches, rapid exits */
 
-/* Expressive Spring Feedback (Used for button taps and micro-interactions) */
---md-sys-motion-easing-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+--md-sys-motion-duration-medium1: 250ms;      /* Lateral tabs, top-level fade-through */
+--md-sys-motion-duration-medium2: 300ms;      /* Forward/backward hierarchical push */
+--md-sys-motion-duration-medium3: 350ms;      /* Fast spatial spring */
+--md-sys-motion-duration-medium4: 400ms;      /* Asymmetric surface enter, FAB -> Sheet */
 
-/* Standard Decelerate (Used for simple fades and exits) */
---md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-```
+--md-sys-motion-duration-long1: 450ms;        /* Medium-large transitions */
+--md-sys-motion-duration-long2: 500ms;        /* Container Transform flagship (Card -> Detail) */
+--md-sys-motion-duration-long3: 550ms;        /* Full-viewport container expand */
+--md-sys-motion-duration-long4: 600ms;        /* Full-screen hierarchical transitions */
 
-### Durations Scale
-
-```css
---md-sys-motion-duration-short1: 50ms;
---md-sys-motion-duration-short2: 100ms;
---md-sys-motion-duration-short3: 150ms;
---md-sys-motion-duration-short4: 200ms;  /* Micro-interactions, ripples */
-
---md-sys-motion-duration-medium1: 250ms; /* Container morphing start */
---md-sys-motion-duration-medium2: 300ms; /* Card and sheet expansions */
---md-sys-motion-duration-medium4: 400ms;
-
---md-sys-motion-duration-long2: 500ms;   /* Full page view transitions */
+--md-sys-motion-duration-extra-long1: 700ms;  /* Stage recess choreography */
+--md-sys-motion-duration-extra-long2: 800ms;  /* Skeleton -> resolved state shimmer */
+--md-sys-motion-duration-extra-long3: 900ms;  /* Guided onboarding sequences */
+--md-sys-motion-duration-extra-long4: 1000ms; /* Ambient carousel / splash screen exit */
 ```
 
 ---

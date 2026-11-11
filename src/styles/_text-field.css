@@ -23,10 +23,10 @@
   box-sizing: border-box;
   border-radius: var(--md-sys-shape-corner-large, 16px); /* Unified Expressive 16px curvature */
   transition:
-    background-color 200ms var(--md-sys-motion-easing-standard),
-    border-color 200ms var(--md-sys-motion-easing-standard),
-    box-shadow 220ms var(--md-sys-motion-easing-standard),
-    transform 150ms var(--md-sys-motion-easing-spring);
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
 }
 
 /* --- 1. FILLED VARIANT (Subtle Tonal Recess) --- */
@@ -120,12 +120,12 @@
   font-family: inherit;
   color: var(--md-sys-color-on-surface-variant);
   transition:
-    top 180ms var(--md-sys-motion-easing-emphasized),
-    font-size 180ms var(--md-sys-motion-easing-emphasized),
-    font-weight 180ms var(--md-sys-motion-easing-standard),
-    color 180ms var(--md-sys-motion-easing-standard),
-    opacity 180ms var(--md-sys-motion-easing-standard),
-    transform 180ms var(--md-sys-motion-easing-emphasized);
+    top var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized),
+    font-size var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized),
+    font-weight var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    opacity var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -175,7 +175,7 @@
   height: 44px;
   flex-shrink: 0;
   color: var(--md-sys-color-on-surface-variant);
-  transition: color 150ms var(--md-sys-motion-easing-standard);
+  transition: color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
 }
 
 .m3-text-field-leading {
@@ -203,8 +203,8 @@
   height: 32px;
   border-radius: var(--md-sys-shape-corner-full, 9999px);
   transition:
-    background-color 150ms var(--md-sys-motion-easing-standard),
-    transform 120ms var(--md-sys-motion-easing-spring);
+    background-color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-spring);
 }
 
 .m3-text-field-trailing button:hover {
@@ -306,9 +306,9 @@
   cursor: pointer;
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--md-sys-color-shadow) 5%, transparent);
   transition:
-    border-color 180ms var(--md-sys-motion-easing-standard),
-    box-shadow 180ms var(--md-sys-motion-easing-standard),
-    background-color 180ms var(--md-sys-motion-easing-standard);
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 -960 960 960' width='20' fill='%23777'%3E%3Cpath d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;

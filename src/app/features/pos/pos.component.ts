@@ -50,7 +50,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 [ngModel]="posService.searchQuery()"
                 (ngModelChange)="posService.searchQuery.set($event)"
                 placeholder="Buscar alimentos, bebidas o SKU... [F2]"
-                class="w-full text-xs pl-9 pr-9 py-2 rounded-xl bg-surface-box border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-2xs" />
+                class="w-full text-xs pl-9 pr-9 py-2 rounded-xl bg-surface-box border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all m3-transition-fast shadow-2xs" />
               @if (posService.searchQuery()) {
                 <button 
                   type="button" 
@@ -68,7 +68,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
               type="button" 
               (click)="toggleShortcutsModal(true)"
               title="Atajos de teclado (F2, F4, Ctrl+Enter, Esc)"
-              class="btn-m3 h-8.5 px-3 rounded-xl bg-surface-box hover:bg-surface-high text-main border border-outline-sub flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors shrink-0 active:scale-95">
+              class="btn-m3 h-8.5 px-3 rounded-xl bg-surface-box hover:bg-surface-high text-main border border-outline-sub flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors m3-transition-fast shrink-0 active:scale-95">
               <span class="material-symbols-rounded text-base text-primary">keyboard</span>
               <span class="text-xs font-bold hidden md:inline">Atajos</span>
             </button>
@@ -101,12 +101,12 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 [class.ring-inset]="qty > 0"
                 [class.ring-primary]="qty > 0"
                 [class.border-primary]="qty > 0"
-                class="group relative flex flex-col justify-between rounded-2xl bg-surface-box border border-outline-sub hover:border-outline hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 ease-out cursor-pointer select-none overflow-hidden active:scale-[0.985]"
+                class="group relative flex flex-col justify-between rounded-2xl bg-surface-box border border-outline-sub hover:border-outline hover:-translate-y-0.5 hover:shadow-md transition-all m3-transition-standard cursor-pointer select-none overflow-hidden active:scale-[0.985]"
                 [ngClass]="qty > 0 ? 'bg-primary/10 shadow-sm' : 'shadow-2xs'">
 
-                <!-- BADGE FLOTANTE DE CANTIDAD EN ORDEN ACTIVA -->
+                <!-- BADGE FLOTANTE DE CANTIDAD EN ORDEN ACTIVA (SPRING POP M3) -->
                 @if (qty > 0) {
-                  <div class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-mono font-black shadow-lg flex items-center gap-1.5 z-20 animate-in zoom-in-75">
+                  <div class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-mono font-black shadow-lg flex items-center gap-1.5 z-20 m3-anim-spring-pop">
                     <span class="material-symbols-rounded text-sm">shopping_bag</span>
                     <span>{{ qty }}x</span>
                   </div>
@@ -120,7 +120,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                       [alt]="product.name" 
                       (error)="imageFailed[product.id] = true"
                       loading="lazy"
-                      class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      class="w-full h-full object-cover transition-transform m3-transition-emphasized group-hover:scale-105" />
                   } @else {
                     <!-- Fallback cromático vectorial con icono -->
                     <div 
@@ -159,7 +159,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 <!-- CONTENIDO DEL PRODUCTO: LIMPIO CON DOBLE BOTONERA TÁCTIL -->
                 <div class="p-3.5 flex-1 flex flex-col justify-between space-y-3">
                   <div>
-                    <h4 class="font-extrabold text-sm text-main group-hover:text-primary transition-colors line-clamp-1 leading-snug">
+                    <h4 class="font-extrabold text-sm text-main group-hover:text-primary transition-colors m3-transition-fast line-clamp-1 leading-snug">
                       {{ product.name }}
                     </h4>
                     <!-- Especificación de origen/receta única sin repetir la categoría -->
@@ -175,19 +175,19 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                       type="button" 
                       title="Personalizar receta o notas"
                       (click)="$event.stopPropagation(); openCustomizeModal(product)"
-                      class="btn-m3 flex-1 text-xs font-bold py-2 px-3 rounded-full bg-surface-high hover:bg-primary/10 hover:border-primary/40 hover:text-primary text-main border border-outline-sub flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all">
+                      class="btn-m3 flex-1 text-xs font-bold py-2 px-3 rounded-full bg-surface-high hover:bg-primary/10 hover:border-primary/40 hover:text-primary text-main border border-outline-sub flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all m3-transition-fast">
                       <span class="material-symbols-rounded text-sm text-primary">tune</span>
                       <span>Opciones</span>
                     </button>
 
                     @if (qty > 0) {
-                      <!-- Stepper Táctil Activo en Tono Primario -->
-                      <div class="flex items-center gap-1 bg-primary text-on-primary rounded-full p-1 shadow-xs" (click)="$event.stopPropagation()">
+                      <!-- Stepper Táctil Activo en Tono Primario (SPATIAL POP) -->
+                      <div class="flex items-center gap-1 bg-primary text-on-primary rounded-full p-1 shadow-xs m3-anim-spring-pop" (click)="$event.stopPropagation()">
                         <button 
                           type="button" 
                           title="Restar cantidad"
                           (click)="posService.updateQuantity(product.id, -1)"
-                          class="btn-m3 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer transition-colors">
+                          class="btn-m3 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer transition-colors m3-transition-fast">
                           <span class="material-symbols-rounded text-sm font-bold">remove</span>
                         </button>
                         <span class="text-xs font-mono font-bold w-5 text-center">{{ qty }}</span>
@@ -195,7 +195,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                           type="button" 
                           title="Sumar cantidad"
                           (click)="posService.updateQuantity(product.id, 1)"
-                          class="btn-m3 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer transition-colors">
+                          class="btn-m3 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer transition-colors m3-transition-fast">
                           <span class="material-symbols-rounded text-sm font-bold">add</span>
                         </button>
                       </div>
@@ -205,7 +205,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                         type="button" 
                         title="Agregar a la comanda"
                         (click)="$event.stopPropagation(); posService.addToCart(product)"
-                        class="btn-m3 flex-1 text-xs font-bold py-2 px-3 rounded-full bg-primary text-on-primary hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all">
+                        class="btn-m3 flex-1 text-xs font-bold py-2 px-3 rounded-full bg-primary text-on-primary hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all m3-transition-fast">
                         <span class="material-symbols-rounded text-sm font-bold">shopping_bag</span>
                         <span>Añadir</span>
                       </button>
@@ -215,7 +215,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
 
               </div>
             } @empty {
-              <div class="col-span-full p-12 text-center bg-surface-box border border-outline-sub rounded-2xl space-y-2">
+              <div class="col-span-full p-12 text-center bg-surface-box border border-outline-sub rounded-2xl space-y-2 m3-anim-fade-through">
                 <span class="material-symbols-rounded text-4xl text-muted">search_off</span>
                 <h4 class="font-bold text-base">No se encontraron productos</h4>
                 <p class="text-xs text-muted">Revisá el término de búsqueda o cambiá de categoría.</p>
@@ -252,7 +252,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="setChannel('dine-in')"
                 [class]="posService.serviceChannel() === 'dine-in' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 truncate text-xs">
+                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all m3-transition-fast truncate text-xs">
                 <span class="material-symbols-rounded text-sm">restaurant</span>
                 <span>{{ posService.tableNumber() }}</span>
               </button>
@@ -260,7 +260,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="setChannel('takeaway')"
                 [class]="posService.serviceChannel() === 'takeaway' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 truncate text-xs">
+                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all m3-transition-fast truncate text-xs">
                 <span class="material-symbols-rounded text-sm">shopping_bag</span>
                 <span>Llevar</span>
               </button>
@@ -268,7 +268,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="setChannel('delivery')"
                 [class]="posService.serviceChannel() === 'delivery' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-150 truncate text-xs">
+                class="btn-m3 py-1.5 px-2 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all m3-transition-fast truncate text-xs">
                 <span class="material-symbols-rounded text-sm">two_wheeler</span>
                 <span>Delivery</span>
               </button>
@@ -280,7 +280,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="posService.setVoucherType('boleta')"
                 [class]="posService.voucherType() === 'boleta' ? 'bg-sec-box text-on-sec-box font-bold shadow-xs' : 'text-muted hover:text-main'"
-                class="btn-m3 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-150">
+                class="btn-m3 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all m3-transition-fast">
                 <span class="material-symbols-rounded text-sm">person</span>
                 Boleta de Venta
               </button>
@@ -288,7 +288,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="posService.setVoucherType('factura')"
                 [class]="posService.voucherType() === 'factura' ? 'bg-sec-box text-on-sec-box font-bold shadow-xs' : 'text-muted hover:text-main'"
-                class="btn-m3 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-150">
+                class="btn-m3 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all m3-transition-fast">
                 <span class="material-symbols-rounded text-sm">domain</span>
                 Factura SUNAT
               </button>
@@ -303,7 +303,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
               <button 
                 type="button"
                 (click)="toggleCustomerModal(true)"
-                class="btn-m3 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold hover:bg-primary/20 text-xs cursor-pointer transition-colors">
+                class="btn-m3 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold hover:bg-primary/20 text-xs cursor-pointer transition-colors m3-transition-fast">
                 Editar [F4]
               </button>
             </div>
@@ -312,7 +312,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
           <!-- B. STREAM DE ÍTEMS CON SCROLL INTERNO (NUNCA EXPULSA EL TOTAL) -->
           <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar p-3.5 space-y-2.5">
             @for (item of posService.cart(); track item.product.id) {
-              <div class="flex items-start justify-between gap-2 pb-2.5 border-b border-outline-sub/60 last:border-b-0 last:pb-0">
+              <div class="flex items-start justify-between gap-2 pb-2.5 border-b border-outline-sub/60 last:border-b-0 last:pb-0 m3-anim-item-in">
                 <div class="min-w-0 flex-1">
                   <h5 class="font-bold text-xs text-main truncate">{{ item.product.name }}</h5>
                   <div class="text-[11px] text-muted font-mono mt-0.5">
@@ -357,7 +357,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 </div>
               </div>
             } @empty {
-              <div class="py-14 text-center space-y-2 text-muted">
+              <div class="py-14 text-center space-y-2 text-muted m3-anim-fade-through">
                 <span class="material-symbols-rounded text-3xl">shopping_cart</span>
                 <p class="text-xs font-medium">No hay productos en la comanda.</p>
                 <p class="text-[11px]">Tocá una tarjeta del catálogo para sumarlo.</p>
@@ -377,7 +377,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                     type="button"
                     (click)="posService.discountPercent.set(pct)"
                     [class]="posService.discountPercent() === pct ? 'bg-primary text-on-primary font-bold shadow-xs' : 'bg-surface-high text-muted hover:text-main'"
-                    class="btn-m3 px-2.5 py-0.5 rounded-full text-[11px] font-mono cursor-pointer transition-colors">
+                    class="btn-m3 px-2.5 py-0.5 rounded-full text-[11px] font-mono cursor-pointer transition-colors m3-transition-fast">
                     {{ pct === 0 ? '0%' : '-' + pct + '%' }}
                   </button>
                 }
@@ -391,7 +391,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 <span class="font-mono">S/ {{ posService.subtotal().toFixed(2) }}</span>
               </div>
               @if (posService.discount() > 0) {
-                <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-semibold text-xs">
+                <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-semibold text-xs m3-anim-fade-through">
                   <span>Descuento Aplicado ({{ posService.discountPercent() }}%)</span>
                   <span class="font-mono">- S/ {{ posService.discount().toFixed(2) }}</span>
                 </div>
@@ -421,7 +421,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 [disabled]="posService.cart().length === 0"
                 (click)="openCheckoutModal()"
-                class="btn-m3 flex-1 font-black shadow-md rounded-full py-3 px-5 bg-primary text-on-primary disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 active:scale-95 transition-all text-sm">
+                class="btn-m3 flex-1 font-black shadow-md rounded-full py-3 px-5 bg-primary text-on-primary disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 active:scale-95 transition-all m3-transition-standard text-sm">
                 <span class="material-symbols-rounded text-xl">payments</span>
                 <span>Cobrar S/ {{ posService.total().toFixed(2) }} [Enter]</span>
               </button>
@@ -454,7 +454,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
             <button 
               type="button"
               (click)="closeCheckoutModal()" 
-              class="btn-m3 p-1 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer active:scale-95 transition-all">
+              class="btn-m3 p-1 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer active:scale-95 transition-all m3-transition-fast">
               <span class="material-symbols-rounded text-lg">close</span>
             </button>
           </div>
@@ -482,7 +482,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="posService.setPaymentMethod('cash')"
                 [class]="posService.paymentMethod() === 'cash' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-main hover:bg-surface-highest'"
-                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs">
+                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors m3-transition-fast text-xs">
                 <span class="material-symbols-rounded text-base">payments</span>
                 <span>Efectivo</span>
               </button>
@@ -491,7 +491,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="posService.setPaymentMethod('yape')"
                 [class]="posService.paymentMethod() === 'yape' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-main hover:bg-surface-highest'"
-                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs">
+                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors m3-transition-fast text-xs">
                 <span class="material-symbols-rounded text-base">qr_code_2</span>
                 <span>Yape / Plin</span>
               </button>
@@ -500,16 +500,16 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="button"
                 (click)="posService.setPaymentMethod('card')"
                 [class]="posService.paymentMethod() === 'card' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-main hover:bg-surface-highest'"
-                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs">
+                class="btn-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-colors m3-transition-fast text-xs">
                 <span class="material-symbols-rounded text-base">credit_card</span>
                 <span>Tarjeta</span>
               </button>
             </div>
           </div>
 
-          <!-- 1. DETALLE EFECTIVO: VUELTO Y BILLETES RÁPIDOS -->
+          <!-- 1. DETALLE EFECTIVO: VUELTO Y BILLETES RÁPIDOS (PATRÓN LATERAL M3) -->
           @if (posService.paymentMethod() === 'cash') {
-            <div class="space-y-3 p-4 bg-surface-high/60 rounded-2xl border border-outline-sub">
+            <div class="space-y-3 p-4 bg-surface-high/60 rounded-2xl border border-outline-sub m3-anim-lateral">
               <div class="flex items-center justify-between">
                 <label class="text-xs font-bold text-main">Monto Entregado por Cliente</label>
                 <button 
@@ -558,9 +558,9 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
             </div>
           }
 
-          <!-- 2. DETALLE YAPE / PLIN: QR Y CÓDIGO DE VALIDACIÓN -->
+          <!-- 2. DETALLE YAPE / PLIN: QR Y CÓDIGO DE VALIDACIÓN (PATRÓN LATERAL M3) -->
           @if (posService.paymentMethod() === 'yape') {
-            <div class="space-y-3 p-4 bg-surface-high/60 rounded-2xl border border-outline-sub text-center">
+            <div class="space-y-3 p-4 bg-surface-high/60 rounded-2xl border border-outline-sub text-center m3-anim-lateral">
               <div class="flex flex-col items-center justify-center space-y-1">
                 <div class="w-32 h-32 bg-white p-2 rounded-xl border border-outline-sub grid place-items-center shadow-sm">
                   <svg class="w-full h-full text-[#742284]" viewBox="0 0 100 100" fill="currentColor">
@@ -593,9 +593,9 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
             </div>
           }
 
-          <!-- 3. DETALLE TARJETA POS: CONTACTLESS / CHIP -->
+          <!-- 3. DETALLE TARJETA POS: CONTACTLESS / CHIP (PATRÓN LATERAL M3) -->
           @if (posService.paymentMethod() === 'card') {
-            <div class="space-y-2 p-5 bg-surface-high/60 rounded-2xl border border-outline-sub text-center">
+            <div class="space-y-2 p-5 bg-surface-high/60 rounded-2xl border border-outline-sub text-center m3-anim-lateral">
               <div class="w-12 h-12 mx-auto rounded-full bg-primary/10 text-primary grid place-items-center animate-pulse">
                 <span class="material-symbols-rounded text-2xl">contactless</span>
               </div>
@@ -638,6 +638,10 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
         
         <!-- CABECERA DE TICKET FISCAL -->
         <div class="text-center space-y-0.5 border-b border-dashed border-zinc-400 pb-2.5">
+          <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mb-1 m3-anim-spring-pop">
+            <span class="material-symbols-rounded text-xs">check_circle</span>
+            <span>VENTA COMPLETADA</span>
+          </div>
           <div class="text-sm font-black tracking-tight">EXPRESSIVE CAFÉ & BISTRO</div>
           <div class="text-[10px]">R.U.C. 20601234567</div>
           <div class="text-[10px]">Av. Larco 450, Miraflores - Lima</div>
@@ -764,7 +768,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
           <button 
             type="button"
             (click)="toggleCustomerModal(false)" 
-            class="btn-m3 p-1 rounded-full text-muted hover:text-main cursor-pointer active:scale-95 transition-all">
+            class="btn-m3 p-1 rounded-full text-muted hover:text-main cursor-pointer active:scale-95 transition-all m3-transition-fast">
             <span class="material-symbols-rounded text-lg">close</span>
           </button>
         </div>
@@ -775,14 +779,14 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
               type="button"
               (click)="setCustomerType('DNI')"
               [class]="editCustomerDocType === 'DNI' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-              class="btn-m3 py-2 rounded-full text-xs cursor-pointer transition-colors active:scale-95">
+              class="btn-m3 py-2 rounded-full text-xs cursor-pointer transition-colors m3-transition-fast active:scale-95">
               Persona Natural (DNI)
             </button>
             <button 
               type="button"
               (click)="setCustomerType('RUC')"
               [class]="editCustomerDocType === 'RUC' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-              class="btn-m3 py-2 rounded-full text-xs cursor-pointer transition-colors active:scale-95">
+              class="btn-m3 py-2 rounded-full text-xs cursor-pointer transition-colors m3-transition-fast active:scale-95">
               Empresa Jurídica (RUC)
             </button>
           </div>
@@ -868,7 +872,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
           <img 
             [src]="customizingProduct.imageUrl" 
             [alt]="customizingProduct.name" 
-            class="w-full h-full object-cover object-center transition-transform duration-500 ease-out hover:scale-105" />
+            class="w-full h-full object-cover object-center transition-transform m3-transition-spatial hover:scale-105" />
           
           <!-- Sutil gradiente solo en la parte superior para dar contraste a los botones flotantes -->
           <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"></div>
@@ -884,7 +888,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
             type="button"
             (click)="closeCustomizeModal()" 
             title="Cerrar personalización"
-            class="btn-m3 absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md text-white grid place-items-center cursor-pointer border border-white/20 transition-all hover:scale-105 active:scale-95 shadow-md">
+            class="btn-m3 absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md text-white grid place-items-center cursor-pointer border border-white/20 transition-all m3-transition-fast hover:scale-105 active:scale-95 shadow-md">
             <span class="material-symbols-rounded text-lg">close</span>
           </button>
         </div>
@@ -933,7 +937,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                   type="button"
                   (click)="selectedBaseOption = base.label"
                   [class]="selectedBaseOption === base.label ? 'bg-primary text-on-primary font-bold shadow-xs border-primary' : 'bg-surface-high hover:bg-surface-highest text-main border-outline-sub'"
-                  class="btn-m3 py-2 px-3 rounded-xl border text-xs text-left flex items-center justify-between cursor-pointer transition-colors active:scale-95">
+                  class="btn-m3 py-2 px-3 rounded-xl border text-xs text-left flex items-center justify-between cursor-pointer transition-colors m3-transition-fast active:scale-95">
                   <span class="truncate">{{ base.name }}</span>
                   <span class="font-mono text-[11px] opacity-85 shrink-0 ml-1">{{ base.extraPrice > 0 ? '+S/ ' + base.extraPrice.toFixed(2) : 'Incl.' }}</span>
                 </button>
@@ -952,7 +956,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                   type="button"
                   (click)="toggleExtra(extra.label)"
                   [class]="isExtraSelected(extra.label) ? 'bg-primary-box text-on-primary-box border-primary font-bold shadow-xs' : 'bg-surface-high hover:bg-surface-highest text-main border-outline-sub'"
-                  class="btn-m3 py-1.5 px-3 rounded-full border text-xs flex items-center gap-1.5 cursor-pointer transition-colors active:scale-95">
+                  class="btn-m3 py-1.5 px-3 rounded-full border text-xs flex items-center gap-1.5 cursor-pointer transition-colors m3-transition-fast active:scale-95">
                   <span class="material-symbols-rounded text-sm font-bold">
                     {{ isExtraSelected(extra.label) ? 'check' : 'add' }}
                   </span>
@@ -976,7 +980,7 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
                 type="text"
                 [(ngModel)]="customizeNotes"
                 placeholder="Ej. Sin azúcar, bien caliente, salsa aparte..."
-                class="w-full text-xs pl-9 pr-3.5 py-2.5 rounded-xl bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all" />
+                class="w-full text-xs pl-9 pr-3.5 py-2.5 rounded-xl bg-surface-high border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all m3-transition-fast" />
             </div>
           </div>
         </div>
@@ -986,13 +990,13 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
           <button 
             type="button"
             (click)="closeCustomizeModal()" 
-            class="btn-m3 py-2 px-4 rounded-full text-xs font-bold text-muted hover:text-main hover:bg-surface-highest transition-colors cursor-pointer active:scale-95">
+            class="btn-m3 py-2 px-4 rounded-full text-xs font-bold text-muted hover:text-main hover:bg-surface-highest transition-colors m3-transition-fast cursor-pointer active:scale-95">
             Cancelar
           </button>
           <button 
             type="button"
             (click)="addCustomizedToCart()"
-            class="btn-m3 py-2.5 px-5 rounded-full bg-primary text-on-primary font-bold text-xs flex items-center gap-2 hover:brightness-110 shadow-sm hover:shadow-md cursor-pointer active:scale-95 transition-all">
+            class="btn-m3 py-2.5 px-5 rounded-full bg-primary text-on-primary font-bold text-xs flex items-center gap-2 hover:brightness-110 shadow-sm hover:shadow-md cursor-pointer active:scale-95 transition-all m3-transition-standard">
             <span class="material-symbols-rounded text-base font-bold">shopping_bag</span>
             <span>Añadir a Comanda (S/ {{ calculatedModalPrice.toFixed(2) }})</span>
           </button>

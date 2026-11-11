@@ -75,7 +75,8 @@ export class DialogService {
         this.activeTrigger.set(null);
         this.activeTaskId.set(null);
         this.resetDraftForm();
-      }
+      },
+      true
     );
   }
 
@@ -85,7 +86,8 @@ export class DialogService {
 
     this.runViewTransition(
       () => this.isHeroExpanded.set(expand),
-      () => this.activeTransition.set(null)
+      () => this.activeTransition.set(null),
+      !expand
     );
   }
 
@@ -150,14 +152,18 @@ export class DialogService {
     this.draftNotes.set('');
   }
 
-  private runViewTransition(update: () => void, cleanup: () => void): void {
+  private runViewTransition(update: () => void, cleanup: () => void, isExiting = false): void {
     const doc = document as any;
     if (typeof doc !== 'undefined' && typeof doc.startViewTransition === 'function') {
+      if (isExiting) {
+        doc.documentElement?.classList.add('vt-exiting');
+      }
       const transition = doc.startViewTransition(() => {
         update();
         this.appRef.tick();
       });
       transition.finished.finally(() => {
+        doc.documentElement?.classList.remove('vt-exiting');
         cleanup();
         this.appRef.tick();
       });

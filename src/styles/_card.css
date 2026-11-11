@@ -9,10 +9,10 @@
   border-radius: var(--md-sys-shape-corner-extra-large, 28px);
   color: var(--md-sys-color-on-surface);
   transition: 
-    background-color 200ms var(--md-sys-motion-easing-standard),
-    box-shadow 240ms var(--md-sys-motion-easing-standard),
-    transform 200ms var(--md-sys-motion-easing-spring),
-    border-color 200ms var(--md-sys-motion-easing-standard);
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-medium1, 240ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-spring),
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
   box-sizing: border-box;
 }
 
@@ -67,3 +67,4 @@
 .m3-card-pad-md   { padding: 20px; }
 .m3-card-pad-lg   { padding: 24px; }
 .m3-card-pad-xl   { padding: 32px; }
+

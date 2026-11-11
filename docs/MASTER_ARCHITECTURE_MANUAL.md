@@ -102,6 +102,25 @@ When sitting down to build a new screen, feature, or complete enterprise applica
      3. Add the navigation item in `src/app/shared/ui/navigation.component.ts`.
    * The new module instantly inherits Stage Recess depth, 60 FPS View Transitions, circular dark mode, and OKLCH color science automatically.
 
+### 0.7 Motion Execution Playbook: The 3-Filter Rule & Zero-Glitch CSS Laws
+
+Before writing any transition or animation in a feature module, apply this 3-filter engineering checklist:
+
+1. **Filter 1 — DOM Lifecycle (Does the source element survive?)**:
+   * **Survives in the same component tree** (e.g., Card expand, FAB &rarr; Bar, Accordion): Use **CSS Transitions** with `overflow-hidden` and bounded geometric dimensions. Do NOT trigger `startViewTransition` for local same-component state.
+   * **Destroyed & replaced** (e.g., Route change `/inventory` &rarr; `/inventory/42`, or global Overlay Dialog): Use the **View Transitions API** (`dialog-transform`, `hero-transform`) so the GPU morphs snapshots across disjoint DOM trees.
+2. **Filter 2 — Physics Family (Geometry vs. Optics in `src/styles/_motion.css`)**:
+   * **Spatial (Size / Position / Shape)**: Use `--md-sys-motion-duration-long2` (`500ms`) + `--md-sys-motion-easing-emphasized-decelerate` for Container Transform, or Expressive/Standard Spatial spring curves ($\zeta = 0.9$, permits subtle overshoot).
+   * **Effects (Color / Opacity / Border)**: Use `--md-sys-motion-spring-*-effects-curve` ($\zeta = 1.0$, zero bounce) or `--md-sys-motion-easing-standard`.
+3. **Filter 3 — Zero Magic Numbers**:
+   * Always reference `var(--md-sys-motion-*)`. Never hardcode `300ms` or `ease-in-out`, so `@media (prefers-reduced-motion: reduce)` works globally without extra code.
+
+#### ⚠️ Critical CSS Layout Traps (Never Repeat)
+* **The `max-width: none` Explosion Trap**: NEVER toggle `w-full max-w-md` in the expanded state against `w-72` (which has `max-width: none`) in the collapsed state. At $t = 0\text{ms}$ on collapse, the browser snaps `max-width` to `none` while `width` still interpolates from `100%`, causing the card to **explode horizontally across the parent container** before shrinking.
+  * **Fix**: Keep `max-w-full` invariant in static `class`, and interpolate pure explicit numeric widths (`w-72` &harr; `w-[448px]`) and heights (`h-16` &harr; `h-48`).
+* **The `height: auto` Snap & Blank Void Trap**: CSS `transition: all` cannot interpolate `height: auto`. Removing inner DOM nodes via `@if` at $t = 0\text{ms}$ while shrinking a tall container over `500ms` leaves an empty hollow void collapsing on screen.
+  * **Fix**: Keep inner content mounted inside `overflow-hidden` and fade it out asynchronously using `--md-sys-motion-duration-short2` (`100ms`, `0ms` delay) on collapse while fading in over `medium2` (`300ms`, slight delay) on expansion.
+
 ---
 
 ## 1. System Architecture & Directory Blueprint

@@ -9,7 +9,7 @@
 .state-layer {
   position: relative;
   overflow: hidden;
-  transition: transform 150ms var(--md-sys-motion-easing-spring);
+  transition: transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
 }
 
 .state-layer::before {
@@ -20,7 +20,7 @@
   background-color: currentColor;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 120ms var(--md-sys-motion-easing-linear);
+  transition: opacity var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-linear);
 }
 
 /* Hover: 8% */
@@ -46,7 +46,7 @@
    Ensures WCAG 2.2 AA / AAA compliance across any surface */
 .focus-ring-m3 {
   outline: none;
-  transition: box-shadow 150ms var(--md-sys-motion-easing-standard);
+  transition: box-shadow var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
 }
 
 .focus-ring-m3:focus-visible {
@@ -84,3 +84,4 @@
   border: 1.5px dashed var(--md-sys-color-primary);
   background-color: oklch(from var(--md-sys-color-primary) l c h / 0.15);
 }
+

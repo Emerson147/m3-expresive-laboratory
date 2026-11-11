@@ -60,7 +60,7 @@
   left: 0;
   background-color: var(--m3-progress-active, var(--md-sys-color-primary));
   border-radius: inherit;
-  transition: width 250ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+  transition: width var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
   will-change: width;
 }
 
@@ -72,7 +72,7 @@
   left: 0;
   background-color: var(--m3-progress-container, var(--md-sys-color-primary-container));
   border-radius: inherit;
-  transition: width 250ms ease;
+  transition: width var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
   will-change: width;
 }
 
@@ -198,7 +198,7 @@
   fill: none;
   stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
   opacity: 0.75;
-  transition: stroke 200ms ease;
+  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 /* Active Indicator Circle */
@@ -206,12 +206,12 @@
   fill: none;
   stroke: var(--m3-progress-active, currentColor);
   stroke-linecap: round;
-  transition: stroke-dashoffset 300ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+  transition: stroke-dashoffset var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
 }
 
 .m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-indicator {
   stroke: var(--m3-progress-active, currentColor);
-  animation: m3CircularDash 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: m3CircularDash 1.4s var(--md-sys-motion-easing-legacy, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
   transform-origin: center center;
 }
 
@@ -334,20 +334,20 @@
   stroke: var(--m3-progress-active, var(--md-sys-color-primary));
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: stroke 200ms ease;
+  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 .m3-linear-wavy-track-line {
   stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
   stroke-linecap: round;
-  transition: stroke 200ms ease;
+  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 .m3-linear-wavy-buffer-line {
   stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
   stroke-linecap: round;
   opacity: 0.6;
-  transition: stroke 200ms ease;
+  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 circle.m3-linear-progress-stop {
@@ -408,7 +408,7 @@ circle.m3-linear-progress-stop {
 
 .m3-loading-shape-path {
   fill: var(--m3-progress-active, var(--md-sys-color-primary));
-  transition: fill 200ms ease;
+  transition: fill var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 .m3-progress-four-color .m3-loading-shape-path {
@@ -460,7 +460,7 @@ circle.m3-linear-progress-stop {
   border-radius: var(--md-sys-shape-corner-full, 9999px);
   background-color: var(--m3-progress-container, var(--md-sys-color-primary-container));
   box-sizing: border-box;
-  animation: m3ContainerPop 320ms var(--md-sys-motion-easing-spring, cubic-bezier(0.34, 1.4, 0.64, 1)) both;
+  animation: m3ContainerPop var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, var(--md-sys-motion-easing-spring)) both;
 }
 
 .m3-loading-container .m3-loading-shape-path {

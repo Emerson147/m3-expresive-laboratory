@@ -28,12 +28,12 @@
   background-color: var(--md-sys-color-surface-container-low);
   color: var(--md-sys-color-on-surface-variant);
   transition: 
-    background-color 200ms var(--md-sys-motion-easing-standard),
-    border-color 200ms var(--md-sys-motion-easing-standard),
-    border-radius 240ms var(--md-sys-motion-easing-emphasized-decelerate),
-    color 200ms var(--md-sys-motion-easing-standard),
-    box-shadow 200ms var(--md-sys-motion-easing-standard),
-    transform 150ms var(--md-sys-motion-easing-spring);
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-radius var(--md-sys-motion-duration-medium1, 240ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
 }
 
 /* LEADING & TRAILING ADJUSTMENTS */

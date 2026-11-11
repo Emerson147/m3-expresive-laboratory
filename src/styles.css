@@ -63,10 +63,32 @@
 
   /* Motion Easings */
   --ease-m3-standard: var(--md-sys-motion-easing-standard);
+  --ease-m3-standard-decelerate: var(--md-sys-motion-easing-standard-decelerate);
+  --ease-m3-standard-accelerate: var(--md-sys-motion-easing-standard-accelerate);
   --ease-m3-emphasized: var(--md-sys-motion-easing-emphasized);
-  --ease-m3-spring: var(--md-sys-motion-easing-spring);
+  --ease-m3-emphasized-decelerate: var(--md-sys-motion-easing-emphasized-decelerate);
+  --ease-m3-emphasized-accelerate: var(--md-sys-motion-easing-emphasized-accelerate);
+  --ease-m3-spring: var(--md-sys-motion-spring-fast-spatial);
+  --ease-m3-spring-spatial: var(--md-sys-motion-spring-default-spatial);
+  --ease-m3-spring-effects: var(--md-sys-motion-spring-effects);
+  --ease-m3-spring-fast-spatial: var(--md-sys-motion-spring-fast-spatial);
+  --ease-m3-spring-default-spatial: var(--md-sys-motion-spring-default-spatial);
+  --ease-m3-spring-slow-spatial: var(--md-sys-motion-spring-slow-spatial);
+  --ease-m3-spring-fast-effects: var(--md-sys-motion-spring-fast-effects);
+  --ease-m3-spring-default-effects: var(--md-sys-motion-spring-default-effects);
+  --ease-m3-spring-slow-effects: var(--md-sys-motion-spring-slow-effects);
 
   /* Motion Durations */
+  --duration-m3-short1: var(--md-sys-motion-duration-short1);
+  --duration-m3-short2: var(--md-sys-motion-duration-short2);
+  --duration-m3-short3: var(--md-sys-motion-duration-short3);
+  --duration-m3-short4: var(--md-sys-motion-duration-short4);
+  --duration-m3-medium1: var(--md-sys-motion-duration-medium1);
+  --duration-m3-medium2: var(--md-sys-motion-duration-medium2);
+  --duration-m3-medium3: var(--md-sys-motion-duration-medium3);
+  --duration-m3-medium4: var(--md-sys-motion-duration-medium4);
+  --duration-m3-long1: var(--md-sys-motion-duration-long1);
+  --duration-m3-long2: var(--md-sys-motion-duration-long2);
   --duration-m3-short: var(--md-sys-motion-duration-short4);
   --duration-m3-medium: var(--md-sys-motion-duration-medium2);
   --duration-m3-long: var(--md-sys-motion-duration-long2);
@@ -90,9 +112,9 @@ body {
   filter: blur(0px) brightness(1);
   transform: scale(1);
   transition:
-    filter 360ms cubic-bezier(0.2, 0, 0, 1),
-    transform 360ms cubic-bezier(0.2, 0, 0, 1),
-    border-radius 360ms cubic-bezier(0.2, 0, 0, 1);
+    filter var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-accelerate),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-accelerate),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-accelerate);
 }
 
 .stage-recessed {
@@ -102,9 +124,9 @@ body {
   pointer-events: none;
   user-select: none;
   transition:
-    filter 360ms cubic-bezier(0.2, 0, 0, 1),
-    transform 360ms cubic-bezier(0.2, 0, 0, 1),
-    border-radius 360ms cubic-bezier(0.2, 0, 0, 1);
+    filter var(--md-sys-motion-duration-medium4, 400ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    transform var(--md-sys-motion-duration-medium4, 400ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    border-radius var(--md-sys-motion-duration-medium4, 400ms) var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
 /* =========================================================
@@ -213,15 +235,22 @@ html:not(.theme-transition)::view-transition-new(root) {
   animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* El grupo anima la caja geométrica con bordes redondeados M3 y sombra */
+/* Container Transform — Entering / Expanding (Medium4 400ms / Emphasized Decelerate) */
 ::view-transition-group(dialog-transform),
 ::view-transition-group(hero-transform),
 ::view-transition-group(nav-transform),
 ::view-transition-group(main-stage) {
-  animation-duration: 240ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
-  border-radius: var(--md-sys-shape-extra-large);
+  animation-duration: var(--md-sys-motion-duration-medium4, 400ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
+  border-radius: var(--md-sys-shape-corner-extra-large);
   overflow: hidden;
+}
+
+/* Container Transform — Exiting / Collapsing (Short4 200ms / Emphasized Accelerate per M3 Spec) */
+html.vt-exiting::view-transition-group(dialog-transform),
+html.vt-exiting::view-transition-group(hero-transform) {
+  animation-duration: var(--md-sys-motion-duration-short4, 200ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
 }
 
 /* Shared Element Transition: Product List -> Hero Detail (Inventario) */
@@ -382,11 +411,11 @@ html:not(.theme-transition)::view-transition-new(root) {
 
 /* Animaciones expresivas M3 para modales y backdrops */
 .m3-dialog-backdrop {
-  animation: m3FadeIn 200ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  animation: m3FadeIn var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate) both;
 }
 
 .m3-dialog-surface {
-  animation: m3DialogSpring 250ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+  animation: m3DialogSpring var(--md-sys-motion-spring-expressive-fast-spatial-duration) var(--md-sys-motion-spring-expressive-fast-spatial-curve) both;
   transform-origin: center center;
 }
 

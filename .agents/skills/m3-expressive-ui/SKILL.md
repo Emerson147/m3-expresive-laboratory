@@ -204,6 +204,74 @@ runViewTransition(mutation: () => void, onFinished?: () => void): void {
 }
 ```
 
+### The 3-Filter Motion Playbook (CSS Transitions vs. View Transitions)
+
+Always evaluate these 3 filters before writing animation code:
+
+1. **Filter 1 — DOM Lifecycle**:
+   * **Node stays alive in same component** (Card expand, FAB morph, inline drawer): Use **CSS Transitions** with bounded explicit dimensions and `overflow-hidden`. Do NOT use `startViewTransition` for local same-tree state.
+   * **DOM tree is destroyed & rebuilt** (Route change, overlay modal teleported to root): Use **View Transitions API** (`view-transition-name`) to morph GPU snapshots across detached DOM nodes.
+2. **Filter 2 — Physics Family (Spatial vs. Effects in `src/styles/_motion.css`)**:
+   * **Spatial (`damping: 0.9`, underdamped)**: Moves position, scale, width, height. Use `Expressive` for focal interactions (`--md-sys-motion-spring-expressive-fast-spatial`, `350ms`–`500ms`) and `Standard` (`+6%` overshoot) for dense enterprise lists/tables.
+   * **Effects (`damping: 1.0`, critical zero-bounce)**: Changes color, opacity, or shadow (`--md-sys-motion-spring-*-effects-curve`, `150ms`–`300ms`). Never bounce optical properties.
+3. **Filter 3 — Zero Magic Numbers**:
+   * Strictly consume `--md-sys-motion-duration-*` (`short1` 50ms &rarr; `extra-long4` 1000ms) and `--md-sys-motion-easing-*` (`emphasized-decelerate` / `accelerate` / `standard`) so `@media (prefers-reduced-motion: reduce)` works globally across the entire app.
+
+### ⚠️ CRITICAL: CSS Transition Layout Traps (Zero-Glitch Container Transform)
+
+When animating local containers with CSS (`transition-all`), **two silent CSS traps destroy M3 fluidity**:
+
+1. **The `max-width: none` Horizontal Explosion Trap**:
+   * **Never** pair `w-full max-w-md` (expanded) with `w-72` (collapsed, where `max-width` is implicitly `none`). On collapse at $t = 0\text{ms}$, `max-width` instantly snaps to `none` while `width` still interpolates from `100%`, causing the card to **explode horizontally across the entire parent** before shrinking.
+   * **Fix**: Pin `max-w-full` invariants in static `class` and animate strictly bounded explicit dimensions (`w-72` &harr; `w-[448px]`, `h-16` &harr; `h-48`).
+2. **The `height: auto` Snap & Blank Void Trap**:
+   * CSS cannot interpolate `height: auto`, and unmounting child content synchronously via `@if` on close leaves a huge hollow box collapsing for `500ms` (`long2`).
+   * **Fix**: Keep detail content inside `overflow-hidden` and cross-fade its opacity asymmetrically (`100ms` `short2` with `0ms` delay on collapse; `300ms` `medium2` with `80ms` delay on expand):
+
+```html
+<div
+  (click)="toggleExpanded()"
+  class="cursor-pointer overflow-hidden border select-none max-w-full transition-all"
+  [class]="expanded()
+    ? 'w-[448px] h-48 p-4 bg-surface-box rounded-m3-xl border-primary shadow-lg'
+    : 'w-72 h-16 p-3 bg-surface-high rounded-m3-lg border-outline-sub shadow-xs'"
+  style="transition-duration: var(--md-sys-motion-duration-long2); transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);">
+  <!-- Persistent Header stays in DOM -->
+  <div class="flex items-center justify-between gap-2">...</div>
+
+  <!-- Secondary Details fade asymmetrically without hollow ghosting -->
+  <div
+    class="mt-3.5 transition-opacity"
+    [style.transition-duration]="expanded() ? 'var(--md-sys-motion-duration-medium2)' : 'var(--md-sys-motion-duration-short2)'"
+    [style.transition-delay]="expanded() ? '80ms' : '0ms'"
+    [class]="expanded() ? 'opacity-100' : 'opacity-0 pointer-events-none'">
+    ...
+  </div>
+</div>
+```
+
+### Reusable Token-Backed Motion Classes (`src/styles/_motion.css`)
+
+Do not duplicate inline `style="transition-duration: var(...)"` across feature components. Compose Tailwind transition properties (`transition-all`, `transition-colors`, `transition-transform`) with these centralized classes:
+
+* `.m3-transition-fast` (`short3` 150ms + `fast-effects`): Search bars, chips, filter tabs, pill controls.
+* `.m3-transition-standard` (`short4` 200ms + `standard`): Dense POS/enterprise product cards and high-frequency actions.
+* `.m3-transition-emphasized` (`medium2` 300ms + `emphasized-decelerate`): Featured hover zooms and surface reveals.
+* `.m3-transition-spatial` (`long2` 500ms + `emphasized-decelerate`): Container Transforms and large spatial morphs.
+* `.m3-anim-spring-pop`: Expressive Fast Spatial Spring (`350ms` overshoot) for cart badges, steppers, and sale confirmation badges.
+* `.m3-anim-item-in`: Subtle upward reveal (`short4` 200ms) for incoming cart/list rows.
+* `.m3-anim-lateral`: Unison peer slide (`medium1` 250ms) for payment/tab panels.
+* `.m3-anim-fade-through`: Clean cross-scale swap (`medium1` 250ms) for empty states, discounts, and root switches.
+
+### The 6 Canonical M3 Transition Patterns
+
+1. **Container Transform** (`long2` 500ms + `emphasized-decelerate`): Persistent outer surface morphs cleanly into detail state.
+2. **Forward & Backward** (`medium2` 300ms + `emphasized-decelerate`): Horizontal directional slide + fade (`m3ForwardIn` / `m3BackwardIn`) across hierarchical levels.
+3. **Lateral** (`medium1` 250ms + `standard`): Peer tabs sliding in strict unison without fade (`m3LateralIn`).
+4. **Top Level (Fade Through)** (`medium1` 250ms + `standard`): Unrelated root destinations cross-fading cleanly with subtle `92% -> 100%` scale (`m3FadeThroughIn`), zero horizontal swipe.
+5. **Enter & Exit** (`short4` 200ms / `medium1` 250ms): Directional emergence from physical device edges (`m3EnterFromTop`, `m3EnterFromBottom`).
+6. **Skeleton Loaders** (`extra-long2` 800ms shimmer + `m3FadeIn`): Pre-sized layout placeholders ensuring zero Cumulative Layout Shift (`CLS = 0.00`).
+
 ---
 
 ## 5. The Stage Recess Depth Pattern
