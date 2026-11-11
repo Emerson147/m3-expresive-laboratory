@@ -1,6 +1,6 @@
-import { Component, input, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AppSection, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { AppSection, DESIGN_SYSTEM_STEPS, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
 
 @Component({
   selector: 'app-navigation',
@@ -15,9 +15,9 @@ import { AppSection, NavStyle, TransitionType, TriggerMode } from '../models/ui.
       <aside 
         [style.view-transition-name]="activeTransition() === 'nav' ? 'nav-transform' : null"
         [class]="navStyle() === 'tunnel' ? 'w-48 bg-surface p-6' : 'w-20 md:w-64 border-r border-outline-sub bg-surface-low p-4'"
-        class="flex flex-col justify-between transition-all duration-300 shrink-0">
+        class="flex flex-col justify-between gap-4 transition-all duration-300 shrink-0 min-h-0">
 
-        <div class="space-y-6">
+        <div class="space-y-6 overflow-y-auto min-h-0">
           <div class="flex items-center gap-3 px-2 py-1">
             <div class="w-10 h-10 rounded-m3-md bg-primary text-on-primary font-bold grid place-items-center text-lg shadow-sm">
               <span class="material-symbols-rounded text-2xl">category</span>
@@ -52,14 +52,50 @@ import { AppSection, NavStyle, TransitionType, TriggerMode } from '../models/ui.
                 </span>
               </a>
 
-              <a 
-                routerLink="/design-system"
-                routerLinkActive="bg-sec-box text-on-sec-box font-semibold shadow-xs"
-                (click)="sectionSelect.emit('design-system')"
-                class="btn-m3 w-full flex items-center gap-3.5 px-4 py-3 rounded-full text-left cursor-pointer text-muted hover:bg-surface-high hover:text-main">
-                <span class="material-symbols-rounded text-xl">widgets</span>
-                <span class="hidden md:inline text-sm">Design System</span>
-              </a>
+              <div>
+                <button
+                  type="button"
+                  (click)="toggleDesignSystemMenu()"
+                  [attr.aria-expanded]="isDesignSystemOpen()"
+                  aria-controls="design-system-submenu"
+                  [class]="currentSection() === 'design-system'
+                    ? 'bg-sec-box/70 text-on-sec-box font-semibold shadow-xs'
+                    : 'text-muted hover:bg-surface-high hover:text-main'"
+                  class="btn-m3 w-full flex items-center justify-between gap-3 px-4 py-3 rounded-full text-left cursor-pointer">
+                  <span class="flex items-center gap-3.5 min-w-0">
+                    <span class="material-symbols-rounded text-xl shrink-0">widgets</span>
+                    <span class="hidden md:inline text-sm truncate">Design System</span>
+                  </span>
+                  <span
+                    class="hidden md:inline material-symbols-rounded text-lg transition-transform m3-transition-fast shrink-0"
+                    [class.rotate-180]="isDesignSystemOpen()"
+                    aria-hidden="true">
+                    expand_more
+                  </span>
+                </button>
+
+                <div
+                  id="design-system-submenu"
+                  [attr.inert]="!isDesignSystemOpen() ? '' : null"
+                  [class]="isDesignSystemOpen() ? 'grid-rows-[1fr] opacity-100 mt-1.5' : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'"
+                  class="grid transition-[grid-template-rows,opacity,margin] m3-transition-emphasized">
+                  <div class="overflow-hidden">
+                    <div class="space-y-1 md:ml-5 md:pl-3 md:border-l md:border-outline-sub">
+                      @for (step of designSystemSteps; track step.path) {
+                        <a
+                          [routerLink]="step.route"
+                          routerLinkActive="bg-sec-box text-on-sec-box font-semibold shadow-xs"
+                          (click)="sectionSelect.emit('design-system')"
+                          [title]="step.label"
+                          class="btn-m3 w-full flex items-center justify-center md:justify-start gap-2.5 px-3 py-2 rounded-full text-left cursor-pointer text-muted hover:bg-surface-high hover:text-main text-xs">
+                          <span class="material-symbols-rounded text-lg shrink-0" aria-hidden="true">{{ step.icon }}</span>
+                          <span class="hidden md:inline truncate">{{ step.navLabel }}</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <a 
                 routerLink="/pos"
@@ -135,13 +171,28 @@ import { AppSection, NavStyle, TransitionType, TriggerMode } from '../models/ui.
                 class="block transition-all duration-200 text-left cursor-pointer text-muted hover:text-main text-base font-medium">
                 Agenda ({{ pendingCount() }})
               </a>
-              <a 
-                routerLink="/design-system"
-                routerLinkActive="text-primary text-2xl font-extrabold tracking-tight translate-x-1"
-                (click)="sectionSelect.emit('design-system')"
-                class="block transition-all duration-200 text-left cursor-pointer text-muted hover:text-main text-base font-medium">
-                Design System
-              </a>
+              <div class="space-y-2">
+                <a 
+                  routerLink="/design-system"
+                  routerLinkActive="text-primary text-2xl font-extrabold tracking-tight translate-x-1"
+                  (click)="sectionSelect.emit('design-system')"
+                  class="block transition-all duration-200 text-left cursor-pointer text-muted hover:text-main text-base font-medium">
+                  Design System
+                </a>
+                @if (currentSection() === 'design-system') {
+                  <div class="pl-3 border-l border-outline-sub space-y-1.5">
+                    @for (step of designSystemSteps; track step.path) {
+                      <a
+                        [routerLink]="step.route"
+                        routerLinkActive="text-primary font-bold"
+                        (click)="sectionSelect.emit('design-system')"
+                        class="block text-xs text-muted hover:text-main transition-colors">
+                        {{ step.navLabel }}
+                      </a>
+                    }
+                  </div>
+                }
+              </div>
               <a 
                 routerLink="/pos"
                 routerLinkActive="text-primary text-2xl font-extrabold tracking-tight translate-x-1"
@@ -309,6 +360,11 @@ import { AppSection, NavStyle, TransitionType, TriggerMode } from '../models/ui.
   `
 })
 export class NavigationComponent {
+  private readonly router = inject(Router);
+
+  readonly designSystemSteps = DESIGN_SYSTEM_STEPS;
+  readonly isDesignSystemOpen = signal<boolean>(false);
+
   readonly navStyle = input.required<NavStyle>();
   readonly currentSection = input<AppSection>('overview');
   readonly pendingCount = input.required<number>();
@@ -319,4 +375,23 @@ export class NavigationComponent {
 
   readonly sectionSelect = output<AppSection>();
   readonly openMenu = output<TriggerMode>();
+
+  constructor() {
+    effect(() => {
+      if (this.currentSection() === 'design-system') {
+        this.isDesignSystemOpen.set(true);
+      }
+    });
+  }
+
+  toggleDesignSystemMenu(): void {
+    if (this.currentSection() !== 'design-system') {
+      this.isDesignSystemOpen.set(true);
+      this.sectionSelect.emit('design-system');
+      void this.router.navigate(['/design-system/styles']);
+      return;
+    }
+
+    this.isDesignSystemOpen.update(open => !open);
+  }
 }

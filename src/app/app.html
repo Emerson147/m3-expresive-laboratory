@@ -20,6 +20,7 @@
       <!-- BARRA SUPERIOR (Oculta en POS, Inventory, Telemetry, Kanban, Campus y Clinic para foco operativo) -->
       @if (currentSection() !== 'pos' && currentSection() !== 'inventory' && currentSection() !== 'telemetry' && currentSection() !== 'kanban' && currentSection() !== 'campus' && currentSection() !== 'clinic') {
       <app-header class="shrink-0" [currentSection]="currentSection()" [navStyle]="dialogService.navStyle()"
+        [sectionTitle]="routeMeta().title" [sectionSubtitle]="routeMeta().subtitle"
         [isDialogOpen]="dialogService.isDialogOpen()" [activeTrigger]="dialogService.activeTrigger()"
         (openCreate)="dialogService.openFrom($event)" />
       }

@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { DialogService } from './core/dialog/dialog.service';
 import { TaskService } from './core/tasks/task.service';
@@ -29,18 +29,33 @@ export type { ThemeOption } from './core/theme/theme.service';
 })
 export class App {
   private readonly router = inject(Router);
+  private readonly activatedRoute = inject(ActivatedRoute);
   readonly themeService = inject(ThemeService);
   readonly taskService = inject(TaskService);
   readonly dialogService = inject(DialogService);
 
   readonly currentSection = signal<AppSection>(this.detectSection(this.router.url));
+  readonly routeMeta = signal<{ title?: string; subtitle?: string }>(this.readActiveRouteMeta());
 
   constructor() {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {
         this.currentSection.set(this.detectSection(event.urlAfterRedirects));
+        this.routeMeta.set(this.readActiveRouteMeta());
       });
+  }
+
+  private readActiveRouteMeta(): { title?: string; subtitle?: string } {
+    let route = this.activatedRoute;
+    while (route.firstChild) {
+      route = route.firstChild;
+    }
+    const data = route.snapshot.data;
+    return {
+      title: typeof data['labTitle'] === 'string' ? data['labTitle'] : undefined,
+      subtitle: typeof data['labSubtitle'] === 'string' ? data['labSubtitle'] : undefined
+    };
   }
 
   private detectSection(url: string): AppSection {

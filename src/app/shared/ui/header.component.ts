@@ -14,7 +14,9 @@ import { M3ButtonComponent } from '../components/button/button.component';
     <header class="flex flex-wrap items-center justify-between gap-4 pb-2">
       <div>
         <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
-          @if (currentSection() === 'overview') {
+          @if (sectionTitle()) {
+            {{ sectionTitle() }}
+          } @else if (currentSection() === 'overview') {
             Fundamentos M3
           } @else if (currentSection() === 'agenda') {
             Agenda de Tareas
@@ -25,7 +27,9 @@ import { M3ButtonComponent } from '../components/button/button.component';
           }
         </h1>
         <p class="text-muted text-sm mt-0.5">
-          @if (currentSection() === 'overview') {
+          @if (sectionSubtitle()) {
+            {{ sectionSubtitle() }} • Vista {{ navStyle().toUpperCase() }}
+          } @else if (currentSection() === 'overview') {
             Arquitectura adaptativa en Modo {{ themeService.isDarkMode() ? 'Oscuro' : 'Claro' }} • Vista {{ navStyle().toUpperCase() }}
           } @else if (currentSection() === 'agenda') {
             Productividad y gestión visual bajo principios M3 • Vista {{ navStyle().toUpperCase() }}
@@ -82,6 +86,8 @@ export class HeaderComponent {
 
   readonly currentSection = input.required<AppSection>();
   readonly navStyle = input.required<NavStyle>();
+  readonly sectionTitle = input<string | undefined>(undefined);
+  readonly sectionSubtitle = input<string | undefined>(undefined);
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);
 

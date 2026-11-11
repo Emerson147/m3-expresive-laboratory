@@ -18,8 +18,8 @@ export const routes: Routes = [
   },
   {
     path: 'design-system',
-    loadComponent: () =>
-      import('./features/design-system/design-system.component').then(m => m.DesignSystemComponent)
+    loadChildren: () =>
+      import('./features/design-system/design-system.routes').then(m => m.DESIGN_SYSTEM_ROUTES)
   },
   {
     path: 'pos',
