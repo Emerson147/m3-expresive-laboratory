@@ -6,40 +6,35 @@
 
 ## 1. Architectural Philosophy: The Design-to-Code Bridge
 
-The official Material Design documentation (`m3.material.io`) provides design theories, abstract DP coordinates, and Figma tokens, but omits modern web implementations. 
-
-This architecture establishes a **three-tier token pipeline**:
-1. **Reference Tokens**: Raw color spaces, curves, and mathematical scales.
-2. **System Tokens (`md-sys-*`)**: Semantic roles (`primary`, `surface-container-high`, `shape-corner-extra-large`, `motion-easing-emphasized`).
-3. **Component Utilities**: Framework classes (`bg-primary`, `rounded-m3-xl`, `text-display-md`, `ease-m3-emphasized`).
+The official Material Design documentation (`m3.material.io`) provides design theories, abstract DP coordinates, and Figma tokens, and defines a **3-tier token taxonomy**:
+1. **Reference Tokens (`--md-ref-*`)**: Context-agnostic raw primitives (`--md-ref-typeface-*` and `--md-ref-palette-*` tonal stops `0..100` calibrated from HCT Tone $L^*$ to OKLCH perceptual lightness $L\%$).
+2. **System Tokens (`--md-sys-*`)**: Semantic roles (`--md-sys-color-*`, `--md-sys-shape-corner-*`, `--md-sys-motion-*`, `--md-sys-state-*`) that map Reference tokens to Light/Dark themes and Standard/Medium/High contrast levels.
+3. **Component Tokens & Utilities (`--md-comp-*` / `@theme`)**: Component-scoped tokens and Tailwind CSS v4 utilities (`bg-primary`, `rounded-m3-xl`, `text-display-md`, `ease-m3-emphasized`).
 
 ```
-┌─────────────────────────┐
-│ Reference (OKLCH, ms)   │
-└───────────┬─────────────┘
-            ▼
-┌─────────────────────────┐
-│ System Tokens (md-sys)  │  -->  src/styles/_token.css, _shape.css, _motion.css, etc.
-└───────────┬─────────────┘
-            ▼
-┌─────────────────────────┐
-│ Tailwind v4 / Utilities │  -->  @theme in src/styles.css
-└───────────┬─────────────┘
-            ▼
-┌─────────────────────────┐
-│ UI Components (Angular) │  -->  Buttons, Cards, Modals, Rails
-└─────────────────────────┘
+┌──────────────────────────────┐
+│ Reference (--md-ref-*)       │  -->  Typefaces + Tonal Palettes (T0..T100)
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ System Tokens (--md-sys-*)   │  -->  src/styles/_token.css, _shape.css, _motion.css, etc.
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ Tailwind v4 / Component Vars │  -->  @theme in src/styles.css & --md-comp-*
+└──────────────┬───────────────┘
+               ▼
+┌──────────────────────────────┐
+│ UI Components (Angular)      │  -->  Buttons, Cards, Modals, Rails
+└──────────────────────────────┘
 ```
 
 ---
 
-## 2. Color System: Dynamic OKLCH Engine
+## 2. Color System: HCT-Calibrated Dynamic OKLCH Engine
 
-### The Problem with HSL/RGB
-In standard HSL, different hues at the same lightness level (50%) produce wildly different perceived brightness. Yellow is blinding; blue is dark. This breaks automated accessibility.
-
-### The OKLCH Solution
-OKLCH separates Lightness ($L$), Chroma ($C$), and Hue ($H$) uniformly. Changing `--seed-hue` alters the brand color across the entire application without distorting contrast ratios.
+### HCT Tone ($L^*$) to OKLCH ($L\%$) Calibration
+M3's HCT color space uses CIE $L^*$ (`0..100`) for tone, whereas CSS `oklch()` uses Oklab cube-root lightness ($L\%$). Rather than passing raw HCT tone integers directly into `oklch()` (which makes dark mode surfaces too dark and crushes contrast), `--md-ref-palette-*` maps every M3 tone stop to its exact perceptual OKLCH lightness equivalent (`T4 → 16.4%`, `T6 → 18.8%`, `T10 → 22.4%`, `T12 → 24.1%`, `T17 → 28.4%`, `T20 → 31.0%`, `T22 → 32.8%`, `T24 → 34.5%`, `T30 → 39.7%`, `T40 → 48.3%`, `T50 → 56.9%`, `T60 → 65.5%`, `T80 → 82.8%`, `T87 → 88.8%`, `T90 → 91.4%`, `T92 → 93.1%`, `T94 → 94.8%`, `T96 → 96.6%`, `T98 → 98.3%`, `T100 → 100%`).
 
 ```css
 :root {
@@ -49,35 +44,43 @@ OKLCH separates Lightness ($L$), Chroma ($C$), and Hue ($H$) uniformly. Changing
   --secondary-hue: calc(var(--seed-hue) + 10);
   --tertiary-hue: calc(var(--seed-hue) + 65);
   --error-hue: 25;       /* Alert red/coral */
+  --success-hue: 150;    /* Extended M3 custom role: Emerald */
+  --warning-hue: 75;     /* Extended M3 custom role: Amber */
 }
 ```
 
 ### Complete Surface & Container Hierarchy
 
-M3 Expressive eliminated flat backgrounds in favor of 5 progressive container levels:
+M3 Expressive uses 5 strictly ordered container levels plus `surface-dim` and `surface-bright`:
 
-| Role Token | Light Theme OKLCH | Dark Theme OKLCH | Usage & Purpose |
+| Role Token | Light Ref (OKLCH $L\%$) | Dark Ref (OKLCH $L\%$) | Usage & Purpose |
 | :--- | :--- | :--- | :--- |
-| `--md-sys-color-surface-dim` | `oklch(90% 0.015 H)` | `oklch(10% 0.014 H)` | Dimmed app stage / recessed plane |
-| `--md-sys-color-surface` | `oklch(98% 0.005 H)` | `oklch(12% 0.016 H)` | Default application background |
-| `--md-sys-color-surface-bright` | `oklch(99% 0.003 H)` | `oklch(20% 0.020 H)` | High-contrast raised panels |
-| `--md-sys-color-surface-container-lowest` | `oklch(100% 0 0)` | `oklch(8% 0.012 H)` | Lowest visual card layer |
-| `--md-sys-color-surface-container-low` | `oklch(96% 0.008 H)` | `oklch(15% 0.018 H)` | Navigation Rail / Sidebar background |
-| `--md-sys-color-surface-container` | `oklch(93% 0.012 H)` | `oklch(18% 0.022 H)` | Default Card & List surface (`bg-surface-box`) |
-| `--md-sys-color-surface-container-high` | `oklch(90% 0.018 H)` | `oklch(22% 0.026 H)` | Active inputs, hovered items, menus |
-| `--md-sys-color-surface-container-highest`| `oklch(86% 0.022 H)` | `oklch(27% 0.030 H)` | Promoted dialogs, chips, high emphasis |
+| `--md-sys-color-surface-dim` | `neutral87` (`88.8%`) | `neutral6` (`18.8%`) | Dimmed app stage / recessed plane |
+| `--md-sys-color-surface` | `neutral98` (`98.3%`) | `neutral6` (`18.8%`) | Default application background |
+| `--md-sys-color-surface-bright` | `neutral98` (`98.3%`) | `neutral24` (`34.5%`) | High-contrast raised panels |
+| `--md-sys-color-surface-container-lowest` | `neutral100` (`100%`) | `neutral4` (`16.4%`) | Lowest visual card layer |
+| `--md-sys-color-surface-container-low` | `neutral96` (`96.6%`) | `neutral10` (`22.4%`) | Navigation Rail / Sidebar background |
+| `--md-sys-color-surface-container` | `neutral94` (`94.8%`) | `neutral12` (`24.1%`) | Default Card & List surface (`bg-surface-box`) |
+| `--md-sys-color-surface-container-high` | `neutral92` (`93.1%`) | `neutral17` (`28.4%`) | Active inputs, hovered items, menus |
+| `--md-sys-color-surface-container-highest`| `neutral90` (`91.4%`) | `neutral22` (`32.8%`) | Promoted dialogs, chips, high emphasis |
 
-### Accent Roles (Primary, Secondary, Tertiary, Error)
+### Accent, Fixed & Extended Semantic Roles
 
-| Semantic Role | Light OKLCH | Dark OKLCH | Description |
+| Semantic Role | Light Ref | Dark Ref | Description |
 | :--- | :--- | :--- | :--- |
-| `primary` | `oklch(42% C H)` | `oklch(78% C H)` | Key interactive elements (FAB, primary buttons) |
-| `on-primary` | `oklch(100% 0 0)` | `oklch(16% 0.06 H)` | Text and icons on primary surface |
-| `primary-container` | `oklch(90% 0.06 H)` | `oklch(30% 0.10 H)` | Low-emphasis action backgrounds |
-| `on-primary-container` | `oklch(20% 0.08 H)` | `oklch(92% 0.04 H)` | Text on primary container |
-| `secondary` | `oklch(45% 0.05 H2)` | `oklch(80% 0.05 H2)` | Navigation pills, filter chips |
-| `tertiary` | `oklch(45% 0.12 H3)` | `oklch(80% 0.13 H3)` | Expressive accent, badges, highlights |
-| `error` | `oklch(50% 0.22 25)` | `oklch(78% 0.16 25)` | Destructive actions, validation errors |
+| `primary` / `on-primary` | `primary40` / `primary100` | `primary80` / `primary20` | Key interactive elements (FAB, primary buttons) |
+| `primary-container` / `on-primary-container` | `primary90` / `primary30` | `primary30` / `primary90` | Expressive vibrant container (Tone 30 on Tone 90) |
+| `*-fixed` / `*-fixed-dim` | `Tone 90` / `Tone 80` | `Tone 90` / `Tone 80` | Theme-invariant containers across Light & Dark |
+| `on-*-fixed` / `on-*-fixed-variant` | `Tone 10` / `Tone 30` | `Tone 10` / `Tone 30` | Content on theme-invariant Fixed containers |
+| `secondary` / `tertiary` / `error` | `Tone 40` | `Tone 80` | Supporting, expressive, and alert accents |
+| `success` / `warning` (Custom M3 Roles) | `Tone 40` | `Tone 80` | Harmonized operational status roles (`on-*`, `*-container`) |
+
+### Contrast Levels (Standard, Medium, High)
+`src/styles/_token.css` implements M3's 3 contrast levels:
+- **Standard** (default): Canonical M3 Expressive tones.
+- **Medium** (`[data-contrast="medium"]`): Boosts `on-*-container` to Tone 20 (Light) / Tone 95 (Dark) and strengthens `outline` to Tone 40 / Tone 70.
+- **High** (`[data-contrast="high"]` or `@media (prefers-contrast: more)`): Pushes `on-*-container` to Tone 10 (Light) / Tone 98 (Dark) and `primary` to Tone 30 / Tone 90.
+- **Forced Colors** (`@media (forced-colors: active)`): Maps semantic tokens to native OS system colors (`Canvas`, `CanvasText`, `Highlight`, `ButtonFace`, `GrayText`).
 
 ---
 

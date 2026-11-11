@@ -21,30 +21,56 @@
   --color-surface-box: var(--md-sys-color-surface-container);
   --color-surface-high: var(--md-sys-color-surface-container-high);
   --color-surface-highest: var(--md-sys-color-surface-container-highest);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
 
-  /* Role: Primary */
+  /* Role: Primary & Fixed */
   --color-primary: var(--md-sys-color-primary);
   --color-on-primary: var(--md-sys-color-on-primary);
   --color-primary-box: var(--md-sys-color-primary-container);
   --color-on-primary-box: var(--md-sys-color-on-primary-container);
+  --color-primary-fixed: var(--md-sys-color-primary-fixed);
+  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
+  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--md-sys-color-on-primary-fixed-variant);
 
-  /* Role: Secondary */
+  /* Role: Secondary & Fixed */
   --color-secondary: var(--md-sys-color-secondary);
   --color-on-secondary: var(--md-sys-color-on-secondary);
   --color-sec-box: var(--md-sys-color-secondary-container);
   --color-on-sec-box: var(--md-sys-color-on-secondary-container);
+  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
+  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--md-sys-color-on-secondary-fixed-variant);
 
-  /* Role: Tertiary */
+  /* Role: Tertiary & Fixed */
   --color-tertiary: var(--md-sys-color-tertiary);
   --color-on-tertiary: var(--md-sys-color-on-tertiary);
   --color-tertiary-box: var(--md-sys-color-tertiary-container);
   --color-on-tertiary-box: var(--md-sys-color-on-tertiary-container);
+  --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
+  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant: var(--md-sys-color-on-tertiary-fixed-variant);
 
   /* Role: Error */
   --color-error: var(--md-sys-color-error);
   --color-on-error: var(--md-sys-color-on-error);
   --color-error-box: var(--md-sys-color-error-container);
   --color-on-error-box: var(--md-sys-color-on-error-container);
+
+  /* Extended Semantic Roles: Success & Warning */
+  --color-success: var(--md-sys-color-success);
+  --color-on-success: var(--md-sys-color-on-success);
+  --color-success-box: var(--md-sys-color-success-container);
+  --color-on-success-box: var(--md-sys-color-on-success-container);
+  --color-warning: var(--md-sys-color-warning);
+  --color-on-warning: var(--md-sys-color-on-warning);
+  --color-warning-box: var(--md-sys-color-warning-container);
+  --color-on-warning-box: var(--md-sys-color-on-warning-container);
 
   /* Typography & Outlines */
   --color-main: var(--md-sys-color-on-surface);
@@ -97,7 +123,7 @@
 body {
   background-color: var(--md-sys-color-surface-dim);
   color: var(--md-sys-color-on-surface);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--md-ref-typeface-plain);
   margin: 0;
   overflow: hidden;
   letter-spacing: -0.01em;
@@ -457,42 +483,42 @@ html.vt-exiting::view-transition-group(hero-transform) {
   border-radius: 1rem;
   border-width: 1.5px;
   border-style: solid;
-  transition: all 180ms cubic-bezier(0.05, 0.7, 0.1, 1);
+  transition: all var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
 .m3-matrix-cell:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--md-sys-color-shadow) 8%, transparent);
 }
 
 .m3-matrix-cell-healthy {
-  border-color: color-mix(in oklch, #10b981 35%, transparent);
-  background-color: color-mix(in oklch, #10b981 6%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-success) 35%, transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-success) 6%, transparent);
 }
 
 .m3-matrix-cell-healthy:hover {
-  border-color: #10b981;
-  background-color: color-mix(in oklch, #10b981 12%, transparent);
+  border-color: var(--md-sys-color-success);
+  background-color: color-mix(in oklch, var(--md-sys-color-success) 12%, transparent);
 }
 
 .m3-matrix-cell-low {
-  border-color: color-mix(in oklch, #f59e0b 50%, transparent);
-  background-color: color-mix(in oklch, #f59e0b 8%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-warning) 50%, transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-warning) 8%, transparent);
 }
 
 .m3-matrix-cell-low:hover {
-  border-color: #f59e0b;
-  background-color: color-mix(in oklch, #f59e0b 16%, transparent);
+  border-color: var(--md-sys-color-warning);
+  background-color: color-mix(in oklch, var(--md-sys-color-warning) 16%, transparent);
 }
 
 .m3-matrix-cell-out {
-  border-color: color-mix(in oklch, #f43f5e 55%, transparent);
-  background-color: color-mix(in oklch, #f43f5e 9%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-error) 55%, transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-error) 9%, transparent);
 }
 
 .m3-matrix-cell-out:hover {
-  border-color: #f43f5e;
-  background-color: color-mix(in oklch, #f43f5e 18%, transparent);
+  border-color: var(--md-sys-color-error);
+  background-color: color-mix(in oklch, var(--md-sys-color-error) 18%, transparent);
 }
 
 /* =========================================================
@@ -503,25 +529,27 @@ html.vt-exiting::view-transition-group(hero-transform) {
   scrollbar-color: color-mix(in oklch, var(--md-sys-color-primary) 50%, var(--md-sys-color-outline-variant)) color-mix(in oklch, var(--md-sys-color-surface-container-high) 40%, transparent);
 }
 
-.m3-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+@supports not (scrollbar-color: auto) {
+  .m3-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-.m3-scrollbar::-webkit-scrollbar-track {
-  background: color-mix(in oklch, var(--md-sys-color-surface-container-high) 30%, transparent);
-  border-radius: 9999px;
-}
+  .m3-scrollbar::-webkit-scrollbar-track {
+    background: color-mix(in oklch, var(--md-sys-color-surface-container-high) 30%, transparent);
+    border-radius: 9999px;
+  }
 
-.m3-scrollbar::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
-  border-radius: 9999px;
-  border: 1px solid color-mix(in oklch, var(--md-sys-color-surface) 60%, transparent);
-  transition: background 150ms ease;
-}
+  .m3-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklch, var(--md-sys-color-surface) 60%, transparent);
+    transition: background var(--md-sys-motion-duration-short3, 150ms) ease;
+  }
 
-.m3-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--md-sys-color-primary);
+  .m3-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--md-sys-color-primary);
+  }
 }
 
 .scrollbar-none {
@@ -531,38 +559,6 @@ html.vt-exiting::view-transition-group(hero-transform) {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
-}
-
-/* =========================================================
-   M3 EXPRESSIVE SELECT FIELD
-   ========================================================= */
-.m3-select-field {
-  width: 100%;
-  padding: 0.625rem 2rem 0.625rem 0.875rem;
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-  border-radius: var(--md-sys-shape-medium, 12px);
-  background-color: var(--md-sys-color-surface-container, #1e1e24);
-  color: var(--md-sys-color-on-surface, #e2e2e6);
-  border: 1px solid var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.12));
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239e9e9e'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  background-size: 1.25rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  cursor: pointer;
-}
-
-.m3-select-field:focus {
-  outline: none;
-  border-color: var(--md-sys-color-primary, #a8c8ff);
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--md-sys-color-primary) 30%, transparent);
-}
-
-.m3-select-field option {
-  background-color: var(--md-sys-color-surface-container-high, #2b2b30);
-  color: var(--md-sys-color-on-surface, #e2e2e6);
 }
 
 /* Kanban Card FLIP Transitions */

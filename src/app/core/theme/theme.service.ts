@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
 
+export type ContrastLevel = 'standard' | 'medium' | 'high';
+
 export interface ThemeOption {
   readonly name: string;
   readonly hue: number;
@@ -22,11 +24,21 @@ export class ThemeService {
 
   readonly isDarkMode = signal<boolean>(false);
   readonly currentHue = signal<number>(275);
+  readonly contrastLevel = signal<ContrastLevel>('standard');
   readonly themes = THEME_OPTIONS;
 
   setThemeHue(hue: number): void {
     this.currentHue.set(hue);
     this.document.documentElement.style.setProperty('--seed-hue', hue.toString());
+  }
+
+  setContrastLevel(level: ContrastLevel): void {
+    this.contrastLevel.set(level);
+    if (level === 'standard') {
+      this.document.documentElement.removeAttribute('data-contrast');
+    } else {
+      this.document.documentElement.setAttribute('data-contrast', level);
+    }
   }
 
   toggleThemeMode(event?: MouseEvent): void {
@@ -82,12 +94,10 @@ export class ThemeService {
     const { x, y, endRadius } = this.getRadialGeometry(event);
     const ripple = this.document.createElement('div');
     ripple.className = 'fixed inset-0 pointer-events-none z-[9999]';
-    ripple.style.backgroundColor = nextDark
-      ? 'oklch(12% 0.016 var(--seed-hue))'
-      : 'oklch(98% 0.005 var(--seed-hue))';
-    this.document.body.appendChild(ripple);
 
     this.applyThemeState(nextDark);
+    ripple.style.backgroundColor = 'var(--md-sys-color-surface)';
+    this.document.body.appendChild(ripple);
 
     const anim = ripple.animate(
       [
