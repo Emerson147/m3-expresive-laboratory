@@ -23,15 +23,15 @@ Most web applications alter button colors on hover by modifying `background-colo
 3. Repaint performance overhead.
 
 ### The M3 State Layer Solution
-Material 3 applies a semi-transparent overlay using the element's designated `on-*` color (e.g., `on-primary` for primary buttons, `on-surface` for cards).
+Material 3 applies a semi-transparent overlay (`background-color: currentColor`) whose role depends on the container surface (`on-primary` for Filled buttons, `on-secondary-container` for Tonal/selected chips, `primary` for Outlined/Text buttons, and **neutral `on-surface` for interactive Cards** so nested semantic badges are never tinted).
 
-Using CSS `currentColor` on an isolated `::before` pseudo-element allows a single utility class (`.state-layer`) to automatically inherit the correct text ink for any element:
+Using CSS `currentColor` on an isolated `::before` pseudo-element allows a single utility class (`.state-layer`) in `src/styles/_interaction.css` to inherit the active ink automatically:
 
 ```css
 .state-layer {
   position: relative;
   overflow: hidden;
-  transition: transform 150ms var(--md-sys-motion-easing-spring);
+  transition: transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
 }
 
 .state-layer::before {
@@ -42,26 +42,34 @@ Using CSS `currentColor` on an isolated `::before` pseudo-element allows a singl
   background-color: currentColor;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 120ms var(--md-sys-motion-easing-linear);
+  transition: opacity var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-linear);
 }
 
-/* Official M3 Opacity Tokens */
+/* Official M3 State Layer Opacity Tokens (_token.css & _interaction.css) */
 .state-layer:hover::before {
-  opacity: var(--md-sys-state-hover-opacity);   /* 0.08 (8%) */
+  opacity: var(--md-sys-state-hover-state-layer-opacity, 0.08);   /* 8% */
 }
 
 .state-layer:focus-visible::before {
-  opacity: var(--md-sys-state-focus-opacity);   /* 0.10 (10%) */
+  opacity: var(--md-sys-state-focus-state-layer-opacity, 0.10);   /* 10% */
 }
 
 .state-layer:active {
-  transform: scale(0.975);                      /* Spring tactile press */
+  transform: scale(0.975);                                         /* Spring tactile press */
 }
 
 .state-layer:active::before {
-  opacity: var(--md-sys-state-pressed-opacity); /* 0.12 (12%) */
+  opacity: var(--md-sys-state-pressed-state-layer-opacity, 0.12); /* 12% */
+}
+
+.state-layer.is-dragged::before {
+  opacity: var(--md-sys-state-dragged-state-layer-opacity, 0.16); /* 16% Dragged */
 }
 ```
+
+### Disabled State Opacities (`_token.css`)
+- **Disabled Content (`--md-sys-state-disabled-content-opacity`)**: `0.38` (`38%`) for disabled text and icons.
+- **Disabled Container (`--md-sys-state-disabled-container-opacity`)**: `0.12` (`12%`) `on-surface` mix for disabled fills and borders.
 
 ---
 

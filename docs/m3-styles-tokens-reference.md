@@ -53,16 +53,16 @@ M3's HCT color space uses CIE $L^*$ (`0..100`) for tone, whereas CSS `oklch()` u
 
 M3 Expressive uses 5 strictly ordered container levels plus `surface-dim` and `surface-bright`:
 
-| Role Token | Light Ref (OKLCH $L\%$) | Dark Ref (OKLCH $L\%$) | Usage & Purpose |
+| Role Token | Light Ref (OKLCH) | Dark Ref (OKLCH) | Usage & Purpose |
 | :--- | :--- | :--- | :--- |
-| `--md-sys-color-surface-dim` | `neutral87` (`89.5%`) | `10.8%` | Dimmed app stage / recessed plane |
-| `--md-sys-color-surface` | `neutral98` (`98.5%`) | `neutral6` (`12.5%`) | Default application background |
-| `--md-sys-color-surface-bright` | `neutral98` (`98.5%`) | `neutral24` (`28.5%`) | High-contrast raised panels |
-| `--md-sys-color-surface-container-lowest` | `neutral100` (`100%`) | `neutral4` (`9.5%`) | Lowest visual card layer |
-| `--md-sys-color-surface-container-low` | `neutral96` (`96.8%`) | `neutral10` (`15.5%`) | Navigation Rail / Sidebar background |
-| `--md-sys-color-surface-container` | `neutral94` (`95.2%`) | `neutral12` (`18.5%`) | Default Card & List surface (`bg-surface-box`) |
-| `--md-sys-color-surface-container-high` | `neutral92` (`93.5%`) | `neutral17` (`22.0%`) | Active inputs, hovered items, menus |
-| `--md-sys-color-surface-container-highest`| `neutral90` (`91.8%`) | `neutral22` (`25.5%`) | Promoted dialogs, chips, high emphasis |
+| `--md-sys-color-surface-dim` | `neutral87` (`84% 0.020 H`) | `10% 0.014 H` | Dimmed app stage / recessed plane |
+| `--md-sys-color-surface` | `neutral98` (`98% 0.005 H`) | `neutral6` (`12% 0.016 H`) | Default application background |
+| `--md-sys-color-surface-bright` | `neutral99` (`99% 0.003 H`) | `neutral24` (`30% 0.028 H`) | High-contrast raised panels |
+| `--md-sys-color-surface-container-lowest` | `neutral100` (`100% 0 0`) | `neutral4` (`8% 0.012 H`) | Lowest visual card layer |
+| `--md-sys-color-surface-container-low` | `neutral96` (`96% 0.008 H`) | `neutral10` (`15% 0.018 H`) | Navigation Rail / Sidebar background |
+| `--md-sys-color-surface-container` | `neutral94` (`93% 0.012 H`) | `neutral12` (`18% 0.022 H`) | Default Card & List surface (`bg-surface-box`) |
+| `--md-sys-color-surface-container-high` | `neutral92` (`90% 0.018 H`) | `neutral17` (`22% 0.026 H`) | Active inputs, hovered items, menus |
+| `--md-sys-color-surface-container-highest`| `neutral90` (`86% 0.022 H`) | `neutral22` (`27% 0.030 H`) | Promoted dialogs, chips, high emphasis |
 
 ### Accent, Fixed & Extended Semantic Roles
 
@@ -84,19 +84,22 @@ M3 Expressive uses 5 strictly ordered container levels plus `surface-dim` and `s
 
 ---
 
-## 3. Shape System: Corner Radii & Squircles
+## 3. Shape System: 10-Step Corner Scale & Shape Morphing
 
-M3 Expressive uses shape as a semantic state indicator (shape morphing). A button is rounded-full when idle, but morphs to rounded-m3-md when active or checked.
+M3 Expressive uses shape as a semantic state indicator (shape morphing) and expands the classic 7-step corner scale to **10 official tokens** (adding `20px`, `32px`, and `48px`):
 
 | Token Name | Value | Tailwind v4 Utility | Typical Component Usage |
 | :--- | :--- | :--- | :--- |
 | `--md-sys-shape-corner-none` | `0px` | `rounded-m3-none` | Full-bleed banners, dividers |
-| `--md-sys-shape-corner-extra-small` | `4px` | `rounded-m3-xs` | Badges, snackbars |
-| `--md-sys-shape-corner-small` | `8px` | `rounded-m3-sm` | Small chips, tooltips |
-| `--md-sys-shape-corner-medium` | `12px` | `rounded-m3-md` | Buttons, text fields, active checkboxes |
-| `--md-sys-shape-corner-large` | `16px` | `rounded-m3-lg` | Standard cards, action sheets |
-| `--md-sys-shape-corner-extra-large` | `28px` | `rounded-m3-xl` | Hero cards, modal dialogs, drawers |
-| `--md-sys-shape-corner-full` | `9999px` | `rounded-m3-full` | FABs, pill buttons, search bars |
+| `--md-sys-shape-corner-extra-small` | `4px` | `rounded-m3-xs` | Badges, snackbars, checkboxes |
+| `--md-sys-shape-corner-small` | `8px` | `rounded-m3-sm` | Small chips, tooltips, menus |
+| `--md-sys-shape-corner-medium` | `12px` | `rounded-m3-md` | Active/morphed buttons & filter chips |
+| `--md-sys-shape-corner-large` | `16px` | `rounded-m3-lg` | Standard cards, text fields |
+| `--md-sys-shape-corner-large-increased` | `20px` | `rounded-m3-lg-inc` | **M3 Expressive**: Medium feature cards |
+| `--md-sys-shape-corner-extra-large` | `28px` | `rounded-m3-xl` | Bento cards, modal dialogs, drawers |
+| `--md-sys-shape-corner-extra-large-increased` | `32px` | `rounded-m3-xl-inc` | **M3 Expressive**: Expanded sheets & containers |
+| `--md-sys-shape-corner-extra-extra-large` | `48px` | `rounded-m3-2xl` | **M3 Expressive**: Monumental Hero surfaces |
+| `--md-sys-shape-corner-full` | `9999px` | `rounded-m3-full` | FABs, idle pill buttons, search bars |
 
 ---
 
@@ -104,15 +107,25 @@ M3 Expressive uses shape as a semantic state indicator (shape morphing). A butto
 
 Google's M3 docs supply the design specification (`N/A` in CSS for 2-segment `Emphasized`); `src/styles/_motion.css` implements the complete executable web engine with automatic `@media (prefers-reduced-motion: reduce)` fallbacks. **Never write raw `300ms` or `ease-in-out` values in feature code.**
 
-### 4.1 Easing Sets (Emphasized & Standard)
+> **GM3 Expressive Note (Spring Physics)**: Google Material 3 Expressive migrates component interactions to physics-based Springs (`--md-sys-motion-spring-*` in Section 4.2), while the Easing + Duration system remains actively used for View Transitions API groups and legacy CSS transitions.
+
+### 4.1 Easing Sets & Official Suggested Pairs
 * **Emphasized Set** (Focal points, container transforms, asymmetric enter/exit):
-  * `--md-sys-motion-easing-emphasized`: 10-stop `linear(...)` curve approximating the 2-segment Android path interpolator.
-  * `--md-sys-motion-easing-emphasized-decelerate`: `cubic-bezier(0.05, 0.7, 0.1, 1)` (Entering surfaces, pair with `medium4` 400ms or `long2` 500ms).
-  * `--md-sys-motion-easing-emphasized-accelerate`: `cubic-bezier(0.3, 0, 0.8, 0.15)` (Exiting surfaces, pair with `short4` 200ms).
+  * `--md-sys-motion-easing-emphasized`: 10-stop `linear(...)` curve approximating the 2-segment Android path interpolator (rapid 22% acceleration takeoff + long 78% gentle deceleration settle).
+  * `--md-sys-motion-easing-emphasized-decelerate`: `cubic-bezier(0.05, 0.7, 0.1, 1)` (Entering on-screen surfaces).
+  * `--md-sys-motion-easing-emphasized-accelerate`: `cubic-bezier(0.3, 0, 0.8, 0.15)` (Permanent off-screen exits only — never use when a morph settles visible on an existing slot).
 * **Standard Set** (Utilitarian, peer navigation, compact controls):
   * `--md-sys-motion-easing-standard`: `cubic-bezier(0.2, 0, 0, 1)`
   * `--md-sys-motion-easing-standard-decelerate`: `cubic-bezier(0, 0, 0, 1)`
   * `--md-sys-motion-easing-standard-accelerate`: `cubic-bezier(0.3, 0, 1, 1)`
+
+| Transition Context | Easing Token | Canonical Duration | Reference Example |
+| :--- | :--- | :--- | :--- |
+| **Begins & ends on-screen** (and recoverable return) | `emphasized` | `500ms` (`long2`) expand / `250ms` (`medium1`) return | `hero-transform` Card &harr; Detail Modal, inline Container Transform |
+| **Enters on-screen** | `emphasized-decelerate` | `400ms` (`medium4`) | Bottom sheets, drawers, `dialog-transform` open |
+| **Permanent exit** | `emphasized-accelerate` | `200ms` (`short4`) | `dialog-transform` close, dismissed banners/chips |
+| **Standard on-screen** | `standard` | `300ms` (`medium2`) | Peer tab switch, utility card reorder |
+| **Standard enter / exit** | `standard-decelerate` / `-accelerate` | `250ms` (`medium1`) / `200ms` (`short4`) | Menus, tooltips, compact popovers |
 
 ### 4.2 Motion Physics: Spatial vs. Effects Springs
 Material 3 divides spring physics into two disjoint families:
@@ -156,39 +169,105 @@ Material 3 divides spring physics into two disjoint families:
 
 ---
 
-## 5. Typography Scale: 15 Canonical Tokens
+## 5. Typography System: Fonts, Applying Type & 30-Style Dual Scale
 
-All typography classes follow the official M3 font scale:
+### 5.1 Reference Typeface Tokens (`m3.material.io/styles/typography/fonts`)
+M3 splits reference typefaces into two semantic role tokens plus monospace (`src/styles/_token.css`):
+- **Brand (`--md-ref-typeface-brand`)**: `'Plus Jakarta Sans', system-ui, -apple-system, sans-serif` — assigned to **Display** and **Headline** scales (`24px–57px`) with weights `400`, `600`, `700`, `800`.
+- **Plain (`--md-ref-typeface-plain`)**: `'Plus Jakarta Sans', system-ui, -apple-system, sans-serif` — assigned to **Title**, **Body**, and **Label** scales (`11px–22px`, weights `400`, `500`, `700`). Keeping `--md-ref-typeface-plain` separate from `--md-ref-typeface-brand` allows swapping the UI reading font (e.g., to `'Inter'` or `'Roboto'`) in `_token.css` without touching components.
+- **Monospace (`--md-ref-typeface-mono`)**: `ui-monospace, 'Cascadia Code', 'Fira Code', monospace` — system monospace stack assigned to numeric KPIs, timers, and OKLCH token readouts with `tabular-nums` (zero extra webfont payload).
 
-| Category | Token Class | Font Size | Line Height | Tracking | Weight |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Display** | `.text-display-lg` | 57px (3.5625rem) | 64px (4rem) | `-0.025em` | 800 |
-| | `.text-display-md` | 45px (2.8125rem) | 52px (3.25rem) | `-0.020em` | 800 |
-| | `.text-display-sm` | 36px (2.25rem) | 44px (2.75rem) | `-0.015em` | 700 |
-| **Headline** | `.text-headline-lg` | 32px (2rem) | 40px (2.5rem) | `-0.015em` | 700 |
-| | `.text-headline-md` | 28px (1.75rem) | 36px (2.25rem) | `-0.010em` | 700 |
-| | `.text-headline-sm` | 24px (1.5rem) | 32px (2rem) | `-0.005em` | 600 |
-| **Title** | `.text-title-lg` | 22px (1.375rem) | 28px (1.75rem) | `-0.005em` | 600 |
-| | `.text-title-md` | 16px (1rem) | 24px (1.5rem) | `+0.010em` | 600 |
-| | `.text-title-sm` | 14px (0.875rem) | 20px (1.25rem) | `+0.010em` | 600 |
-| **Body** | `.text-body-lg` | 16px (1rem) | 24px (1.5rem) | `+0.015em` | 400 |
-| | `.text-body-md` | 14px (0.875rem) | 20px (1.25rem) | `+0.015em` | 400 |
-| | `.text-body-sm` | 12px (0.75rem) | 16px (1rem) | `+0.020em` | 400 |
-| **Label** | `.text-label-lg` | 14px (0.875rem) | 20px (1.25rem) | `+0.010em` | 600 |
-| | `.text-label-md` | 12px (0.75rem) | 16px (1rem) | `+0.035em` | 600 |
-| | `.text-label-sm` | 11px (0.6875rem) | 16px (1rem) | `+0.040em` | 600 |
+### 5.2 Applying Type (`m3.material.io/styles/typography/applying-type`)
+- **Display & Headline**: Use `text-wrap: balance` to prevent single-word orphans on multi-line headers.
+- **Title**: Medium-emphasis structural headers for Bento cards, dialogs, and App Bars without competing with Headline.
+- **Body**: Sustained reading (`40ch–75ch` ideal line width, max `80ch`) with `text-wrap: pretty` and `rem` font sizes to honor OS/browser text scaling.
+- **Label**: Utilitarian interactive text inside Buttons (`Label Large 14px`), Chips (`Label Large/Medium`), and badges (`Label Small 11px`).
+
+### 5.3 Type Scale Tokens (`m3.material.io/styles/typography/type-scale-tokens`)
+`src/styles/_typography.css` defines all `--md-sys-typescale-*` tokens (`-font`, `-size`, `-line-height`, `-tracking`, `-weight`, `-emphasized-weight`) and provides both `.text-*` (Baseline) and `.text-*-emphasized` (M3 Expressive Emphasized) utility classes:
+
+| Category | Baseline / Emphasized Class | Size | Line Height | Tracking | Baseline Weight | Emphasized Weight |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Display** | `.text-display-lg` / `-emphasized` | 57px (3.5625rem) | 64px (4rem) | `-0.25px` | 400 | 800 |
+| | `.text-display-md` / `-emphasized` | 45px (2.8125rem) | 52px (3.25rem) | `0px` | 400 | 800 |
+| | `.text-display-sm` / `-emphasized` | 36px (2.25rem) | 44px (2.75rem) | `0px` | 400 | 700 |
+| **Headline** | `.text-headline-lg` / `-emphasized` | 32px (2rem) | 40px (2.5rem) | `0px` | 400 | 700 |
+| | `.text-headline-md` / `-emphasized` | 28px (1.75rem) | 36px (2.25rem) | `0px` | 400 | 700 |
+| | `.text-headline-sm` / `-emphasized` | 24px (1.5rem) | 32px (2rem) | `0px` | 400 | 600 |
+| **Title** | `.text-title-lg` / `-emphasized` | 22px (1.375rem) | 28px (1.75rem) | `0px` | 400 | 700 |
+| | `.text-title-md` / `-emphasized` | 16px (1rem) | 24px (1.5rem) | `+0.15px` | 500 | 700 |
+| | `.text-title-sm` / `-emphasized` | 14px (0.875rem) | 20px (1.25rem) | `+0.1px` | 500 | 700 |
+| **Body** | `.text-body-lg` / `-emphasized` | 16px (1rem) | 24px (1.5rem) | `+0.5px` | 400 | 500 |
+| | `.text-body-md` / `-emphasized` | 14px (0.875rem) | 20px (1.25rem) | `+0.25px` | 400 | 500 |
+| | `.text-body-sm` / `-emphasized` | 12px (0.75rem) | 16px (1rem) | `+0.4px` | 400 | 500 |
+| **Label** | `.text-label-lg` / `-emphasized` | 14px (0.875rem) | 20px (1.25rem) | `+0.1px` | 500 | 700 |
+| | `.text-label-md` / `-emphasized` | 12px (0.75rem) | 16px (1rem) | `+0.5px` | 500 | 700 |
+| | `.text-label-sm` / `-emphasized` | 11px (0.6875rem) | 16px (1rem) | `+0.5px` | 500 | 700 |
+
+### 5.4 Shape Principles & Dual Shape Morphing (`m3.material.io/styles/shape/overview-principles`, `shape-morph`)
+Three optical laws govern the 10-step shape scale (`0px`, `4px`, `8px`, `12px`, `16px`, `20px`, `28px`, `32px`, `48px`, `9999px`):
+- **Geometric Attention Hierarchy**: High-radius interactive pills stand out cleanly inside rounded Bento containers (`16px–28px`) without heavy borders.
+- **Optical Concentricity**: Nested controls match container geometry ($R_{\text{outer}} \approx R_{\text{inner}} + \text{padding}$, e.g. `28px` card with `16px` padding holds `12px` inner blocks).
+- **Geometry as Visual Haptics**: On Web/Desktop, animated corner/polygon transitions communicate press and selection without hardware vibration.
+
+M3 Expressive implements two distinct Shape Morph mechanisms:
+1. **Corner Radius Morphing (Web/Desktop & Mobile)**: Interpolates `border-radius` on interaction using `--md-sys-motion-spring-expressive-fast-spatial`.
+   - **Bounded Pill Radius Law (`h/2`)**: **Never animate `border-radius` from `9999px` (`rounded-full`)**, because CSS interpolates numerically from `9999px` down to `h/2` before any visual corner change occurs (~1s invisible dead-zone). Use bounded half-height component tokens instead:
+     - **Buttons (`_button.css`)**: `--md-comp-button-shape-pill` (`24px` or `20px` on `40px` buttons $\leftrightarrow$ `12px`/`10px` on `:active`).
+     - **Filter Chips (`_chip.css`)**: `--md-comp-chip-shape-pill` (`16px` on `32px` chips $\leftrightarrow$ `8px` on `.is-selected`).
+     - **Interactive Cards**: `medium 12px` / `large 16px` $\leftrightarrow$ `extra-large 28px`.
+2. **Polygon / Spline Path Morphing (Organic Shapes)**: Continuous SVG path interpolation (`Rounded Pentagon` $\leftrightarrow$ `Squircle` $\leftrightarrow$ `4-Petal Clover` $\leftrightarrow$ `Circle`) in `<m3-loading-indicator>`.
+   - **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path (`M3_PENTAGON_PATH`, `M3_SQUIRCLE_PATH`, `M3_COOKIE4_PATH`, `M3_CIRCLE_PATH`) MUST be generated with the exact same `SEGMENT_COUNT = 40` ($\text{lcm}(4, 5, 8, 10)$) cubic Bézier `C` commands centered at `(24, 24)` (`viewBox="0 0 48 48"`) via Catmull-Rom closed splines so SMIL `<animate attributeName="d">` morphs symmetrically at 60fps.
 
 ---
 
-## 6. How to Replicate in Future Projects
+## 6. Elevation (0dp → 12dp), Applying Elevation & State Layer Opacities
+
+### 6.1 Elevation System & Applying Elevation (`src/styles/_elevation.css` & `applying-elevation`)
+Shadows use `color-mix(in oklch, var(--md-sys-color-shadow) ..., transparent)` so ambient and key shadows adapt automatically across themes:
+- `level0` (`0dp`): `none` (`surface` / `surface-container-highest`) — **Tonal Containment first**: separate static Bento boxes via surface tones before adding shadows.
+- `level1` (`1dp`): `surface-container-low` (Elevated cards & Elevated buttons at rest).
+- `level2` (`3dp`): `surface-container` (Elevated cards on hover, menus, popovers, scrolled Top App Bar via **on-scroll / overlap trigger**).
+- `level3` (`6dp`): `surface-container-high` (FAB at rest, modal dialogs with Stage Recess scrim).
+- `level4` (`8dp`): `surface-container-high` (FAB on hover, dragged cards/items via **`+1` / drag elevation delta**).
+- `level5` (`12dp`): `surface-container-highest` (Expanded Hero containers & top floating surfaces).
+
+**Component Elevation Matrix (`Resting → Hover/Scroll → Pressed/Dragged`)**:
+| Component | Tonal Surface | Resting | Hover / Scroll | Pressed / Dragged |
+| :--- | :--- | :--- | :--- | :--- |
+| **Filled & Outlined Cards / Bento** | `surface-container` / `highest` | `Level 0` (`0dp`) | `Level 1` (`1dp`) if interactive | `Level 3–4` (`6–8dp`) when dragged |
+| **Elevated Card & Elevated Button** | `surface-container-low` | `Level 1` (`1dp`) | `Level 2` (`3dp`) | `Level 1` (`1dp`) press / `Level 4` drag |
+| **Top App Bar / Sticky Header** | `surface` $\to$ `surface-container` | `Level 0` (`0dp`) | `Level 2` (`3dp`) on scroll | — |
+| **Menus, Autocomplete & Popovers** | `surface-container` | `Level 2` (`3dp`) | `Level 2` (`3dp`) | — |
+| **Floating Action Button (FAB)** | `primary-container` | `Level 3` (`6dp`) | `Level 4` (`8dp`) | `Level 3` (`6dp`) press |
+| **Modal Dialog / Bottom Sheet** | `surface-container-high` | `Level 3` (`6dp`) + Scrim | `Level 3` (`6dp`) | `Level 5` (`12dp`) Hero expanded |
+
+### 6.2 State Layer Opacities & Component Hover Recipes (`src/styles/_token.css` & `_interaction.css`)
+- `--md-sys-state-hover-state-layer-opacity`: `0.08` (`8%`)
+- `--md-sys-state-focus-state-layer-opacity`: `0.10` (`10%`)
+- `--md-sys-state-pressed-state-layer-opacity`: `0.12` (`12%`)
+- `--md-sys-state-dragged-state-layer-opacity`: `0.16` (`16%`)
+- `--md-sys-state-disabled-content-opacity`: `0.38` (`38%`)
+- `--md-sys-state-disabled-container-opacity`: `0.12` (`12%`)
+
+**How Hover State Layers work per Component Role**:
+- **Filled Button (`bg-primary`)**: `8%` of `on-primary` (`currentColor`) + shadow lift to `Level 1`.
+- **Tonal Button (`bg-sec-box`)**: `8%` of `on-secondary-container`.
+- **Outlined / Text Button (`transparent`)**: `8%` of `primary` tints the transparent surface.
+- **Interactive Cards (`Elevated`, `Filled`, `Outlined`)**: `8%` of neutral `on-surface` (preserving inner semantic badge colors) + `+1` elevation level lift.
+- **Filter Chips & List Items**: `8%` of `on-surface-variant` (unselected) or `on-secondary-container` (selected) + corner radius morph.
+
+---
+
+## 7. How to Replicate in Future Projects
 
 To use this exact token architecture in another project (Angular, React, Vue, Next.js, or HTML):
 1. Copy the files in `src/styles/`:
    - `_token.css` (OKLCH colors & roles)
    - `_shape.css` (Corner tokens)
    - `_motion.css` (Curves & durations)
-   - `_elevation.css` (Tonal elevation & shadows)
-   - `_typography.css` (15 M3 typography classes)
+   - `_elevation.css` (6-level tonal elevation & `color-mix` shadows + `applying-elevation`)
+   - `_typography.css` (30 M3 dual typography classes: 15 Baseline + 15 Emphasized)
 2. Import them into your main stylesheet:
    ```css
    @import "./styles/_token.css";

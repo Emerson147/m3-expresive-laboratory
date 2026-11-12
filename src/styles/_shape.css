@@ -1,22 +1,40 @@
 :root {
   /* =========================================================
-     M3 SHAPE SYSTEM (m3.material.io/styles/shape)
+     M3 EXPRESSIVE SHAPE SYSTEM — 10-STEP CORNER SCALE
+     References:
+       - m3.material.io/styles/shape/overview-principles
+       - m3.material.io/styles/shape/corner-radius-scale
+       - m3.material.io/styles/shape/shape-morph
      ========================================================= */
+
+  /* --- 1. Canonical 10 Corner Radius Tokens --- */
   --md-sys-shape-corner-none: 0px;
   --md-sys-shape-corner-extra-small: 4px;
   --md-sys-shape-corner-small: 8px;
   --md-sys-shape-corner-medium: 12px;
   --md-sys-shape-corner-large: 16px;
-  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-large-increased: 20px;         /* M3 Expressive intermediate step */
   --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-extra-large-increased: 32px;   /* M3 Expressive expanded container step */
+  --md-sys-shape-corner-extra-extra-large: 48px;       /* M3 Expressive hero / focal surface step */
   --md-sys-shape-corner-full: 9999px;
 
-  /* Aliases for backwards compatibility */
+  /* --- 2. Asymmetric Directional Corner Tokens (Top / Bottom / Start / End) --- */
+  --md-sys-shape-corner-extra-small-top: 4px 4px 0px 0px;
+  --md-sys-shape-corner-large-top: 16px 16px 0px 0px;
+  --md-sys-shape-corner-large-end: 0px 16px 16px 0px;
+  --md-sys-shape-corner-large-start: 16px 0px 0px 16px;
+  --md-sys-shape-corner-extra-large-top: 28px 28px 0px 0px;
+
+  /* --- 3. Backwards-Compatible Short Aliases --- */
   --md-sys-shape-none: var(--md-sys-shape-corner-none);
   --md-sys-shape-extra-small: var(--md-sys-shape-corner-extra-small);
   --md-sys-shape-small: var(--md-sys-shape-corner-small);
   --md-sys-shape-medium: var(--md-sys-shape-corner-medium);
   --md-sys-shape-large: var(--md-sys-shape-corner-large);
+  --md-sys-shape-large-increased: var(--md-sys-shape-corner-large-increased);
   --md-sys-shape-extra-large: var(--md-sys-shape-corner-extra-large);
+  --md-sys-shape-extra-large-increased: var(--md-sys-shape-corner-extra-large-increased);
+  --md-sys-shape-extra-extra-large: var(--md-sys-shape-corner-extra-extra-large);
   --md-sys-shape-full: var(--md-sys-shape-corner-full);
 }

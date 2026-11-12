@@ -15,51 +15,54 @@ M3 Expressive departs from rigid, sterile enterprise layouts through:
 
 1. **Dynamic Color Science (OKLCH)**: Perceptually uniform lightness across the color spectrum, preventing luminance distortion when shifting hues.
 2. **Spring Physics & Expressive Motion**: Non-linear physics (`cubic-bezier(0.05, 0.7, 0.1, 1)` and spring curves) instead of generic linear/ease transitions.
-3. **Fluid Shape Morphing**: Elements dynamically transition between sharp and squircle radii (`rounded-full` $\leftrightarrow$ `rounded-2xl` $\leftrightarrow$ `rounded-md`) based on active state.
+3. **Fluid Shape Morphing**: Elements dynamically transition between bounded pill (`h/2`) and squircle radii on interactive controls, and uniform $N=40$ SVG spline polygons on `<m3-loading-indicator>`.
 4. **Bento Grid Hierarchy**: Asymmetric modular cards prioritizing content density and focal points over uniform repetition.
 5. **Depth via Stage Recess**: Modal dialogs do not simply cover content with a dark scrim; the entire underlying stage scales down and blurs into a recess layer.
 
 ---
 
-## 2. Color Tokens & OKLCH Dynamic Theming
+## 2. 3-Tier Color Tokens & OKLCH Dynamic Theming
 
-### Why OKLCH?
+### Architecture & Vibrant Expressive Progression
+
+Tokens flow strictly through **3 tiers** (`src/styles/_token.css`): **Reference (`--md-ref-*`: palette & typefaces) $\to$ System (`--md-sys-*`: semantic roles, shape, motion, elevation, state opacities) $\to$ Component (`--md-comp-*`) & Tailwind v4 `@theme`**.
 
 Standard HSL and RGB suffer from perceptual non-uniformity: Hue 60° (Yellow) appears much brighter than Hue 240° (Blue) at identical lightness percentages. OKLCH guarantees constant perceived luminance:
 
 $$\text{oklch}(\text{Lightness} \quad \text{Chroma} \quad \text{Hue})$$
 
-### Surface and Tone Palette Mapping
+### 8 Surfaces, 12 Fixed Roles, Extended Semantics & 3 Contrast Levels
 
 ```css
+/* src/styles/_token.css (simplified; references flow through --md-ref-palette-* → --md-sys-color-*) */
 :root {
-  --seed-hue: 250; /* Dynamic user seed in degrees (0 - 360) */
+  --seed-hue: 275; /* Dynamic user seed in degrees (0 - 360) */
 
-  /* Light Theme Surfaces & Tones */
-  --md-sys-color-primary: oklch(52% 0.22 var(--seed-hue));
-  --md-sys-color-on-primary: oklch(99% 0.02 var(--seed-hue));
-  --md-sys-color-primary-container: oklch(92% 0.08 var(--seed-hue));
-  --md-sys-color-on-primary-container: oklch(25% 0.16 var(--seed-hue));
-
-  --md-sys-color-surface: oklch(98% 0.01 var(--seed-hue));
-  --md-sys-color-surface-dim: oklch(93% 0.02 var(--seed-hue));
-  --md-sys-color-surface-container: oklch(95% 0.02 var(--seed-hue));
-  --md-sys-color-surface-container-high: oklch(91% 0.03 var(--seed-hue));
+  /* Vibrant Expressive Surface Progression (8 Ordered Surfaces)
+     Light chroma grows 0.005 → 0.022 | Dark chroma grows 0.014 → 0.030 */
+  --md-sys-color-surface-dim: oklch(84% 0.020 var(--seed-hue));
+  --md-sys-color-surface: oklch(98% 0.005 var(--seed-hue));
+  --md-sys-color-surface-container-lowest: /* Peak inset surface (_token.css) */;
+  --md-sys-color-surface-container-low: oklch(96% 0.008 var(--seed-hue));
+  --md-sys-color-surface-container: oklch(93% 0.012 var(--seed-hue));
+  --md-sys-color-surface-container-high: oklch(90% 0.018 var(--seed-hue));
+  --md-sys-color-surface-container-highest: oklch(86% 0.022 var(--seed-hue));
+  --md-sys-color-surface-bright: /* High-emphasis canvas (_token.css) */;
 }
 
 .dark {
-  /* Dark Theme Surfaces & Tones (Inverted luminance with dialed-down chroma) */
-  --md-sys-color-primary: oklch(78% 0.14 var(--seed-hue));
-  --md-sys-color-on-primary: oklch(18% 0.08 var(--seed-hue));
-  --md-sys-color-primary-container: oklch(34% 0.12 var(--seed-hue));
-  --md-sys-color-on-primary-container: oklch(92% 0.04 var(--seed-hue));
-
-  --md-sys-color-surface: oklch(13% 0.02 var(--seed-hue));
-  --md-sys-color-surface-dim: oklch(9% 0.02 var(--seed-hue));
-  --md-sys-color-surface-container: oklch(19% 0.025 var(--seed-hue));
-  --md-sys-color-surface-container-high: oklch(24% 0.03 var(--seed-hue));
+  --md-sys-color-surface-dim: oklch(10% 0.014 var(--seed-hue));
+  --md-sys-color-surface: oklch(12% 0.016 var(--seed-hue));
+  --md-sys-color-surface-container-low: oklch(15% 0.018 var(--seed-hue));
+  --md-sys-color-surface-container: oklch(18% 0.022 var(--seed-hue));
+  --md-sys-color-surface-container-high: oklch(22% 0.026 var(--seed-hue));
+  --md-sys-color-surface-container-highest: oklch(27% 0.030 var(--seed-hue));
 }
 ```
+
+* **12 Theme-Invariant Fixed Roles**: `--md-sys-color-{primary,secondary,tertiary}-fixed`, `*-fixed-dim`, `--md-sys-color-on-*-fixed`, and `*-fixed-variant` keep constant lightness/chroma across Light and Dark modes (use for persistent badges and media overlays).
+* **Extended Semantic Roles**: OKLCH-harmonized `success` / `warning` roles (`--md-sys-color-success*`, `--md-sys-color-warning*`) alongside `error`.
+* **3 Contrast Levels + Forced Colors**: Switch `standard | medium | high` via `ThemeService.setContrastLevel(level)` to tighten surface/text/border separation; pair with `@media (forced-colors: active)` OS high-contrast fallbacks.
 
 ### Circular Reveal Dark Mode
 
@@ -209,13 +212,20 @@ runViewTransition(mutation: () => void, onFinished?: () => void): void {
 Always evaluate these 3 filters before writing animation code:
 
 1. **Filter 1 — DOM Lifecycle**:
-   * **Node stays alive in same component** (Card expand, FAB morph, inline drawer): Use **CSS Transitions** with bounded explicit dimensions and `overflow-hidden`. Do NOT use `startViewTransition` for local same-tree state.
+   * **Node stays alive in same component** (Card expand, FAB morph, inline drawer): Use **CSS Transitions** with bounded explicit dimensions + `overflow-hidden`, or CSS Grid `grid-rows-[0fr]` &harr; `grid-rows-[1fr]` + `[attr.inert]`. Do NOT use `startViewTransition` for local same-tree state.
    * **DOM tree is destroyed & rebuilt** (Route change, overlay modal teleported to root): Use **View Transitions API** (`view-transition-name`) to morph GPU snapshots across detached DOM nodes.
-2. **Filter 2 — Physics Family (Spatial vs. Effects in `src/styles/_motion.css`)**:
-   * **Spatial (`damping: 0.9`, underdamped)**: Moves position, scale, width, height. Use `Expressive` for focal interactions (`--md-sys-motion-spring-expressive-fast-spatial`, `350ms`–`500ms`) and `Standard` (`+6%` overshoot) for dense enterprise lists/tables.
+2. **Filter 2 — Physics Family & M3 Transition Context (`src/styles/_motion.css`)**:
+   * **Begins & Ends On-Screen / Recoverable** (`hero-transform`, inline expand): Use `--md-sys-motion-easing-emphasized` (10-stop `linear(...)` curve) with asymmetric durations (`500ms` `long2` expand &harr; `250ms` `medium1` return), or **Spatial** spring tokens (`damping: 0.9`). Never pair `emphasized-accelerate` when the returning snapshot lands visible on a card slot.
+   * **Enters vs. Permanent Exit** (`dialog-transform`, dismissed overlays): Pair `--md-sys-motion-easing-emphasized-decelerate` (`400ms` `medium4`) with `--md-sys-motion-easing-emphasized-accelerate` (`200ms` `short4`).
    * **Effects (`damping: 1.0`, critical zero-bounce)**: Changes color, opacity, or shadow (`--md-sys-motion-spring-*-effects-curve`, `150ms`–`300ms`). Never bounce optical properties.
-3. **Filter 3 — Zero Magic Numbers**:
-   * Strictly consume `--md-sys-motion-duration-*` (`short1` 50ms &rarr; `extra-long4` 1000ms) and `--md-sys-motion-easing-*` (`emphasized-decelerate` / `accelerate` / `standard`) so `@media (prefers-reduced-motion: reduce)` works globally across the entire app.
+3. **Filter 3 — Zero Magic Numbers & Compositor-Only Ambient Motion**:
+   * Strictly consume `--md-sys-motion-duration-*` (`short1` 50ms &rarr; `extra-long4` 1000ms) and `--md-sys-motion-easing-*` so `@media (prefers-reduced-motion: reduce)` works globally.
+   * For Gemini-style ambient blurred aurora backgrounds (`.m3-aurora-glow`), render circular `closest-side` multi-stop OKLCH radial clouds (`.m3-aurora-orb-1..3`) inside `<div class="m3-aurora-layer" aria-hidden="true">` — **never** on `::before`/`::after` of `.card-interactive`/`.state-layer` hosts (which reserve `::before` for `currentColor` overlays). Animate **only** compositor `transform` + `opacity`, pause on `html.vt-running`, provide `.is-aurora-paused`, and set `animation: none` under `prefers-reduced-motion`.
+
+### Stage Recess + View Transitions Coordination Checklist
+* **Keep Origin Slot Mounted**: Hide expanded card sources via `[class.invisible]` + `[attr.aria-hidden]` instead of `@if` to prevent Bento grid shifts and stagger replays on return.
+* **Prevent Blurry Stage Snapshots**: Set `html.vt-running #app-stage { transition: none !important; }` and freeze background ambient loops during active View Transitions.
+* **Isolate Hero Return Timing**: Scope Hero close overrides to `html.vt-hero.vt-exiting:not(.theme-transition)` so dark-mode circular reveals remain intact, preserve opaque container background/border on `::view-transition-group(hero-transform)`, lock snapshot aspect ratio (`object-fit: none; object-position: top left; width: 100%; height: 100%`), and route focus to the revealed modal heading (`tabindex="-1"`).
 
 ### ⚠️ CRITICAL: CSS Transition Layout Traps (Zero-Glitch Container Transform)
 
@@ -265,7 +275,7 @@ Do not duplicate inline `style="transition-duration: var(...)"` across feature c
 
 ### The 6 Canonical M3 Transition Patterns
 
-1. **Container Transform** (`long2` 500ms + `emphasized-decelerate`): Persistent outer surface morphs cleanly into detail state.
+1. **Container Transform** (`long2` 500ms enter / `medium1` 250ms return + `emphasized`): Persistent outer surface morphs cleanly into detail state and settles smoothly back into its origin slot.
 2. **Forward & Backward** (`medium2` 300ms + `emphasized-decelerate`): Horizontal directional slide + fade (`m3ForwardIn` / `m3BackwardIn`) across hierarchical levels.
 3. **Lateral** (`medium1` 250ms + `standard`): Peer tabs sliding in strict unison without fade (`m3LateralIn`).
 4. **Top Level (Fade Through)** (`medium1` 250ms + `standard`): Unrelated root destinations cross-fading cleanly with subtle `92% -> 100%` scale (`m3FadeThroughIn`), zero horizontal swipe.
@@ -315,10 +325,11 @@ Applying CSS `filter: blur(...)` to a container element (`#app-stage`) forces th
 
 ### Universal State Layer Engine
 
-Never use raw `:hover { opacity }` or `:hover { background }`. In M3, state layers project an overlay of `currentColor` without altering the base background color:
-* **Hover**: 8% opacity (`var(--md-sys-state-hover-opacity)`)
-* **Focus**: 10% opacity (`var(--md-sys-state-focus-opacity)`) + dual focus ring
-* **Pressed**: 12% opacity (`var(--md-sys-state-pressed-opacity)`) + spring scaling (`scale(0.975)`)
+Never use raw `:hover { opacity }` or `:hover { background }`. In M3, state layers project a `currentColor` overlay (`on-*` on Filled/Tonal buttons, `primary` on Outlined/Text, **neutral `on-surface` on interactive Cards** to keep nested badges untinted):
+* **Hover**: 8% opacity (`var(--md-sys-state-hover-state-layer-opacity)`)
+* **Focus**: 10% opacity (`var(--md-sys-state-focus-state-layer-opacity)`) + dual focus ring
+* **Pressed**: 12% opacity (`var(--md-sys-state-pressed-state-layer-opacity)`) + spring scaling (`scale(0.975)`)
+* **Dragged / Disabled**: 16% dragged (`--md-sys-state-dragged-state-layer-opacity`); disabled `0.38` content / `0.12` container (`--md-sys-state-disabled-*`)
 * **Touch Target**: 48×48dp minimum accessible hitbox via `.touch-target-48`.
 
 ### Window Size Classes
@@ -336,7 +347,7 @@ When porting or creating new M3 Expressive components:
 * [ ] **State Separation**: Business logic and metrics belong in `@Injectable({ providedIn: 'root' })` services (`ThemeService`, `TaskService`, `AdaptiveLayoutService`), never in template logic.
 * [ ] **CSS Box Isolation**: Use `host: { class: 'contents' }` or `host: { class: 'block col-span-12' }` on custom components to prevent CSS grid/flex layout clipping.
 * [ ] **State Layers**: Interactive elements must include `.state-layer` and `.focus-ring-m3`.
-* [ ] **Shape Morphing**: Use Tailwind shape transitions (`transition-all duration-300 rounded-full hover:rounded-m3-md`).
+* [ ] **Bounded Pill Shape Morphing**: Animate corner morphs using bounded half-height (`h/2`) component tokens (`24px/20px ↔ 12px/10px` via `--md-comp-button-shape-pill`, `16px ↔ 8px` via `--md-comp-chip-shape-pill`) + `--md-sys-motion-spring-expressive-fast-spatial`. **Anti-pattern**: never animate `border-radius` from `9999px` (`rounded-full`)—CSS interpolates numerically from `9999` down to `h/2` before corners start moving (~1s dead-zone).
 * [ ] **Dynamic View Transitions**: Always control `view-transition-name` with an `activeTransition` signal state.
 
 ---
@@ -385,7 +396,7 @@ When porting or creating new M3 Expressive components:
 
 ### Chip Types & Hierarchy
 
-- `filter`: Selection with `check` icon and organic shape morphing from `full` to `medium` (12px squircle).
+- `filter`: Selection with `check` icon and bounded shape morphing from `16px` (`--md-comp-chip-shape-pill`) to `8px` squircle (`_chip.css`), avoiding the `9999px` dead-zone.
 * `assist`: Contextual action trigger with leading icon.
 * `input`: User tag entity with trailing remove (`cancel`) icon.
 * `suggestion`: System recommendation pill.
@@ -446,7 +457,8 @@ When porting or creating new M3 Expressive components:
   * Flagship `four-color` cycle option.
 * **Shape-Morphing Loading Indicator (`m3-loading-indicator`)**:
   * Distinct component from progress indicators; designed for pull-to-refresh and indeterminate page loading.
-  * Continuous GPU spline morphing between 4 canonical geometric states: Rounded Pentagon $\leftrightarrow$ Squircle $\leftrightarrow$ 4-Petal Clover $\leftrightarrow$ Circle.
+  * Continuous GPU spline morphing between 4 canonical geometric states: `M3_PENTAGON_PATH` (Rounded Pentagon) $\leftrightarrow$ `M3_SQUIRCLE_PATH` (Squircle) $\leftrightarrow$ `M3_COOKIE4_PATH` (4-Petal Clover) $\leftrightarrow$ `M3_CIRCLE_PATH` (Circle).
+  * **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path MUST be generated with `SEGMENT_COUNT = 40` ($\text{lcm}(4, 5, 8, 10)$) closed Catmull-Rom `C` segments centered at `(24, 24)` (`viewBox="0 0 48 48"`) so SMIL `<animate attributeName="d">` morphs symmetrically at 60fps without twisting.
   * Supports canonical 48x48dp container (`[contained]="true"`) in `primary-container` with `on-primary-container` fill, and elevated card mode (`[elevated]="true"`).
 * **Skeleton / Shimmer (`.m3-skeleton`, `.m3-skeleton-shimmer`)**:
   * Zero-layout-shift placeholders with OKLCH reflective wave gradient.
@@ -545,33 +557,39 @@ Material 3 Expressive dynamically switches navigation patterns based on Window S
 
 ---
 
-## 14. Canonical Master Scales Reference
+## 14. Canonical Master Scales & Token Laws Reference
 
-### Typography Scale (15 Roles)
+### Fonts, Applying Type & 30-Style Dual Typography (`_token.css`, `_typography.css`)
 
-| Role | Level | Size | Line Height | Tracking | Weight |
+* **Reference Typefaces**: `--md-ref-typeface-brand` & `--md-ref-typeface-plain` map to `'Plus Jakarta Sans', system-ui, -apple-system, sans-serif` (kept as two independent tokens so Plain UI text can swap without altering components); `--md-ref-typeface-mono` maps to `ui-monospace, 'Cascadia Code', 'Fira Code', monospace` with `tabular-nums`.
+* **Applying Type Rules**: Size in `rem` to respect OS/browser zoom; apply `text-wrap: balance` on Display/Headline; apply `text-wrap: pretty` and `40ch–75ch` (max `80ch`) line measure on Body.
+* **Dual Typescales (`.text-*` Baseline / `.text-*-emphasized` Expressive)**:
+
+| Role | Level | Size (`px` / `rem`) | Line Height | Tracking | Weight (Base / Emph) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Display** | Large / Med / Small | 57 / 45 / 36px | 64 / 52 / 44px | -0.25 / 0 / 0 | Regular (400) |
-| **Headline** | Large / Med / Small | 32 / 28 / 24px | 40 / 36 / 32px | 0 / 0 / 0 | Regular (400) |
-| **Title** | Large / Med / Small | 22 / 16 / 14px | 28 / 24 / 20px | 0 / 0.15 / 0.1 | Medium / SemiBold |
-| **Body** | Large / Med / Small | 16 / 14 / 12px | 24 / 20 / 16px | 0.5 / 0.25 / 0.4 | Regular (400) |
-| **Label** | Large / Med / Small | 14 / 12 / 11px | 20 / 16 / 16px | 0.1 / 0.5 / 0.5 | Medium (500) |
+| **Display** | L / M / S | 57 / 45 / 36px (`3.5625 / 2.8125 / 2.25rem`) | 64 / 52 / 44px | -0.25 / 0 / 0 | `400 / 800`, `400 / 800`, `400 / 700` |
+| **Headline** | L / M / S | 32 / 28 / 24px (`2 / 1.75 / 1.5rem`) | 40 / 36 / 32px | 0 / 0 / 0 | `400 / 700`, `400 / 700`, `400 / 600` |
+| **Title** | L / M / S | 22 / 16 / 14px (`1.375 / 1 / 0.875rem`) | 28 / 24 / 20px | 0 / +0.15 / +0.1 | `400 / 700`, `500 / 700`, `500 / 700` |
+| **Body** | L / M / S | 16 / 14 / 12px (`1 / 0.875 / 0.75rem`) | 24 / 20 / 16px | +0.5 / +0.25 / +0.4 | `400 / 500` |
+| **Label** | L / M / S | 14 / 12 / 11px (`0.875 / 0.75 / 0.6875rem`) | 20 / 16 / 16px | +0.1 / +0.5 / +0.5 | `500 / 700` |
 
-### Shape Corner Scale
+### 10-Step Shape Corner Scale & Overview Principles (`_shape.css`)
 
-- `none`: 0dp
-* `extra-small`: 4dp
-* `small`: 8dp
-* `medium`: 12dp
-* `large`: 16dp
-* `extra-large`: 28dp
-* `full`: 9999px (Pill / Circle)
+* `none`: `0px` | `extra-small`: `4px` | `small`: `8px` | `medium`: `12px` | `large`: `16px`
+* `large-increased`: **`20px` (M3E)** | `extra-large`: `28px` | `extra-large-increased`: **`32px` (M3E)** | `extra-extra-large`: **`48px` (M3E)** | `full`: `9999px` (static pills/circles ONLY — never for animated CSS `border-radius` morphing)
+* **3 Shape Principles**: (1) **Attention Hierarchy** (pills stand out inside organic cards without thick borders), (2) **Optical Concentricity** ($R_{\text{outer}} \approx R_{\text{inner}} + \text{padding}$), (3) **Geometry as Visual Haptics** (Bounded `h/2` Corner Morphing on Web/Desktop + $N=40$ Polygon Spline Morphing on `<m3-loading-indicator>`).
 
-### Elevation & Surface Tone Levels
+### Elevation (`0dp → 12dp`), Applying Elevation & State Layers (`_elevation.css`, `_interaction.css`)
 
-- **Level 0**: 0dp shadow $\to$ `surface`
-* **Level 1**: 1dp shadow + 5% primary tint $\to$ `surface-container-low`
-* **Level 2**: 3dp shadow + 8% primary tint $\to$ `surface-container`
-* **Level 3**: 6dp shadow + 11% primary tint $\to$ `surface-container-high`
-* **Level 4**: 8dp shadow + 12% primary tint $\to$ `surface-container-highest`
-* **Level 5**: 12dp shadow + 14% primary tint $\to$ `surface-bright`
+Shadows compute dynamically via `color-mix(in oklch, var(--md-sys-color-shadow) ..., transparent)` paired with tonal surface containers:
+
+* **Level 0 (`0dp`)**: `none` $\to$ `surface` / `surface-container-highest` (Tonal containment before shadows)
+* **Level 1 (`1dp`)**: `28% ambient + 16% key` $\to$ `surface-container-low` (Elevated cards/buttons at rest)
+* **Level 2 (`3dp`)**: `36% ambient + 20% key` $\to$ `surface-container` (Elevated hover, menus, on-scroll App Bar)
+* **Level 3 (`6dp`)**: `44% ambient + 28% key` $\to$ `surface-container-high` (FAB at rest, Modal Dialogs with Scrim)
+* **Level 4 (`8dp`)**: `52% ambient + 36% key` $\to$ `surface-container-high` (FAB hover, dragged cards — `+1`/drag delta)
+* **Level 5 (`12dp`)**: `60% ambient + 44% key` $\to$ `surface-container-highest` (Expanded Hero surfaces)
+
+* **Applying Elevation**: Prefer `0dp` tonal surface separation for static Bento cards; elevate to `Level 2` (`3dp`) on scroll/overlap; signal hover/drag with a `+1` level lift.
+* **Interaction State Layers (`--md-sys-state-*`)**: `hover-state-layer-opacity`: `0.08` (`8%`), `focus`: `0.10` (`10%`), `pressed`: `0.12` (`12%`), `dragged`: `0.16` (`16%`), `disabled-content`: `0.38` (`38%`), `disabled-container`: `0.12` (`12%`).
+* **Hover Ink Rule (`currentColor`)**: Filled/Tonal controls tint with `on-*`; Outlined/Text buttons tint with `primary`; interactive Cards MUST use **neutral `on-surface`** (`8%`) so nested semantic badges preserve their true color.

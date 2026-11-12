@@ -63,6 +63,7 @@ export class DialogService {
   }
 
   closeDialog(): void {
+    if (!this.isDialogOpen()) return;
     this.activeTransition.set('dialog');
     this.appRef.tick();
 
@@ -81,6 +82,7 @@ export class DialogService {
   }
 
   toggleHeroDetail(expand: boolean): void {
+    if (this.isHeroExpanded() === expand) return;
     this.activeTransition.set('hero');
     this.appRef.tick();
 
@@ -155,6 +157,10 @@ export class DialogService {
   private runViewTransition(update: () => void, cleanup: () => void, isExiting = false): void {
     const doc = document as any;
     if (typeof doc !== 'undefined' && typeof doc.startViewTransition === 'function') {
+      doc.documentElement?.classList.add('vt-running');
+      if (this.activeTransition() === 'hero') {
+        doc.documentElement?.classList.add('vt-hero');
+      }
       if (isExiting) {
         doc.documentElement?.classList.add('vt-exiting');
       }
@@ -163,7 +169,7 @@ export class DialogService {
         this.appRef.tick();
       });
       transition.finished.finally(() => {
-        doc.documentElement?.classList.remove('vt-exiting');
+        doc.documentElement?.classList.remove('vt-exiting', 'vt-running', 'vt-hero');
         cleanup();
         this.appRef.tick();
       });

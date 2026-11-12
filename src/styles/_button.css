@@ -16,7 +16,8 @@
   font-weight: var(--md-sys-typescale-label-large-weight, 500);
   line-height: var(--md-sys-typescale-label-large-line-height, 1.25rem);
   letter-spacing: var(--md-sys-typescale-label-large-tracking, 0.1px);
-  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  /* Bounded pill radius (24px >= half of 48px max button height) avoids the 9999px->20px CSS interpolation dead-zone */
+  border-radius: var(--md-comp-button-shape-pill, 24px);
   text-decoration: none;
   cursor: pointer;
   user-select: none;
@@ -25,8 +26,12 @@
   transition: 
     background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
     box-shadow var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
-    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
     transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
+}
+
+.m3-btn:active:not(:disabled) {
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
 }
 
 /* SIZES */
@@ -153,7 +158,7 @@
 /* DISABLED STATE */
 .m3-btn:disabled,
 .m3-btn[aria-disabled="true"] {
-  opacity: 0.38;
+  opacity: var(--md-sys-state-disabled-content-opacity, 0.38);
   pointer-events: none;
   box-shadow: none !important;
   cursor: not-allowed;
@@ -162,12 +167,12 @@
 .m3-btn-filled:disabled,
 .m3-btn-tonal:disabled,
 .m3-btn-elevated:disabled {
-  background-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
   color: var(--md-sys-color-on-surface);
 }
 
 .m3-btn-outlined:disabled {
-  border-color: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
   color: var(--md-sys-color-on-surface);
 }
 

@@ -177,7 +177,7 @@ export class M3CardComponent {
 
 | Type | Interactive Purpose | Selected State Behavior | Leading Icon |
 | :--- | :--- | :--- | :--- |
-| **Filter** | Toggling view filters & search facets. | Fills with `secondary-container`, text `on-secondary-container`, **morphs corners from full to medium (12px)**. | Shows dynamic `check` icon when active. |
+| **Filter** | Toggling view filters & search facets. | Fills with `secondary-container`, text `on-secondary-container`, **morphs corners from bounded pill (`16px`) to `8px` squircle** (`_chip.css`). | Shows dynamic `check` icon when active. |
 | **Assist** | Smart contextual actions (e.g. "Add to calendar", "Share"). | Stateless action trigger; remains outlined/transparent. | Material Symbol representing intent. |
 | **Input** | User-created entities (tags, email recipients, criteria). | Represents an entity in the UI. | Optional leading icon; trailing `cancel` remove icon. |
 | **Suggestion** | System or AI recommendations. | Discrete tonal background; triggers query or prompt. | Sparkle (`auto_awesome`) or topic icon. |

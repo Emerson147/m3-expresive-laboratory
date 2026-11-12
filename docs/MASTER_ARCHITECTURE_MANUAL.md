@@ -44,10 +44,9 @@ Material 3 Expressive rejects visual jump-cuts in favor of **strict spatial cont
 
 ### 0.3 Shape Morphing: Geometry as an Energy State
 * **The Problem**: Static corner radii treat borders as meaningless decoration.
-* **The M3 Law**: Corner radii communicate physical tension and user readiness:
-  * **Full Pill (`rounded-full`)**: Represents maximum surface tension and kinetic potential. It signals an action trigger waiting for touch or click (e.g. FABs, filter chips, primary buttons).
-  * **Squircle (`rounded-m3-md`, `rounded-m3-xl`)**: Represents stability, resting state, and data containment (e.g. modal containers, bento cards, expanded views).
-  * During interaction, elements interpolate smoothly between pill and squircle using cubic-bezier spring curves (`cubic-bezier(0.05, 0.7, 0.1, 1)`).
+* **The M3 Law**: Corner radii communicate physical tension and user readiness via two mechanisms:
+  * **Corner Radius Morphing (Web/Desktop & Mobile)**: Elements interpolate smoothly between a resting bounded pill radius (`h/2`, e.g. `24px`/`20px` on Buttons via `--md-comp-button-shape-pill` or `16px` on Filter Chips via `--md-comp-chip-shape-pill`) and a squircle (`12px`/`10px` or `8px`) using `--md-sys-motion-spring-expressive-fast-spatial`. Never animate from `9999px` (`rounded-full`)—CSS interpolates `9999 → h/2` invisibly (~1s lag) before visible corners appear.
+  * **Organic Polygon Spline Morphing (`<m3-loading-indicator>`)**: Continuously morphs across Rounded Pentagon $\leftrightarrow$ Squircle $\leftrightarrow$ 4-Petal Clover $\leftrightarrow$ Circle using uniform `SEGMENT_COUNT = 40` cubic Bézier `C` segments centered at `(24, 24)`.
 
 ### 0.4 OKLCH Color Science: Perceptual Uniformity
 * **The Problem**: Standard RGB and HSL color models are physically flawed. The human eye is vastly more sensitive to green and yellow wavelengths than blue. In HSL, an identical Lightness value of `50%` creates a blinding yellow but an illegible, murky blue, destroying automated WCAG accessibility.
@@ -110,16 +109,30 @@ Before writing any transition or animation in a feature module, apply this 3-fil
    * **Survives in the same component tree** (e.g., Card expand, FAB &rarr; Bar, Accordion): Use **CSS Transitions** with `overflow-hidden` and bounded geometric dimensions. Do NOT trigger `startViewTransition` for local same-component state.
    * **Destroyed & replaced** (e.g., Route change `/inventory` &rarr; `/inventory/42`, or global Overlay Dialog): Use the **View Transitions API** (`dialog-transform`, `hero-transform`) so the GPU morphs snapshots across disjoint DOM trees.
 2. **Filter 2 — Physics Family (Geometry vs. Optics in `src/styles/_motion.css`)**:
-   * **Spatial (Size / Position / Shape)**: Use `--md-sys-motion-duration-long2` (`500ms`) + `--md-sys-motion-easing-emphasized-decelerate` for Container Transform, or Expressive/Standard Spatial spring curves ($\zeta = 0.9$, permits subtle overshoot).
+   * **Spatial (Size / Position / Shape)**:
+     * *Begins & Ends On-Screen / Recoverable* (`hero-transform`, inline expand): Use `--md-sys-motion-easing-emphasized` (10-stop `linear(...)` curve) with asymmetric timing — longer expansion (`--md-sys-motion-duration-long2`, `500ms`) and crisp return (`--md-sys-motion-duration-medium1`, `250ms`), or Expressive Spatial springs ($\zeta = 0.9$). **Never** use `emphasized-accelerate` when returning to an on-screen slot; its slow start + hard terminal velocity slams visibly into place.
+     * *Enters vs. Permanent Exit* (`dialog-transform`, snackbars, dismissed overlays): Pair `--md-sys-motion-easing-emphasized-decelerate` (`medium4`, `400ms`) on enter with `--md-sys-motion-easing-emphasized-accelerate` (`short4`, `200ms`) on permanent discard.
    * **Effects (Color / Opacity / Border)**: Use `--md-sys-motion-spring-*-effects-curve` ($\zeta = 1.0$, zero bounce) or `--md-sys-motion-easing-standard`.
+   * *Note (GM3 Expressive)*: Google's Expressive update moves interactive physics toward Springs (`md.sys.motion.spring.*` in `_motion.css`), while Duration + Easing pairs remain first-class for View Transitions & CSS state transforms.
 3. **Filter 3 — Zero Magic Numbers**:
    * Always reference `var(--md-sys-motion-*)`. Never hardcode `300ms` or `ease-in-out`, so `@media (prefers-reduced-motion: reduce)` works globally without extra code.
 
 #### ⚠️ Critical CSS Layout Traps (Never Repeat)
 * **The `max-width: none` Explosion Trap**: NEVER toggle `w-full max-w-md` in the expanded state against `w-72` (which has `max-width: none`) in the collapsed state. At $t = 0\text{ms}$ on collapse, the browser snaps `max-width` to `none` while `width` still interpolates from `100%`, causing the card to **explode horizontally across the parent container** before shrinking.
-  * **Fix**: Keep `max-w-full` invariant in static `class`, and interpolate pure explicit numeric widths (`w-72` &harr; `w-[448px]`) and heights (`h-16` &harr; `h-48`).
+  * **Fix**: Keep `max-w-full` invariant in static `class`, and interpolate pure explicit numeric widths (`w-72` &harr; `w-[448px]`) and heights (`h-16` &harr; `h-48`) — or use CSS Grid `grid-rows-[0fr]` &harr; `grid-rows-[1fr]` with `[attr.inert]` for intrinsic-height accordion/detail drawers.
 * **The `height: auto` Snap & Blank Void Trap**: CSS `transition: all` cannot interpolate `height: auto`. Removing inner DOM nodes via `@if` at $t = 0\text{ms}$ while shrinking a tall container over `500ms` leaves an empty hollow void collapsing on screen.
   * **Fix**: Keep inner content mounted inside `overflow-hidden` and fade it out asynchronously using `--md-sys-motion-duration-short2` (`100ms`, `0ms` delay) on collapse while fading in over `medium2` (`300ms`, slight delay) on expansion.
+
+#### View Transitions + Stage Recess Production Checklist
+* **Keep the origin Bento card mounted**: Hide the source card with `[class.invisible]` + `[attr.aria-hidden]` instead of `@if`, preserving grid layout stability and preventing entrance-animation replays on return.
+* **Freeze stage transitions during snapshot**: Apply `html.vt-running #app-stage { transition: none !important; }` (and pause ambient loops via `html.vt-running .m3-aurora-orb { animation-play-state: paused !important; }`) so the browser never snapshots intermediate Stage Recess blur or running keyframe drift.
+* **Scope root return timing cleanly**: Gate Hero close duration (`250ms` `emphasized`) with `html.vt-hero.vt-exiting:not(.theme-transition)` so dark-mode circular reveal transitions (`html.theme-transition`) remain untouched.
+* **Preserve opaque surface + prevent text rubber-banding**: Set opaque `--md-sys-color-surface-container`, border, and elevation on `::view-transition-group(hero-transform)`, plus `object-fit: none; object-position: top left; width: 100%; height: 100%;` on `old`/`new` hero snapshots.
+* **Route keyboard focus explicitly**: Focus the destination heading (`tabindex="-1"`) on modal open and bind `Escape` with idempotent service guards (`closeDialog()` / `toggleHeroDetail()`).
+
+#### GPU-Composited Ambient Aurora Layers (`.m3-aurora-glow` + `.m3-aurora-layer`)
+* Never animate `filter: blur(...)` or `background-position` per frame, and **never** attach aurora layers to `::before`/`::after` on `.card-interactive` or `.state-layer` hosts (those pseudo-elements carry `background-color: currentColor` state overlays).
+* Render circular `closest-side` multi-stop OKLCH radial gradients (`.m3-aurora-orb-1..3`, fading smoothly to `transparent 100%` without hard edges) inside `<div class="m3-aurora-layer" aria-hidden="true">` under `overflow: hidden; isolation: isolate`, animate strictly `transform` and `opacity` on the GPU compositor (`.is-aurora-ambient` &harr; `.is-aurora-thinking`), expose `.is-aurora-paused`, and disable animations cleanly under `@media (prefers-reduced-motion: reduce)`.
 
 ---
 
@@ -164,31 +177,40 @@ src/app/
 
 ## 2. Design Tokens & Styling Architecture
 
-Styles are organized in an inverted pyramid: **Reference Tokens $\to$ System Tokens (`md-sys-*`) $\to$ Tailwind v4 Utility Classes**.
+Styles are organized in a 3-tier M3 pyramid: **Reference Tokens (`--md-ref-*`) $\to$ System Tokens (`--md-sys-*`) $\to$ Component Tokens (`--md-comp-*`) & Tailwind v4 `@theme`**.
 
-### 2.1 Surfaces & Container Hierarchy (`src/styles/_token.css`)
-Never use arbitrary gray or hex values. Use semantic container tokens:
+### 2.1 Color System: 8 Surfaces, 12 Fixed Roles & 3 Contrast Levels (`src/styles/_token.css`)
+Never use arbitrary gray or hex values. Semantic container surfaces follow HCT-to-OKLCH Vibrant Expressive chroma progression:
 
 | Token / Utility | Role | Light OKLCH | Dark OKLCH | Usage |
 | :--- | :--- | :--- | :--- | :--- |
-| `bg-surface-dim` | Recessed stage | `oklch(90% 0.015 H)` | `oklch(10% 0.014 H)` | `#app-stage` backdrop plane |
+| `bg-surface-dim` | Recessed stage | `oklch(84% 0.020 H)` | `oklch(10% 0.014 H)` | `#app-stage` recessed backdrop / dim plane |
 | `bg-surface` | Base canvas | `oklch(98% 0.005 H)` | `oklch(12% 0.016 H)` | Default page background |
+| `surface-container-lowest` | Purest inset | `—` (`_token.css`) | `—` (`_token.css`) | Deepest inset cards on Light, lowest layer on Dark |
 | `bg-surface-low` | Subtle elevation | `oklch(96% 0.008 H)` | `oklch(15% 0.018 H)` | Navigation Rail, sidebars |
 | `bg-surface-box` | Standard card | `oklch(93% 0.012 H)` | `oklch(18% 0.022 H)` | Default card & metric containers |
 | `bg-surface-high` | Raised surface | `oklch(90% 0.018 H)` | `oklch(22% 0.026 H)` | Hover states, active inputs, popovers |
-| `bg-surface-highest`| Promoted card | `oklch(86% 0.022 H)` | `oklch(27% 0.030 H)` | Dialogs, chips, high-emphasis items |
+| `bg-surface-highest` | Promoted card | `oklch(86% 0.022 H)` | `oklch(27% 0.030 H)` | Dialogs, chips, high-emphasis items |
+| `surface-bright` | Highlighted canvas | `—` (`_token.css`) | `—` (`_token.css`) | High-emphasis bright surface variant |
 
-### 2.2 Semantic Accent Roles
+* **12 Theme-Invariant Fixed Roles**: `--md-sys-color-{primary,secondary,tertiary}-fixed`, `*-fixed-dim`, `--md-sys-color-on-*-fixed`, and `*-fixed-variant` keep constant luminance/tone across Light and Dark modes (ideal for persistent badges and media overlays).
+* **3 Accessibility Contrast Levels**: Switching `standard | medium | high` (`ThemeService.setContrastLevel()`) scales border contrast, outline thickness, and text luminance separation, paired with `@media (forced-colors: active)` OS high-contrast fallbacks.
+
+### 2.2 Semantic & Extended Accent Roles
 * `bg-primary text-on-primary`: Main commitments, FAB buttons, active toggles.
 * `bg-primary-box text-on-primary-box`: Primary containers, badge highlights.
 * `bg-sec-box text-on-sec-box`: Navigation active items, filter chips.
 * `bg-tertiary-box text-on-tertiary-box`: Expressive badges, high-priority status.
+* **Extended Semantic Roles (`--md-sys-color-success*`, `--md-sys-color-warning*`)**: Dedicated M3-harmonized OKLCH roles (`success`, `on-success`, `success-container`, `on-success-container`, `warning`, `on-warning`, `warning-container`, `on-warning-container`) beyond `error`.
 * `text-main` / `text-muted`: Main text (`on-surface`) vs secondary text (`on-surface-variant`).
 * `border-outline-sub`: 1px subtle boundary (`outline-variant`).
 
-### 2.3 Expressive Shapes & Curves
-* `rounded-m3-xs` (4px), `rounded-m3-sm` (8px), `rounded-m3-md` (12px), `rounded-m3-lg` (16px), `rounded-m3-xl` (28px squircle), `rounded-full` (9999px).
-* State layers: Add `.btn-m3` or `.card-interactive` to get automatic 8%/10%/12% `currentColor` opacity layers on hover, focus, and press.
+### 2.3 Expressive Shapes, Dual Typography, Applying Elevation & State Layers
+* **10-Step Shape Corner Scale (`_shape.css`)**: `none` (`0px`), `xs` (`4px`), `sm` (`8px`), `md` (`12px`), `lg` (`16px`), **`lg-inc` (`20px`, M3E)**, `xl` (`28px`), **`xl-inc` (`32px`, M3E)**, **`2xl` (`48px`, M3E)**, and `full` (`9999px` for static pills/circles).
+* **Bounded Pill Morph Law (`_button.css`, `_chip.css`)**: Animated corner morphs MUST use bounded half-height (`h/2`) component tokens (`24px`/`20px` $\leftrightarrow$ `12px`/`10px` on Buttons; `16px` $\leftrightarrow$ `8px` on Filter Chips) instead of `9999px` so spring morphs fire immediately without a ~1s invisible interpolation dead-zone.
+* **Dual Typography (`_token.css`, `_typography.css`)**: Separates `--md-ref-typeface-brand` (`Plus Jakarta Sans`), `--md-ref-typeface-plain` (currently mapped to `Plus Jakarta Sans`, swappable in one token), and `--md-ref-typeface-mono` (`ui-monospace, 'Cascadia Code', 'Fira Code', monospace`). Provides **30 Dual Typescale classes** (15 Baseline `.text-*` + 15 Emphasized `.text-*-emphasized`) sized in `rem`, using `text-wrap: balance` (Display/Headline) and `text-wrap: pretty` (Body, `40ch–75ch`, max `80ch`).
+* **Applying Elevation (`0dp → 12dp`, `_elevation.css`)**: Shadows derive from `color-mix(in oklch, var(--md-sys-color-shadow) ..., transparent)`. Prefer `Level 0` (`0dp`) tonal surface containment first, activate `Level 2` (`3dp`) on scroll/overlap, and apply `+1` elevation delta on hover/drag.
+* **State Layers (`--md-sys-state-*`)**: `hover` (`0.08`), `focus` (`0.10`), `pressed` (`0.12`), `dragged` (`0.16`), `disabled-content` (`0.38`), and `disabled-container` (`0.12`). Interactive cards use neutral `on-surface` `8%` overlays so nested semantic badges keep their true color.
 
 ---
 
@@ -197,7 +219,7 @@ Never use arbitrary gray or hex values. Use semantic container tokens:
 All services are `@Injectable({ providedIn: 'root' })` and expose Angular **Signals** (`computed`, `signal`, `model`).
 
 ### 3.1 `ThemeService` (`src/app/core/theme/theme.service.ts`)
-Controls dynamic OKLCH color science, active theme hue, and dark mode toggles.
+Controls dynamic OKLCH color science, active theme hue, contrast level, and dark mode toggles.
 
 ```typescript
 import { inject } from '@angular/core';
@@ -208,11 +230,13 @@ const theme = inject(ThemeService);
 // Signals & State
 theme.isDarkMode();        // boolean (true = dark, false = light)
 theme.currentHue();         // number (e.g. 275)
+theme.contrastLevel();      // 'standard' | 'medium' | 'high'
 theme.themes;               // Array of preset themes ({ name: 'Iris', hue: 275 }, etc.)
 
 // Methods
-theme.setThemeHue(235);     // Switches dynamic seed color to Blue
-theme.toggleThemeMode(event); // Smooth circular clip-path reveal (60/120 FPS)
+theme.setThemeHue(235);           // Switches dynamic seed color to Blue
+theme.setContrastLevel('high');   // Switches contrast tier ('standard' | 'medium' | 'high')
+theme.toggleThemeMode(event);     // Smooth circular clip-path reveal (60/120 FPS)
 ```
 
 ### 3.2 `TaskService` (`src/app/core/tasks/task.service.ts`)

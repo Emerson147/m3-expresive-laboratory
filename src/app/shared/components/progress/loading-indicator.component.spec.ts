@@ -52,11 +52,17 @@ describe('M3LoadingIndicatorComponent', () => {
     expect(container).toBeTruthy();
   });
 
-  it('should render SVG shape path with animate element', () => {
+  it('should render SVG shape path with animate element and uniform 40-segment symmetric Bezier paths', () => {
     const path = fixture.nativeElement.querySelector('.m3-loading-shape-path');
     const animate = fixture.nativeElement.querySelector('animate');
     expect(path).toBeTruthy();
     expect(animate).toBeTruthy();
     expect(animate.getAttribute('attributeName')).toBe('d');
+
+    const countCubicSegments = (d: string) => (d.match(/ C /g) ?? []).length;
+    expect(countCubicSegments(component.pentagonPath)).toBe(40);
+    expect(countCubicSegments(component.squirclePath)).toBe(40);
+    expect(countCubicSegments(component.flowerPath)).toBe(40);
+    expect(countCubicSegments(component.circlePath)).toBe(40);
   });
 });

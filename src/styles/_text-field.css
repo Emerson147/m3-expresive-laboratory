@@ -86,11 +86,11 @@
   border: none;
   background: transparent;
   outline: none;
-  font-family: inherit;
-  font-size: 0.875rem;
+  font-family: var(--md-sys-typescale-body-medium-font, inherit);
+  font-size: var(--md-sys-typescale-body-medium-size, 0.875rem);
   /* 14px compact modern scale */
-  font-weight: 500;
-  line-height: 1.25rem;
+  font-weight: var(--md-sys-typescale-body-medium-emphasized-weight, 500);
+  line-height: var(--md-sys-typescale-body-medium-line-height, 1.25rem);
   color: var(--md-sys-color-on-surface);
   box-sizing: border-box;
   caret-color: var(--md-sys-color-primary);
@@ -283,7 +283,7 @@
 
 /* --- DISABLED STATE --- */
 .m3-text-field.is-disabled {
-  opacity: 0.38;
+  opacity: var(--md-sys-state-disabled-content-opacity, 0.38);
   pointer-events: none;
   cursor: not-allowed;
 }

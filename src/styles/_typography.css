@@ -1,113 +1,378 @@
 /* =========================================================
-   M3 CANONICAL TYPOGRAPHY SYSTEM (m3.material.io/styles/typography)
+   M3 EXPRESSIVE TYPOGRAPHY SYSTEM (30-Style Dual Scale)
+   15 Baseline Styles + 15 Emphasized Styles
+   References:
+     - m3.material.io/styles/typography/overview
+     - m3.material.io/styles/typography/type-scale-tokens
    ========================================================= */
 
-/* --- 1. DISPLAY (Hero banners and massive numerals) --- */
+:root {
+  /* --- 1. DISPLAY TOKENS (Brand Typeface) --- */
+  --md-sys-typescale-display-large-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-large-size: 3.5625rem;      /* 57px */
+  --md-sys-typescale-display-large-line-height: 4rem;    /* 64px */
+  --md-sys-typescale-display-large-tracking: -0.015625rem; /* -0.25px */
+  --md-sys-typescale-display-large-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-display-large-emphasized-weight: var(--md-ref-typeface-weight-extrabold, 800);
+
+  --md-sys-typescale-display-medium-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-medium-size: 2.8125rem;     /* 45px */
+  --md-sys-typescale-display-medium-line-height: 3.25rem;/* 52px */
+  --md-sys-typescale-display-medium-tracking: 0rem;      /* 0px */
+  --md-sys-typescale-display-medium-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-display-medium-emphasized-weight: var(--md-ref-typeface-weight-extrabold, 800);
+
+  --md-sys-typescale-display-small-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-small-size: 2.25rem;        /* 36px */
+  --md-sys-typescale-display-small-line-height: 2.75rem; /* 44px */
+  --md-sys-typescale-display-small-tracking: 0rem;       /* 0px */
+  --md-sys-typescale-display-small-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-display-small-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  /* --- 2. HEADLINE TOKENS (Brand Typeface) --- */
+  --md-sys-typescale-headline-large-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-large-size: 2rem;          /* 32px */
+  --md-sys-typescale-headline-large-line-height: 2.5rem; /* 40px */
+  --md-sys-typescale-headline-large-tracking: 0rem;      /* 0px */
+  --md-sys-typescale-headline-large-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-headline-large-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-headline-medium-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-medium-size: 1.75rem;      /* 28px */
+  --md-sys-typescale-headline-medium-line-height: 2.25rem; /* 36px */
+  --md-sys-typescale-headline-medium-tracking: 0rem;     /* 0px */
+  --md-sys-typescale-headline-medium-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-headline-medium-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-headline-small-font: var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-small-size: 1.5rem;        /* 24px */
+  --md-sys-typescale-headline-small-line-height: 2rem;   /* 32px */
+  --md-sys-typescale-headline-small-tracking: 0rem;      /* 0px */
+  --md-sys-typescale-headline-small-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-headline-small-emphasized-weight: var(--md-ref-typeface-weight-semibold, 600);
+
+  /* --- 3. TITLE TOKENS (Plain Typeface) --- */
+  --md-sys-typescale-title-large-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-large-size: 1.375rem;         /* 22px */
+  --md-sys-typescale-title-large-line-height: 1.75rem;   /* 28px */
+  --md-sys-typescale-title-large-tracking: 0rem;         /* 0px */
+  --md-sys-typescale-title-large-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-title-large-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-title-medium-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-medium-size: 1rem;            /* 16px */
+  --md-sys-typescale-title-medium-line-height: 1.5rem;   /* 24px */
+  --md-sys-typescale-title-medium-tracking: 0.009375rem; /* 0.15px */
+  --md-sys-typescale-title-medium-weight: var(--md-ref-typeface-weight-medium, 500);
+  --md-sys-typescale-title-medium-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-title-small-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-small-size: 0.875rem;         /* 14px */
+  --md-sys-typescale-title-small-line-height: 1.25rem;   /* 20px */
+  --md-sys-typescale-title-small-tracking: 0.00625rem;  /* 0.1px */
+  --md-sys-typescale-title-small-weight: var(--md-ref-typeface-weight-medium, 500);
+  --md-sys-typescale-title-small-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  /* --- 4. BODY TOKENS (Plain Typeface) --- */
+  --md-sys-typescale-body-large-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-large-size: 1rem;             /* 16px */
+  --md-sys-typescale-body-large-line-height: 1.5rem;    /* 24px */
+  --md-sys-typescale-body-large-tracking: 0.03125rem;   /* 0.5px */
+  --md-sys-typescale-body-large-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-body-large-emphasized-weight: var(--md-ref-typeface-weight-medium, 500);
+
+  --md-sys-typescale-body-medium-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-medium-size: 0.875rem;        /* 14px */
+  --md-sys-typescale-body-medium-line-height: 1.25rem;  /* 20px */
+  --md-sys-typescale-body-medium-tracking: 0.015625rem; /* 0.25px */
+  --md-sys-typescale-body-medium-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-body-medium-emphasized-weight: var(--md-ref-typeface-weight-medium, 500);
+
+  --md-sys-typescale-body-small-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-small-size: 0.75rem;          /* 12px */
+  --md-sys-typescale-body-small-line-height: 1rem;      /* 16px */
+  --md-sys-typescale-body-small-tracking: 0.025rem;     /* 0.4px */
+  --md-sys-typescale-body-small-weight: var(--md-ref-typeface-weight-regular, 400);
+  --md-sys-typescale-body-small-emphasized-weight: var(--md-ref-typeface-weight-medium, 500);
+
+  /* --- 5. LABEL TOKENS (Plain Typeface) --- */
+  --md-sys-typescale-label-large-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-large-size: 0.875rem;        /* 14px */
+  --md-sys-typescale-label-large-line-height: 1.25rem;  /* 20px */
+  --md-sys-typescale-label-large-tracking: 0.00625rem;  /* 0.1px */
+  --md-sys-typescale-label-large-weight: var(--md-ref-typeface-weight-medium, 500);
+  --md-sys-typescale-label-large-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-label-medium-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-medium-size: 0.75rem;        /* 12px */
+  --md-sys-typescale-label-medium-line-height: 1rem;    /* 16px */
+  --md-sys-typescale-label-medium-tracking: 0.03125rem; /* 0.5px */
+  --md-sys-typescale-label-medium-weight: var(--md-ref-typeface-weight-medium, 500);
+  --md-sys-typescale-label-medium-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+
+  --md-sys-typescale-label-small-font: var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-small-size: 0.6875rem;       /* 11px */
+  --md-sys-typescale-label-small-line-height: 1rem;     /* 16px */
+  --md-sys-typescale-label-small-tracking: 0.03125rem;  /* 0.5px */
+  --md-sys-typescale-label-small-weight: var(--md-ref-typeface-weight-medium, 500);
+  --md-sys-typescale-label-small-emphasized-weight: var(--md-ref-typeface-weight-bold, 700);
+}
+
+/* =========================================================
+   UTILITY CLASSES — 15 BASELINE + 15 EMPHASIZED (M3 Expressive)
+   ========================================================= */
+
+/* --- 1. DISPLAY (Brand Typeface + Balanced Wrapping) --- */
+.text-display-lg,
+.text-display-lg-emphasized,
+.text-display-md,
+.text-display-md-emphasized,
+.text-display-sm,
+.text-display-sm-emphasized,
+.text-headline-lg,
+.text-headline-lg-emphasized,
+.text-headline-md,
+.text-headline-md-emphasized,
+.text-headline-sm,
+.text-headline-sm-emphasized {
+  text-wrap: balance;
+}
+
+/* --- BODY READABILITY (Plain Typeface + Pretty Wrapping) --- */
+.text-body-lg,
+.text-body-lg-emphasized,
+.text-body-md,
+.text-body-md-emphasized,
+.text-body-sm,
+.text-body-sm-emphasized {
+  text-wrap: pretty;
+}
+
 .text-display-lg {
-  font-size: 3.5625rem; /* 57px */
-  line-height: 4rem;    /* 64px */
-  letter-spacing: -0.025em;
-  font-weight: 800;
+  font-family: var(--md-sys-typescale-display-large-font);
+  font-size: var(--md-sys-typescale-display-large-size);
+  line-height: var(--md-sys-typescale-display-large-line-height);
+  letter-spacing: var(--md-sys-typescale-display-large-tracking);
+  font-weight: var(--md-sys-typescale-display-large-weight);
+}
+.text-display-lg-emphasized {
+  font-family: var(--md-sys-typescale-display-large-font);
+  font-size: var(--md-sys-typescale-display-large-size);
+  line-height: var(--md-sys-typescale-display-large-line-height);
+  letter-spacing: var(--md-sys-typescale-display-large-tracking);
+  font-weight: var(--md-sys-typescale-display-large-emphasized-weight);
 }
 
 .text-display-md {
-  font-size: 2.8125rem; /* 45px */
-  line-height: 3.25rem; /* 52px */
-  letter-spacing: -0.02em;
-  font-weight: 800;
+  font-family: var(--md-sys-typescale-display-medium-font);
+  font-size: var(--md-sys-typescale-display-medium-size);
+  line-height: var(--md-sys-typescale-display-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-display-medium-tracking);
+  font-weight: var(--md-sys-typescale-display-medium-weight);
+}
+.text-display-md-emphasized {
+  font-family: var(--md-sys-typescale-display-medium-font);
+  font-size: var(--md-sys-typescale-display-medium-size);
+  line-height: var(--md-sys-typescale-display-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-display-medium-tracking);
+  font-weight: var(--md-sys-typescale-display-medium-emphasized-weight);
 }
 
 .text-display-sm {
-  font-size: 2.25rem;   /* 36px */
-  line-height: 2.75rem; /* 44px */
-  letter-spacing: -0.015em;
-  font-weight: 700;
+  font-family: var(--md-sys-typescale-display-small-font);
+  font-size: var(--md-sys-typescale-display-small-size);
+  line-height: var(--md-sys-typescale-display-small-line-height);
+  letter-spacing: var(--md-sys-typescale-display-small-tracking);
+  font-weight: var(--md-sys-typescale-display-small-weight);
+}
+.text-display-sm-emphasized {
+  font-family: var(--md-sys-typescale-display-small-font);
+  font-size: var(--md-sys-typescale-display-small-size);
+  line-height: var(--md-sys-typescale-display-small-line-height);
+  letter-spacing: var(--md-sys-typescale-display-small-tracking);
+  font-weight: var(--md-sys-typescale-display-small-emphasized-weight);
 }
 
-/* --- 2. HEADLINE (Section headers and primary titles) --- */
+/* --- 2. HEADLINE --- */
 .text-headline-lg {
-  font-size: 2rem;      /* 32px */
-  line-height: 2.5rem;  /* 40px */
-  letter-spacing: -0.015em;
-  font-weight: 700;
+  font-family: var(--md-sys-typescale-headline-large-font);
+  font-size: var(--md-sys-typescale-headline-large-size);
+  line-height: var(--md-sys-typescale-headline-large-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+  font-weight: var(--md-sys-typescale-headline-large-weight);
+}
+.text-headline-lg-emphasized {
+  font-family: var(--md-sys-typescale-headline-large-font);
+  font-size: var(--md-sys-typescale-headline-large-size);
+  line-height: var(--md-sys-typescale-headline-large-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+  font-weight: var(--md-sys-typescale-headline-large-emphasized-weight);
 }
 
 .text-headline-md {
-  font-size: 1.75rem;   /* 28px */
-  line-height: 2.25rem; /* 36px */
-  letter-spacing: -0.01em;
-  font-weight: 700;
+  font-family: var(--md-sys-typescale-headline-medium-font);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+  font-weight: var(--md-sys-typescale-headline-medium-weight);
+}
+.text-headline-md-emphasized {
+  font-family: var(--md-sys-typescale-headline-medium-font);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+  font-weight: var(--md-sys-typescale-headline-medium-emphasized-weight);
 }
 
 .text-headline-sm {
-  font-size: 1.5rem;    /* 24px */
-  line-height: 2rem;    /* 32px */
-  letter-spacing: -0.005em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-headline-small-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+}
+.text-headline-sm-emphasized {
+  font-family: var(--md-sys-typescale-headline-small-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-small-tracking);
+  font-weight: var(--md-sys-typescale-headline-small-emphasized-weight);
 }
 
-/* --- 3. TITLE (Card titles and dialog headers) --- */
+/* --- 3. TITLE --- */
 .text-title-lg {
-  font-size: 1.375rem;  /* 22px */
-  line-height: 1.75rem; /* 28px */
-  letter-spacing: -0.005em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-title-large-font);
+  font-size: var(--md-sys-typescale-title-large-size);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+}
+.text-title-lg-emphasized {
+  font-family: var(--md-sys-typescale-title-large-font);
+  font-size: var(--md-sys-typescale-title-large-size);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+  font-weight: var(--md-sys-typescale-title-large-emphasized-weight);
 }
 
 .text-title-md {
-  font-size: 1rem;       /* 16px */
-  line-height: 1.5rem;   /* 24px */
-  letter-spacing: 0.01em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+}
+.text-title-md-emphasized {
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  font-weight: var(--md-sys-typescale-title-medium-emphasized-weight);
 }
 
 .text-title-sm {
-  font-size: 0.875rem;  /* 14px */
-  line-height: 1.25rem; /* 20px */
-  letter-spacing: 0.01em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-title-small-font);
+  font-size: var(--md-sys-typescale-title-small-size);
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+  font-weight: var(--md-sys-typescale-title-small-weight);
+}
+.text-title-sm-emphasized {
+  font-family: var(--md-sys-typescale-title-small-font);
+  font-size: var(--md-sys-typescale-title-small-size);
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+  font-weight: var(--md-sys-typescale-title-small-emphasized-weight);
 }
 
-/* --- 4. BODY (Paragraphs and main text flow) --- */
+/* --- 4. BODY --- */
 .text-body-lg {
-  font-size: 1rem;       /* 16px */
-  line-height: 1.5rem;   /* 24px */
-  letter-spacing: 0.015em;
-  font-weight: 400;
+  font-family: var(--md-sys-typescale-body-large-font);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  font-weight: var(--md-sys-typescale-body-large-weight);
+}
+.text-body-lg-emphasized {
+  font-family: var(--md-sys-typescale-body-large-font);
+  font-size: var(--md-sys-typescale-body-large-size);
+  line-height: var(--md-sys-typescale-body-large-line-height);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  font-weight: var(--md-sys-typescale-body-large-emphasized-weight);
 }
 
 .text-body-md {
-  font-size: 0.875rem;  /* 14px */
-  line-height: 1.25rem; /* 20px */
-  letter-spacing: 0.015em;
-  font-weight: 400;
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+}
+.text-body-md-emphasized {
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  font-weight: var(--md-sys-typescale-body-medium-emphasized-weight);
 }
 
 .text-body-sm {
-  font-size: 0.75rem;   /* 12px */
-  line-height: 1rem;    /* 16px */
-  letter-spacing: 0.02em;
-  font-weight: 400;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  font-weight: var(--md-sys-typescale-body-small-weight);
+}
+.text-body-sm-emphasized {
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  font-weight: var(--md-sys-typescale-body-small-emphasized-weight);
 }
 
-/* --- 5. LABEL (Buttons, chips, badges, and metadata) --- */
+/* --- 5. LABEL --- */
 .text-label-lg {
-  font-size: 0.875rem;  /* 14px */
-  line-height: 1.25rem; /* 20px */
-  letter-spacing: 0.01em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+}
+.text-label-lg-emphasized {
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  font-weight: var(--md-sys-typescale-label-large-emphasized-weight);
 }
 
 .text-label-md {
-  font-size: 0.75rem;   /* 12px */
-  line-height: 1rem;    /* 16px */
-  letter-spacing: 0.035em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+}
+.text-label-md-emphasized {
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  font-weight: var(--md-sys-typescale-label-medium-emphasized-weight);
 }
 
 .text-label-sm {
-  font-size: 0.6875rem; /* 11px */
-  line-height: 1rem;    /* 16px */
-  letter-spacing: 0.04em;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+}
+.text-label-sm-emphasized {
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
+  font-weight: var(--md-sys-typescale-label-small-emphasized-weight);
 }

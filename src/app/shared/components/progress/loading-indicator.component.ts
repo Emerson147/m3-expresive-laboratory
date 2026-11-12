@@ -3,6 +3,100 @@ import { Component, computed, input } from '@angular/core';
 export type M3LoadingIndicatorSize = 'sm' | 'md' | 'lg';
 export type M3LoadingIndicatorColor = 'primary' | 'secondary' | 'tertiary' | 'error' | 'four-color';
 
+const SEGMENT_COUNT = 40;
+const CENTER = 24;
+
+interface Point2D {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Converts a closed ring of N points into a uniform N-segment Cubic Bezier SVG path
+ * using Catmull-Rom tangents. Because every shape uses the exact same N=40 `C` commands,
+ * SVG SMIL `<animate attributeName="d">` interpolates all vertices at 60fps without snapping.
+ */
+function buildClosedSplinePath(points: readonly Point2D[], tension = 1 / 6): string {
+  const n = points.length;
+  const fmt = (v: number) => Number(v.toFixed(2));
+  let d = `M ${fmt(points[0].x)},${fmt(points[0].y)}`;
+
+  for (let i = 0; i < n; i++) {
+    const p0 = points[(i - 1 + n) % n];
+    const p1 = points[i];
+    const p2 = points[(i + 1) % n];
+    const p3 = points[(i + 2) % n];
+
+    const c1x = p1.x + (p2.x - p0.x) * tension;
+    const c1y = p1.y + (p2.y - p0.y) * tension;
+    const c2x = p2.x - (p3.x - p1.x) * tension;
+    const c2y = p2.y - (p3.y - p1.y) * tension;
+
+    d += ` C ${fmt(c1x)},${fmt(c1y)} ${fmt(c2x)},${fmt(c2y)} ${fmt(p2.x)},${fmt(p2.y)}`;
+  }
+
+  return `${d} Z`;
+}
+
+/**
+ * Computes exact points on a regular n-gon with rounded corner radius `cornerRadius`
+ * and center-to-corner-center distance `coreRadius` (Minkowski sum of regular n-gon + circle).
+ */
+function createRoundedRegularPolygonPath(sides: number, coreRadius: number, cornerRadius: number): string {
+  const points: Point2D[] = [];
+  const sector = (2 * Math.PI) / sides;
+  const halfSector = sector / 2;
+
+  for (let i = 0; i < SEGMENT_COUNT; i++) {
+    const theta = -Math.PI / 2 + (2 * Math.PI * i) / SEGMENT_COUNT;
+    const rel = ((theta + Math.PI / 2) % sector + sector) % sector;
+    const phi = rel - halfSector; // [-pi/sides, +pi/sides], 0 at vertex
+
+    // Smoothly blend between the flat polygon face (cos(halfSector)/cos(phi)) and rounded vertex cap
+    const flatR = (coreRadius * Math.cos(halfSector)) / Math.cos(phi);
+    const vertexCapR = coreRadius * Math.cos(phi) + Math.sqrt(Math.max(0, cornerRadius * cornerRadius - Math.pow(coreRadius * Math.sin(phi), 2)));
+    // Rounded polygon radius at angle theta:
+    const r = Math.min(flatR + cornerRadius * 0.72, vertexCapR);
+
+    points.push({
+      x: CENTER + r * Math.cos(theta),
+      y: CENTER + r * Math.sin(theta)
+    });
+  }
+
+  return buildClosedSplinePath(points);
+}
+
+function createPolarShapePath(radiusFn: (theta: number) => number): string {
+  const points: Point2D[] = [];
+  for (let i = 0; i < SEGMENT_COUNT; i++) {
+    const theta = -Math.PI / 2 + (2 * Math.PI * i) / SEGMENT_COUNT;
+    const r = radiusFn(theta);
+    points.push({
+      x: CENTER + r * Math.cos(theta),
+      y: CENTER + r * Math.sin(theta)
+    });
+  }
+  return buildClosedSplinePath(points);
+}
+
+// Precompute canonical M3 Expressive geometric shapes (all with 40 uniform Cubic Bezier segments):
+// 1. Canonical M3 Rounded Regular Pentagon (5 identical rounded corners + 5 straight sides)
+export const M3_PENTAGON_PATH = createRoundedRegularPolygonPath(5, 13.2, 5.2);
+
+// 2. Canonical M3 Squircle (Superellipse |x|^4 + |y|^4 = R^4)
+export const M3_SQUIRCLE_PATH = createPolarShapePath(theta => {
+  const c = Math.abs(Math.cos(theta));
+  const s = Math.abs(Math.sin(theta));
+  return 16.2 / Math.pow(Math.pow(c, 4.2) + Math.pow(s, 4.2), 1 / 4.2);
+});
+
+// 3. Canonical M3 4-Petal Cookie / Clover (4 radially symmetric lobes)
+export const M3_COOKIE4_PATH = createPolarShapePath(theta => 15.4 - 2.8 * Math.cos(4 * (theta + Math.PI / 2)));
+
+// 4. Canonical M3 Perfect Circle (constant radius R = 17)
+export const M3_CIRCLE_PATH = createPolarShapePath(() => 17.0);
+
 @Component({
   selector: 'm3-loading-indicator',
   standalone: true,
@@ -22,13 +116,13 @@ export type M3LoadingIndicatorColor = 'primary' | 'secondary' | 'tertiary' | 'er
           fill="none"
           xmlns="http://www.w3.org/2000/svg">
           
-          <!-- Morphing Geometric Contour (Pentagon -> Squircle -> Flower -> Circle) -->
+          <!-- Morphing Geometric Contour (Pentagon -> Squircle -> 4-Petal Cookie -> Circle) -->
           <path
             class="m3-loading-shape-path"
             [attr.d]="pentagonPath">
             <animate
               attributeName="d"
-              dur="3.6s"
+              dur="3.2s"
               repeatCount="indefinite"
               [attr.values]="morphValues()"
               keyTimes="0; 0.25; 0.5; 0.75; 1"
@@ -59,17 +153,17 @@ export class M3LoadingIndicatorComponent {
   /** Additional classes */
   readonly customClass = input<string>('');
 
-  // 1. Pentagon (5-point organic rounded polygon - canonical M3 Expressive)
-  readonly pentagonPath = 'M 24,5 C 33,5 42,12 39,22 C 37,32 40,40 31,43 C 21,45 11,41 8,33 C 5,24 7,13 14,7 C 17,5 20,5 24,5 Z';
+  // 1. Pentagon (5-point symmetric rounded regular pentagon - canonical M3 Expressive)
+  readonly pentagonPath = M3_PENTAGON_PATH;
 
-  // 2. Squircle (4-corner continuous squircle)
-  readonly squirclePath = 'M 24,6 C 36,6 42,12 42,24 C 42,36 36,42 24,42 C 12,42 6,36 6,24 C 6,12 12,6 24,6 Z';
+  // 2. Squircle (4-corner continuous superellipse)
+  readonly squirclePath = M3_SQUIRCLE_PATH;
 
-  // 3. 4-Petal Flower (clover organic shape)
-  readonly flowerPath = 'M 24,7 C 31,3 41,13 37,21 C 45,27 37,39 29,37 C 23,45 11,39 15,31 C 5,23 13,11 21,15 C 22,10 23,7 24,7 Z';
+  // 3. 4-Petal Cookie (symmetric 4-lobe organic shape)
+  readonly flowerPath = M3_COOKIE4_PATH;
 
-  // 4. Circle
-  readonly circlePath = 'M 24,6 C 33.94,6 42,14.06 42,24 C 42,33.94 33.94,42 24,42 C 14.06,42 6,33.94 6,24 C 6,14.06 14.06,6 24,6 Z';
+  // 4. Perfect Circle
+  readonly circlePath = M3_CIRCLE_PATH;
 
   readonly morphValues = computed(() => {
     return `${this.pentagonPath}; ${this.squirclePath}; ${this.flowerPath}; ${this.circlePath}; ${this.pentagonPath}`;

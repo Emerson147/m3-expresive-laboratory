@@ -78,14 +78,25 @@
   --color-outline: var(--md-sys-color-outline);
   --color-outline-sub: var(--md-sys-color-outline-variant);
 
-  /* Shape Corners */
+  /* Shape Corners (10-Step M3 Expressive Scale) */
   --radius-m3-none: var(--md-sys-shape-corner-none);
   --radius-m3-xs: var(--md-sys-shape-corner-extra-small);
   --radius-m3-sm: var(--md-sys-shape-corner-small);
   --radius-m3-md: var(--md-sys-shape-corner-medium);
   --radius-m3-lg: var(--md-sys-shape-corner-large);
+  --radius-m3-lg-inc: var(--md-sys-shape-corner-large-increased);
   --radius-m3-xl: var(--md-sys-shape-corner-extra-large);
+  --radius-m3-xl-inc: var(--md-sys-shape-corner-extra-large-increased);
+  --radius-m3-2xl: var(--md-sys-shape-corner-extra-extra-large);
   --radius-m3-full: var(--md-sys-shape-corner-full);
+
+  /* Elevation Shadows */
+  --shadow-m3-level0: var(--md-sys-elevation-level0);
+  --shadow-m3-level1: var(--md-sys-elevation-level1);
+  --shadow-m3-level2: var(--md-sys-elevation-level2);
+  --shadow-m3-level3: var(--md-sys-elevation-level3);
+  --shadow-m3-level4: var(--md-sys-elevation-level4);
+  --shadow-m3-level5: var(--md-sys-elevation-level5);
 
   /* Motion Easings */
   --ease-m3-standard: var(--md-sys-motion-easing-standard);
@@ -137,6 +148,7 @@ body {
 .stage-normal {
   filter: blur(0px) brightness(1);
   transform: scale(1);
+  border-radius: 0px;
   transition:
     filter var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-accelerate),
     transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-accelerate),
@@ -155,6 +167,16 @@ body {
     border-radius var(--md-sys-motion-duration-medium4, 400ms) var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
+/* Snapshot inmediato al usar View Transitions: evita fotografiar blur intermedio */
+html.vt-running #app-stage {
+  transition: none !important;
+}
+
+/* Congela animaciones ambientales continuas mientras View Transitions captura el snapshot */
+html.vt-running .m3-aurora-orb {
+  animation-play-state: paused !important;
+}
+
 /* =========================================================
    2. M3 STATE LAYERS & SUPERFICIES EXPRESIVAS
    ========================================================= */
@@ -162,9 +184,9 @@ body {
   position: relative;
   overflow: hidden;
   transition:
-    transform 0.2s var(--md-sys-motion-spring),
-    border-radius 0.3s var(--md-sys-motion-emphasized),
-    background-color 0.2s ease;
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 .btn-m3::before {
@@ -175,7 +197,7 @@ body {
   background-color: currentColor;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
 }
 
 .btn-m3:hover::before {
@@ -195,13 +217,19 @@ body {
 }
 
 .card-m3 {
-  transition: border-color 0.25s ease, background-color 0.3s ease, transform 0.25s var(--md-sys-motion-emphasized);
+  transition:
+    border-color var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized);
 }
 
 .card-interactive {
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s ease, background-color 0.3s ease, transform 0.2s var(--md-sys-motion-spring);
+  transition:
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring);
 }
 
 .card-interactive::before {
@@ -212,7 +240,7 @@ body {
   background-color: currentColor;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
 .card-interactive:hover::before {
@@ -223,10 +251,18 @@ body {
   transform: scale(0.99);
 }
 
-.hero-mesh-m3 {
-  background:
-    radial-gradient(circle at 82% 22%, var(--md-sys-hero-glow, oklch(65% 0.15 var(--seed-hue) / 0.25)) 0%, transparent 62%),
-    var(--md-sys-color-surface-container);
+@layer components {
+  .hero-mesh-m3 {
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  .hero-mesh-m3:not(.m3-aurora-glow) {
+    background:
+      radial-gradient(circle at 82% 22%, var(--md-sys-hero-glow, oklch(65% 0.15 var(--seed-hue) / 0.25)) 0%, transparent 60%),
+      radial-gradient(circle at 18% 78%, var(--md-sys-hero-glow-ambient, oklch(52% 0.14 calc(var(--seed-hue) - 24) / 0.22)) 0%, transparent 64%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, var(--md-sys-hero-glow-secondary, oklch(64% 0.13 var(--tertiary-hue) / 0.16)) 0%, transparent 66%),
+      var(--md-sys-color-surface-container);
+  }
 }
 
 /* =========================================================
@@ -257,26 +293,61 @@ html.theme-transition::view-transition-new(root) {
    ========================================================= */
 html:not(.theme-transition)::view-transition-old(root),
 html:not(.theme-transition)::view-transition-new(root) {
-  animation-duration: 280ms;
-  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  animation-duration: var(--md-sys-motion-duration-medium4, 400ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
-/* Container Transform — Entering / Expanding (Medium4 400ms / Emphasized Decelerate) */
+html.vt-hero:not(.theme-transition)::view-transition-old(root),
+html.vt-hero:not(.theme-transition)::view-transition-new(root) {
+  animation-duration: var(--md-sys-motion-duration-long2, 500ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized);
+}
+
+html.vt-exiting:not(.theme-transition)::view-transition-old(root),
+html.vt-exiting:not(.theme-transition)::view-transition-new(root) {
+  animation-duration: var(--md-sys-motion-duration-short4, 200ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
+}
+
+html.vt-hero.vt-exiting:not(.theme-transition)::view-transition-old(root),
+html.vt-hero.vt-exiting:not(.theme-transition)::view-transition-new(root) {
+  animation-duration: var(--md-sys-motion-duration-medium1, 250ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized);
+}
+
+/* Container Transform — Entering / Expanding */
 ::view-transition-group(dialog-transform),
 ::view-transition-group(hero-transform),
-::view-transition-group(nav-transform),
-::view-transition-group(main-stage) {
+::view-transition-group(nav-transform) {
   animation-duration: var(--md-sys-motion-duration-medium4, 400ms);
   animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
   border-radius: var(--md-sys-shape-corner-extra-large);
   overflow: hidden;
 }
 
-/* Container Transform — Exiting / Collapsing (Short4 200ms / Emphasized Accelerate per M3 Spec) */
-html.vt-exiting::view-transition-group(dialog-transform),
-html.vt-exiting::view-transition-group(hero-transform) {
+/* Flagship Card -> Full-Screen Detail uses long2 (500ms) + Emphasized curve per M3 "begin & end on screen" */
+::view-transition-group(hero-transform) {
+  animation-duration: var(--md-sys-motion-duration-long2, 500ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized);
+}
+
+::view-transition-group(dialog-transform),
+::view-transition-group(hero-transform) {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: var(--md-sys-elevation-level-3);
+}
+
+/* Container Transform — Exiting / Collapsing */
+html.vt-exiting::view-transition-group(dialog-transform) {
   animation-duration: var(--md-sys-motion-duration-short4, 200ms);
   animation-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
+}
+
+/* On-screen Hero return takes off fast and eases gently to rest on its Bento Card */
+html.vt-exiting::view-transition-group(hero-transform) {
+  animation-duration: var(--md-sys-motion-duration-medium1, 250ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized);
 }
 
 /* Shared Element Transition: Product List -> Hero Detail (Inventario) */
@@ -343,31 +414,64 @@ html.vt-exiting::view-transition-group(hero-transform) {
   mix-blend-mode: normal;
 }
 
-/* Desvanecimiento veloz del botón origen para que no se deforme */
+/* Desvanecimiento veloz del botón / card origen para evitar estiramiento */
 ::view-transition-old(dialog-transform),
 ::view-transition-old(hero-transform) {
-  animation: 50ms linear both fade-out;
-  object-fit: none;
-  object-position: center;
-}
-
-/* La vista nueva entra fluida sin delay perceptible */
-::view-transition-new(dialog-transform),
-::view-transition-new(hero-transform) {
-  animation: 200ms cubic-bezier(0.05, 0.7, 0.1, 1) both fade-in;
+  animation: var(--md-sys-motion-duration-short1, 50ms) linear both fade-out;
   object-fit: none;
   object-position: top left;
   width: 100%;
   height: 100%;
 }
 
-/* Transición suave al cambiar entre pestañas Overview <-> Agenda */
-::view-transition-old(main-stage) {
-  animation: 120ms ease-out both stage-out;
+/* La vista nueva entra fluida con curva emphasized (despegue rápido, aterrizaje suave) */
+::view-transition-new(dialog-transform) {
+  animation: var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
 }
 
-::view-transition-new(main-stage) {
-  animation: 260ms cubic-bezier(0.2, 0, 0, 1) 60ms both stage-in;
+::view-transition-new(hero-transform) {
+  animation: var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-emphasized) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
+}
+
+/* Colapso asimétrico M3: diálogo acelera su salida; Hero aterriza suave sobre su card */
+html.vt-exiting::view-transition-old(dialog-transform) {
+  animation: var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-emphasized-accelerate) both fade-out;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
+}
+
+html.vt-exiting::view-transition-old(hero-transform) {
+  animation: var(--md-sys-motion-duration-short2, 100ms) linear both fade-out;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
+}
+
+html.vt-exiting::view-transition-new(dialog-transform) {
+  animation: var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-emphasized-accelerate) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
+}
+
+html.vt-exiting::view-transition-new(hero-transform) {
+  animation: var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
+  object-fit: none;
+  object-position: top left;
+  width: 100%;
+  height: 100%;
 }
 
 @keyframes fade-out {
@@ -390,37 +494,9 @@ html.vt-exiting::view-transition-group(hero-transform) {
   }
 }
 
-@keyframes stage-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0px);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.99);
-    filter: blur(4px);
-  }
-}
-
-@keyframes stage-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.99);
-    filter: blur(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0px);
-  }
-}
-
 /* Fallback para navegadores sin View Transitions */
 .m3-container-enter {
-  animation: m3ContainerGrow 320ms var(--md-sys-motion-spring) both;
+  animation: m3ContainerGrow var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-spring) both;
 }
 
 @keyframes m3ContainerGrow {

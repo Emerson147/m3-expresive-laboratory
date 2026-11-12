@@ -36,20 +36,40 @@ type MotionPatternId =
         <!-- PILAR 1: ASIMETRÍA DE ENTRADA VS SALIDA (MODO ESTUDIO CON TOKENS EXPLÍCITOS) -->
         <div class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl flex flex-col justify-between space-y-5 shadow-xs">
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2 text-xs font-semibold text-muted uppercase tracking-wider">
                 <span class="material-symbols-rounded text-base text-primary">swap_horiz</span>
                 Pilar 1 • Asimetría Perceptual
               </div>
-              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold"
-                [class]="demoAsymmetryOpen() ? 'bg-primary-box text-on-primary-box' : 'bg-surface-high text-muted'">
-                {{ demoAsymmetryOpen() ? 'Abierto (400ms)' : 'Cerrado (200ms)' }}
-              </span>
+              <div class="flex items-center gap-1 bg-surface-high p-1 rounded-full border border-outline-sub">
+                <button
+                  type="button"
+                  (click)="setAsymmetryMode('disposable')"
+                  [class]="demoAsymmetryMode() === 'disposable' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
+                  class="btn-m3 px-2.5 py-0.5 rounded-full text-[11px] cursor-pointer">
+                  Descartable (400/200)
+                </button>
+                <button
+                  type="button"
+                  (click)="setAsymmetryMode('onscreen')"
+                  [class]="demoAsymmetryMode() === 'onscreen' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
+                  class="btn-m3 px-2.5 py-0.5 rounded-full text-[11px] cursor-pointer">
+                  En Pantalla (500/250)
+                </button>
+              </div>
             </div>
 
-            <h3 class="text-title-md font-bold text-main">Entrada Desacelerada vs. Salida Acelerada</h3>
+            <h3 class="text-title-md font-bold text-main">
+              {{ demoAsymmetryMode() === 'disposable'
+                ? 'Entrada Desacelerada vs. Salida Permanente'
+                : 'Comienza y Termina en Pantalla (Hero / Card)' }}
+            </h3>
             <p class="text-xs text-muted leading-relaxed">
-              En M3, <strong>la entrada y la salida jamás comparten la misma duración ni curva</strong>. Cuando una superficie entra, el cerebro requiere tiempo para registrar la nueva información visual (400ms con desaceleración). Al salir, el usuario ya tomó la decisión consciente de cerrar; demorarlo genera fricción perceptiva (200ms con aceleración).
+              @if (demoAsymmetryMode() === 'disposable') {
+                En superficies descartables (modales, snackbars), <strong>entrada y salida jamás comparten curva</strong>: entra en 400ms desacelerando y se descarta en 200ms acelerando fuera de pantalla.
+              } @else {
+                Si el destino vuelve a quedar visible en pantalla (Hero Card &harr; Detalle), <strong>no uses accelerate</strong> al cerrar porque golpea en seco: usa <strong>emphasized</strong> (500ms abrir / 250ms regresar) para frenar suave en su origen.
+              }
             </p>
 
             <!-- TOKENS COMPARATIVOS -->
@@ -57,19 +77,29 @@ type MotionPatternId =
               <div class="p-3 rounded-m3-md bg-surface-high border border-outline-sub space-y-1">
                 <div class="text-[11px] font-bold text-primary flex items-center gap-1">
                   <span class="material-symbols-rounded text-sm">login</span>
-                  Entrada (Entering)
+                  {{ demoAsymmetryMode() === 'disposable' ? 'Entrada (Entering)' : 'Expansión (Open)' }}
                 </div>
-                <div class="font-mono text-xs font-bold text-main">medium4 • 400ms</div>
-                <div class="text-[10px] text-muted font-mono leading-tight">emphasized-decelerate<br>cubic-bezier(0.05, 0.7, 0.1, 1)</div>
+                <div class="font-mono text-xs font-bold text-main">
+                  {{ demoAsymmetryMode() === 'disposable' ? 'medium4 • 400ms' : 'long2 • 500ms' }}
+                </div>
+                <div class="text-[10px] text-muted font-mono leading-tight">
+                  {{ demoAsymmetryMode() === 'disposable' ? 'emphasized-decelerate' : 'emphasized (linear 10-stop)' }}<br>
+                  {{ demoAsymmetryMode() === 'disposable' ? 'cubic-bezier(0.05, 0.7, 0.1, 1)' : '22% despegue rápido • 78% freno suave' }}
+                </div>
               </div>
 
               <div class="p-3 rounded-m3-md bg-surface-high border border-outline-sub space-y-1">
                 <div class="text-[11px] font-bold text-primary flex items-center gap-1">
                   <span class="material-symbols-rounded text-sm">logout</span>
-                  Salida (Exiting)
+                  {{ demoAsymmetryMode() === 'disposable' ? 'Salida Permanente' : 'Retorno (Close)' }}
                 </div>
-                <div class="font-mono text-xs font-bold text-main">short4 • 200ms</div>
-                <div class="text-[10px] text-muted font-mono leading-tight">emphasized-accelerate<br>cubic-bezier(0.3, 0, 0.8, 0.15)</div>
+                <div class="font-mono text-xs font-bold text-main">
+                  {{ demoAsymmetryMode() === 'disposable' ? 'short4 • 200ms' : 'medium1 • 250ms' }}
+                </div>
+                <div class="text-[10px] text-muted font-mono leading-tight">
+                  {{ demoAsymmetryMode() === 'disposable' ? 'emphasized-accelerate' : 'emphasized (sin accelerate)' }}<br>
+                  {{ demoAsymmetryMode() === 'disposable' ? 'cubic-bezier(0.3, 0, 0.8, 0.15)' : 'Acelera al inicio y frena en la card' }}
+                </div>
               </div>
             </div>
 
@@ -79,8 +109,12 @@ type MotionPatternId =
                 <!-- CONTENEDOR ASIMÉTRICO EN VIVO (MISMA ARQUITECTURA DE CAJA ACOTADA) -->
                 <div
                   (click)="toggleAsymmetryDemo()"
-                  [style.transition-duration]="demoAsymmetryOpen() ? 'var(--md-sys-motion-duration-medium4)' : 'var(--md-sys-motion-duration-short4)'"
-                  [style.transition-timing-function]="demoAsymmetryOpen() ? 'var(--md-sys-motion-easing-emphasized-decelerate)' : 'var(--md-sys-motion-easing-emphasized-accelerate)'"
+                  [style.transition-duration]="demoAsymmetryOpen()
+                    ? (demoAsymmetryMode() === 'disposable' ? 'var(--md-sys-motion-duration-medium4)' : 'var(--md-sys-motion-duration-long2)')
+                    : (demoAsymmetryMode() === 'disposable' ? 'var(--md-sys-motion-duration-short4)' : 'var(--md-sys-motion-duration-medium1)')"
+                  [style.transition-timing-function]="demoAsymmetryMode() === 'disposable'
+                    ? (demoAsymmetryOpen() ? 'var(--md-sys-motion-easing-emphasized-decelerate)' : 'var(--md-sys-motion-easing-emphasized-accelerate)')
+                    : 'var(--md-sys-motion-easing-emphasized)'"
                   [class]="demoAsymmetryOpen()
                     ? 'w-[384px] h-36 p-4 bg-surface-box text-main border-primary rounded-m3-xl shadow-lg'
                     : 'w-56 h-10 px-4 bg-primary text-on-primary border-transparent rounded-full shadow-xs'"
@@ -88,7 +122,7 @@ type MotionPatternId =
                   @if (!demoAsymmetryOpen()) {
                     <div class="h-full flex items-center justify-center gap-2 text-xs font-bold">
                       <span class="material-symbols-rounded text-base">open_in_full</span>
-                      <span>Abrir Superficie (400ms)</span>
+                      <span>{{ demoAsymmetryMode() === 'disposable' ? 'Abrir Superficie (400ms)' : 'Expandir en Pantalla (500ms)' }}</span>
                     </div>
                   } @else {
                     <div class="space-y-2 text-left" style="animation: m3ContainerContentIn 250ms var(--md-sys-motion-easing-emphasized-decelerate) both;">
@@ -100,9 +134,15 @@ type MotionPatternId =
                         <span class="material-symbols-rounded text-base text-muted hover:text-main">close</span>
                       </div>
                       <p class="text-xs text-muted leading-relaxed">
-                        Desaceleración suave al entrar (400ms) para asimilar la info; al cerrar, salida acelerada e instantánea (200ms).
+                        @if (demoAsymmetryMode() === 'disposable') {
+                          Desaceleración suave al entrar (400ms) para asimilar la info; al cerrar, salida acelerada e instantánea (200ms).
+                        } @else {
+                          Despegue elástico al abrir (500ms) y retorno ágil (250ms) frenando suave sobre el origen con <code class="font-mono text-main">emphasized</code>.
+                        }
                       </p>
-                      <div class="text-[10px] font-mono text-primary font-bold">Clic para cerrar acelerado (200ms)</div>
+                      <div class="text-[10px] font-mono text-primary font-bold">
+                        {{ demoAsymmetryMode() === 'disposable' ? 'Clic para cerrar acelerado (200ms)' : 'Clic para regresar suave (250ms)' }}
+                      </div>
                     </div>
                   }
                 </div>
@@ -111,7 +151,9 @@ type MotionPatternId =
                 <div class="w-full max-w-xs mt-4 pt-2 border-t border-outline-sub flex items-center justify-between text-[10px] font-mono text-muted">
                   <span>Curva activa:</span>
                   <span class="font-bold text-main">
-                    {{ demoAsymmetryOpen() ? 'emphasized-decelerate (400ms)' : 'emphasized-accelerate (200ms)' }}
+                    {{ demoAsymmetryMode() === 'disposable'
+                      ? (demoAsymmetryOpen() ? 'emphasized-decelerate (400ms)' : 'emphasized-accelerate (200ms)')
+                      : (demoAsymmetryOpen() ? 'emphasized (500ms)' : 'emphasized (250ms)') }}
                   </span>
                 </div>
               </div>
@@ -427,7 +469,7 @@ type MotionPatternId =
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-box text-on-primary-box">
                     Máxima Expresividad M3
                   </span>
-                  <span class="text-[10px] font-mono text-muted">long2 (500ms)</span>
+                  <span class="text-[10px] font-mono text-muted">long2 (500ms) / medium1 (250ms)</span>
                 </div>
 
                 <h4 class="text-sm font-bold text-main">Container Transform</h4>
@@ -728,7 +770,8 @@ type MotionPatternId =
                     [class]="demoContainerExpanded()
                       ? 'w-[448px] h-48 p-4 bg-surface-box text-main rounded-m3-xl border-primary shadow-lg'
                       : 'w-72 h-16 p-3 bg-surface-high hover:bg-surface-box text-main rounded-m3-lg border-outline-sub shadow-xs'"
-                    style="transition-duration: var(--md-sys-motion-duration-long2); transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);">
+                    [style.transition-duration]="demoContainerExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
+                    style="transition-timing-function: var(--md-sys-motion-easing-emphasized);">
 
                     <!-- ELEMENTO PERSISTENTE: CABECERA QUE ACOMPAÑA LA TRANSFORMACIÓN -->
                     <div class="flex items-center justify-between gap-2">
@@ -781,7 +824,7 @@ type MotionPatternId =
 
                       <div class="flex items-center justify-between text-[10px] text-muted pt-1 border-t border-outline-sub/60">
                         <span>Clic en cualquier parte para volver al origen</span>
-                        <span class="font-mono text-primary font-bold">long2 • 500ms</span>
+                        <span class="font-mono text-primary font-bold">500ms abrir / 250ms volver • emphasized</span>
                       </div>
                     </div>
                   </div>
@@ -790,7 +833,9 @@ type MotionPatternId =
                 <div class="text-[11px] font-mono text-muted flex items-center gap-2">
                   <span class="font-bold text-main">Física activa:</span>
                   <span class="px-2 py-0.5 rounded-full bg-primary-box text-on-primary-box font-bold">
-                    {{ demoContainerExpanded() ? 'Expansión (288px → 448px • long2 500ms)' : 'Colapso Simétrico (448px → 288px • long2 500ms)' }}
+                    {{ demoContainerExpanded()
+                      ? 'Expansión En Pantalla (288px → 448px • long2 500ms + emphasized)'
+                      : 'Retorno En Pantalla (448px → 288px • medium1 250ms + emphasized)' }}
                   </span>
                 </div>
               </div>
@@ -1475,18 +1520,18 @@ type MotionPatternId =
               </div>
             </div>
 
-            <!-- CASO 3: LONG (500ms) - CARD TO FULL SCREEN -->
+            <!-- CASO 3: LONG (500ms / 250ms) - CARD TO FULL SCREEN -->
             <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub flex flex-col justify-between space-y-3 shadow-xs">
               <div class="space-y-1">
                 <div class="flex items-center justify-between">
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-box text-on-primary-box">
-                    3. Long (500ms)
+                    3. Long (500ms / 250ms)
                   </span>
-                  <span class="text-[10px] font-mono text-primary font-bold">Emphasized Decel</span>
+                  <span class="text-[10px] font-mono text-primary font-bold">Emphasized</span>
                 </div>
                 <h5 class="text-xs font-bold text-main pt-1">Card Expanding to Full Screen</h5>
                 <p class="text-[11px] text-muted leading-relaxed">
-                  "A Card expanding to full screen uses a long 500ms duration with Emphasized easing."
+                  Inicia y termina en pantalla: <strong>500ms</strong> (long2) al expandir y <strong>250ms</strong> (medium1) al regresar con <strong>Emphasized</strong>.
                 </p>
               </div>
 
@@ -1494,11 +1539,12 @@ type MotionPatternId =
               <div class="h-24 bg-surface-high/60 rounded-m3-md p-2 border border-outline-sub grid place-items-center overflow-hidden">
                 <div
                   (click)="toggleCanonicalCardExpanded()"
-                  class="cursor-pointer overflow-hidden border shadow-sm transition-all"
+                  class="cursor-pointer overflow-hidden border shadow-sm max-w-full transition-all"
                   [class]="demoCanonicalCardExpanded()
-                    ? 'w-full h-20 rounded-m3-md bg-surface border-primary p-2'
+                    ? 'w-56 h-20 rounded-m3-md bg-surface border-primary p-2'
                     : 'w-24 h-12 rounded-m3-sm bg-surface-box border-outline-sub p-1.5'"
-                  style="transition-duration: var(--md-sys-motion-duration-long2); transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);">
+                  [style.transition-duration]="demoCanonicalCardExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
+                  style="transition-timing-function: var(--md-sys-motion-easing-emphasized);">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-primary text-xs">dashboard</span>
                     <span class="font-bold text-main text-[10px] truncate">
@@ -1507,15 +1553,15 @@ type MotionPatternId =
                   </div>
                   @if (demoCanonicalCardExpanded()) {
                     <p class="text-[9px] text-muted mt-1 leading-tight">
-                      Transformación de contenedor fluida a 500ms.
+                      Abrir 500ms &harr; Volver 250ms (Emphasized).
                     </p>
                   }
                 </div>
               </div>
 
               <div class="text-[10px] font-mono text-muted space-y-0.5 pt-1 border-t border-outline-sub">
-                <div class="truncate"><strong class="text-main">Token:</strong> long2 (500ms)</div>
-                <div class="truncate"><strong class="text-main">Easing:</strong> emphasized-decelerate</div>
+                <div class="truncate"><strong class="text-main">Token:</strong> long2 (500ms) / medium1 (250ms)</div>
+                <div class="truncate"><strong class="text-main">Easing:</strong> emphasized</div>
               </div>
             </div>
 
@@ -1753,30 +1799,43 @@ type MotionPatternId =
             <span class="text-[10px] font-mono text-primary font-bold">Leyes Cero-Glitches Verificadas</span>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub space-y-2">
-              <div class="font-bold text-main flex items-center justify-between">
-                <span>Trampa 1: La Explosión Horizontal (<code class="font-mono text-error">max-width: none</code>)</span>
-                <span class="text-[10px] font-mono text-error font-bold">Anti-Patrón</span>
+              <div class="font-bold text-main flex items-center justify-between gap-2">
+                <span>Trampa 1: Explosión Horizontal (<code class="font-mono text-error">max-width</code>)</span>
+                <span class="text-[10px] font-mono text-error font-bold shrink-0">Anti-Patrón</span>
               </div>
               <p class="text-[11px] text-muted leading-relaxed">
-                <strong>El error:</strong> Mezclar <code class="font-mono text-main">w-full max-w-md</code> al expandir con <code class="font-mono text-main">w-72</code> al colapsar. Al cerrar, el navegador quita <code class="font-mono">max-width</code> a <code class="font-mono">none</code> en 0ms mientras <code class="font-mono">width</code> aún interpola desde <code class="font-mono">100%</code>, haciendo que la tarjeta se estire al máximo ancho antes de achicarse.
+                <strong>El error:</strong> Mezclar <code class="font-mono text-main">w-full max-w-md</code> al expandir con <code class="font-mono text-main">w-72</code> al colapsar. Al cerrar, el navegador quita <code class="font-mono">max-width</code> a <code class="font-mono">none</code> en 0ms mientras <code class="font-mono">width</code> aún interpola desde <code class="font-mono">100%</code>.
               </p>
               <div class="p-2 rounded bg-surface-high border border-outline-sub/70 text-[10px] font-mono text-primary">
-                Solución: Dejar max-w-full fijo en el HTML e interpolar anchos numéricos explícitos (w-72 &harr; w-[448px]).
+                Solución: Dejar max-w-full fijo e interpolar anchos explícitos (w-72 &harr; w-[448px]).
               </div>
             </div>
 
             <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub space-y-2">
-              <div class="font-bold text-main flex items-center justify-between">
-                <span>Trampa 2: El Hueco Fantasma (<code class="font-mono text-error">height: auto</code> + <code class="font-mono text-error">&#64;if</code>)</span>
-                <span class="text-[10px] font-mono text-error font-bold">Anti-Patrón</span>
+              <div class="font-bold text-main flex items-center justify-between gap-2">
+                <span>Trampa 2: Hueco Fantasma (<code class="font-mono text-error">height: auto</code>)</span>
+                <span class="text-[10px] font-mono text-error font-bold shrink-0">Anti-Patrón</span>
               </div>
               <p class="text-[11px] text-muted leading-relaxed">
-                <strong>El error:</strong> CSS no puede interpolar <code class="font-mono">height: auto</code>. Además, desmontar el contenido interno con <code class="font-mono">&#64;if</code> en el milisegundo 0 mientras la caja tarda 500ms (<code class="font-mono">long2</code>) en encogerse deja una superficie vacía contrayéndose en pantalla.
+                <strong>El error:</strong> CSS no interpola <code class="font-mono">height: auto</code>, y desmontar nodos con <code class="font-mono">&#64;if</code> en 0ms deja una caja vacía encogiéndose durante 500ms.
               </p>
               <div class="p-2 rounded bg-surface-high border border-outline-sub/70 text-[10px] font-mono text-primary">
-                Solución: Alturas explícitas (h-16 &harr; h-48) + overflow-hidden + fade-out asimétrico rápido (100ms short2, delay 0ms).
+                Solución: grid-rows-[0fr/1fr] o alturas fijas + [attr.inert] + fade asimétrico.
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub space-y-2">
+              <div class="font-bold text-main flex items-center justify-between gap-2">
+                <span>Trampa 3: Ghosting &amp; Colisión en <code class="font-mono text-error">::before</code></span>
+                <span class="text-[10px] font-mono text-error font-bold shrink-0">Anti-Patrón</span>
+              </div>
+              <p class="text-[11px] text-muted leading-relaxed">
+                <strong>El error:</strong> Usar <code class="font-mono text-main">::before</code> para auras animadas sobre <code class="font-mono text-main">.card-interactive</code> (colisiona con el state layer <code class="font-mono text-main">currentColor</code>) o capturar <code class="font-mono text-main">#app-stage</code> a mitad de su blur.
+              </p>
+              <div class="p-2 rounded bg-surface-high border border-outline-sub/70 text-[10px] font-mono text-primary">
+                Solución: Usar .m3-aurora-layer (.m3-aurora-orb) aislada + html.vt-running + [class.invisible].
               </div>
             </div>
           </div>
@@ -1792,20 +1851,21 @@ type MotionPatternId =
           </div>
           <h3 class="text-base font-bold text-main">Respeto por Prefers-Reduced-Motion</h3>
           <p class="text-xs text-muted leading-relaxed">
-            El sistema detecta automáticamente cuando el usuario tiene configurado <code class="font-mono text-primary">&#64;media (prefers-reduced-motion: reduce)</code> en su sistema operativo. En ese instante, todas las animaciones, resortes y transiciones de vista colapsan instantáneamente a <strong>1ms</strong> para garantizar confort vestibular absoluto sin romper la lógica funcional del sistema.
+            Cuando el usuario activa <code class="font-mono text-primary">&#64;media (prefers-reduced-motion: reduce)</code>, las transiciones de vista colapsan a <strong>1ms</strong> y los fondos ambientales continuos como <code class="font-mono text-primary">.m3-aurora-orb</code> pasan a estado estático (<code class="font-mono text-main">animation: none</code>) para garantizar confort vestibular absoluto.
           </p>
         </div>
 
         <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub text-xs space-y-1 shrink-0 font-mono">
           <div class="text-muted text-[10px] uppercase font-bold tracking-wider">Regla CSS en _motion.css</div>
           <div class="text-main font-bold">&#64;media (prefers-reduced-motion)</div>
-          <div class="text-primary text-[11px]">* {{ '{' }} animation-duration: 1ms !important; {{ '}' }}</div>
+          <div class="text-primary text-[11px]">.m3-aurora-orb {{ '{' }} animation: none; {{ '}' }}</div>
         </div>
       </div>
     </div>
   `
 })
 export class MotionLabComponent {
+  readonly demoAsymmetryMode = signal<'disposable' | 'onscreen'>('disposable');
   readonly demoAsymmetryOpen = signal<boolean>(false);
   readonly demoSpringCount = signal<number>(0);
   readonly demoSpringStyle = signal<SpringStyle>('expressive');
@@ -1860,10 +1920,15 @@ export class MotionLabComponent {
         ? { valid: true, text: 'Maridaje Canónico Óptimo (M3: Salida rápida con short4 o short3)' }
         : { valid: false, text: 'M3 recomienda short4 (200ms) o short3 (150ms) para accelerate' };
     }
-    if (easing === 'emphasized' || easing === 'standard') {
-      return duration >= 250 && duration <= 400
-        ? { valid: true, text: 'Maridaje Canónico Óptimo (M3: Transición interna en pantalla)' }
-        : { valid: false, text: 'M3 recomienda 250ms - 400ms (medium) para morphing en pantalla' };
+    if (easing === 'emphasized') {
+      return duration === 500 || duration === 250 || (duration >= 250 && duration <= 500)
+        ? { valid: true, text: 'Maridaje Canónico Óptimo (M3: 500ms abrir o 250ms retorno en pantalla)' }
+        : { valid: false, text: 'M3 recomienda long2 (500ms) para abrir o medium1 (250ms) para volver en pantalla' };
+    }
+    if (easing === 'standard') {
+      return duration >= 250 && duration <= 350
+        ? { valid: true, text: 'Maridaje Canónico Óptimo (M3: Transición utilitaria en pantalla con 300ms)' }
+        : { valid: false, text: 'M3 recomienda medium2 (300ms) para transiciones Standard en pantalla' };
     }
     return { valid: true, text: 'Configuración libre de laboratorio' };
   });
@@ -1881,6 +1946,10 @@ export class MotionLabComponent {
       effects: { ...physics.effects, ...webCurves.effects[speed] }
     };
   });
+
+  setAsymmetryMode(mode: 'disposable' | 'onscreen'): void {
+    this.demoAsymmetryMode.set(mode);
+  }
 
   toggleAsymmetryDemo(): void {
     this.demoAsymmetryOpen.update(v => !v);

@@ -39,6 +39,7 @@
 
   <!-- 4. CONTENEDOR TRANSFORMABLE MULTIPROPÓSITO -->
   <app-dialog-container [isDialogOpen]="dialogService.isDialogOpen()" [activeTrigger]="dialogService.activeTrigger()"
+    [activeTransition]="dialogService.activeTransition()"
     [dialogView]="dialogService.dialogView()" [navStyle]="dialogService.navStyle()"
     [activeTaskId]="dialogService.activeTaskId()" [(draftTitle)]="dialogService.draftTitle"
     [(draftCategory)]="dialogService.draftCategory" [(draftDate)]="dialogService.draftDate"

@@ -1,30 +1,38 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, ElementRef, effect, inject, input, output, viewChild } from '@angular/core';
 import { ThemeService } from '../../core/theme/theme.service';
 import { TransitionType } from '../models/ui.models';
 import { M3ButtonComponent } from '../components/button/button.component';
+import { M3LinearProgressComponent } from '../components/progress';
 
 @Component({
   selector: 'app-hero-detail-modal',
   standalone: true,
-  imports: [M3ButtonComponent],
+  imports: [M3ButtonComponent, M3LinearProgressComponent],
   host: {
-    class: 'contents'
+    class: 'contents',
+    '(document:keydown.escape)': 'onEscapeKey()'
   },
   template: `
     @if (isHeroExpanded()) {
-      <div (click)="close.emit()" class="fixed inset-0 z-40"></div>
+      <div
+        (click)="close.emit()"
+        [class.m3-dialog-backdrop]="!themeService.hasViewTransitions()"
+        class="fixed inset-0 z-40"></div>
 
-      <div 
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="hero-modal-title"
         [style.view-transition-name]="activeTransition() === 'hero' ? 'hero-transform' : null"
         [class.m3-container-enter]="!themeService.hasViewTransitions()"
         class="fixed inset-4 md:inset-12 hero-mesh-m3 border border-outline-sub rounded-m3-xl p-8 flex flex-col justify-between z-50 shadow-2xl overflow-y-auto">
 
         <div class="flex items-center justify-between">
-          <m3-button 
-            [iconOnly]="true" 
-            variant="tonal" 
-            icon="close" 
-            ariaLabel="Cerrar modal" 
+          <m3-button
+            [iconOnly]="true"
+            variant="tonal"
+            icon="close"
+            ariaLabel="Cerrar modal"
             (action)="close.emit()" />
           <span class="px-4 py-1.5 rounded-full bg-primary-box text-on-primary-box text-xs font-bold">
             Métricas del Sistema
@@ -32,11 +40,21 @@ import { M3ButtonComponent } from '../components/button/button.component';
         </div>
 
         <div class="my-auto py-6 max-w-2xl space-y-6">
-          <div>
+          <div class="space-y-3">
             <span class="text-xs font-semibold uppercase tracking-widest text-muted">Progreso Total</span>
-            <div class="text-5xl md:text-6xl font-extrabold tracking-tight mt-1">
+            <h2
+              #modalHeading
+              id="hero-modal-title"
+              tabindex="-1"
+              class="text-5xl md:text-6xl font-extrabold tracking-tight mt-1 outline-none">
               {{ completionRate() }}% Completado
-            </div>
+            </h2>
+            <m3-linear-progress
+              [value]="completionRate()"
+              color="primary"
+              size="lg"
+              [wavy]="true"
+              ariaLabel="Progreso total de tareas" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -52,8 +70,8 @@ import { M3ButtonComponent } from '../components/button/button.component';
         </div>
 
         <div class="flex justify-end">
-          <m3-button 
-            variant="filled" 
+          <m3-button
+            variant="filled"
             (action)="close.emit()">
             Cerrar vista detallada
           </m3-button>
@@ -64,6 +82,7 @@ import { M3ButtonComponent } from '../components/button/button.component';
 })
 export class HeroDetailModalComponent {
   readonly themeService = inject(ThemeService);
+  private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
 
   readonly isHeroExpanded = input.required<boolean>();
   readonly activeTransition = input<TransitionType>(null);
@@ -72,4 +91,18 @@ export class HeroDetailModalComponent {
   readonly pendingCount = input.required<number>();
 
   readonly close = output<void>();
+
+  constructor() {
+    effect(() => {
+      if (this.isHeroExpanded()) {
+        queueMicrotask(() => this.modalHeading()?.nativeElement.focus());
+      }
+    });
+  }
+
+  onEscapeKey(): void {
+    if (this.isHeroExpanded()) {
+      this.close.emit();
+    }
+  }
 }

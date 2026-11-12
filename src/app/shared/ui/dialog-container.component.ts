@@ -2,7 +2,7 @@ import { Component, inject, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TaskPriority } from '../../core/tasks/task.service';
 import { ThemeService } from '../../core/theme/theme.service';
-import { DialogView, NavStyle, TriggerMode } from '../models/ui.models';
+import { DialogView, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
 import { M3ButtonComponent } from '../components/button/button.component';
 import { M3TextFieldComponent } from '../components/text-field/text-field.component';
 
@@ -19,7 +19,7 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
 
       <div 
         id="dialog-container" 
-        style="view-transition-name: dialog-transform;"
+        [style.view-transition-name]="isDialogOpen() && activeTransition() === 'dialog' ? 'dialog-transform' : null"
         [class.top-4]="activeTrigger() === 'fab-header'" 
         [class.right-4]="activeTrigger() === 'fab-header'"
         [class.sm:w-[420px]]="activeTrigger() === 'fab-header'"
@@ -245,6 +245,7 @@ export class DialogContainerComponent {
 
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);
+  readonly activeTransition = input<TransitionType>(null);
   readonly dialogView = input.required<DialogView>();
   readonly navStyle = input.required<NavStyle>();
   readonly activeTaskId = input<number | null>(null);

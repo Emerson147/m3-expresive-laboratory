@@ -25,12 +25,12 @@
 
 /* Hover: 8% */
 .state-layer:hover::before {
-  opacity: var(--md-sys-state-hover-opacity);
+  opacity: var(--md-sys-state-hover-state-layer-opacity, 0.08);
 }
 
 /* Focus: 10% */
 .state-layer:focus-visible::before {
-  opacity: var(--md-sys-state-focus-opacity);
+  opacity: var(--md-sys-state-focus-state-layer-opacity, 0.10);
 }
 
 /* Pressed: 12% + Spring Feedback */
@@ -39,7 +39,12 @@
 }
 
 .state-layer:active::before {
-  opacity: var(--md-sys-state-pressed-opacity);
+  opacity: var(--md-sys-state-pressed-state-layer-opacity, 0.12);
+}
+
+/* Dragged: 16% */
+.state-layer.is-dragged::before {
+  opacity: var(--md-sys-state-dragged-state-layer-opacity, 0.16);
 }
 
 /* --- 2. ACCESSIBLE DUAL FOCUS RING ---

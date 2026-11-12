@@ -3,15 +3,21 @@
    m3.material.io/components/cards/specs
    ========================================================= */
 
-/* --- BASE CARD CONTAINER --- */
+/* --- BASE CARD CONTAINER & COMPONENT TOKENS (--md-comp-*) --- */
 .m3-card {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface-container-low);
+  --md-comp-elevated-card-container-elevation: var(--md-sys-elevation-level1);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface-container-highest);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface);
+  --md-comp-outlined-card-outline-color: var(--md-sys-color-outline-variant);
+
   position: relative;
   border-radius: var(--md-sys-shape-corner-extra-large, 28px);
   color: var(--md-sys-color-on-surface);
   transition: 
     background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
-    box-shadow var(--md-sys-motion-duration-medium1, 240ms) var(--md-sys-motion-easing-standard),
-    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-spring),
+    box-shadow var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial),
     border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
   box-sizing: border-box;
 }
@@ -20,35 +26,35 @@
 
 /* 1. ELEVATED CARD */
 .m3-card-elevated {
-  background-color: var(--md-sys-color-surface-container-low);
-  box-shadow: var(--md-sys-elevation-level-1);
+  background-color: var(--md-comp-elevated-card-container-color);
+  box-shadow: var(--md-comp-elevated-card-container-elevation);
   border: 1px solid transparent;
 }
 .m3-card-elevated.m3-card-interactive:hover {
-  box-shadow: var(--md-sys-elevation-level-2);
+  box-shadow: var(--md-sys-elevation-level2);
 }
 .m3-card-elevated.m3-card-interactive:active {
-  box-shadow: var(--md-sys-elevation-level-1);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
 /* 2. FILLED CARD */
 .m3-card-filled {
-  background-color: var(--md-sys-color-surface-container-highest);
+  background-color: var(--md-comp-filled-card-container-color);
   box-shadow: none;
   border: 1px solid transparent;
 }
 .m3-card-filled.m3-card-interactive:hover {
-  box-shadow: var(--md-sys-elevation-level-1);
+  box-shadow: var(--md-sys-elevation-level1);
 }
 
 /* 3. OUTLINED CARD */
 .m3-card-outlined {
-  background-color: var(--md-sys-color-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-comp-outlined-card-container-color);
+  border: 1px solid var(--md-comp-outlined-card-outline-color);
   box-shadow: none;
 }
 .m3-card-outlined.m3-card-interactive:hover {
-  box-shadow: var(--md-sys-elevation-level-1);
+  box-shadow: var(--md-sys-elevation-level1);
   border-color: var(--md-sys-color-outline);
 }
 

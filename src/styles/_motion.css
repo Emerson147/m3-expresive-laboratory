@@ -153,6 +153,11 @@
   ::view-transition-new(*) {
     animation-duration: 1ms !important;
   }
+
+  /* Keep continuous ambient aurora orbs static under reduced motion */
+  .m3-aurora-orb {
+    animation: none !important;
+  }
 }
 
 /* --- 7. KEYFRAMES FOR TRANSITION PATTERNS & SPRINGS --- */
@@ -432,6 +437,150 @@
 
 .m3-anim-fade-through {
   animation: m3FadeThroughIn var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-standard) both;
+}
+
+/* --- 9. AMBIENT AURORA GLOW (Compositor-Only GPU Radial Cloud Orbs) --- */
+/* Uses dedicated .m3-aurora-layer/.m3-aurora-orb elements so M3 .state-layer/.card-interactive ::before stays untouched */
+@keyframes m3AuroraOrbOne {
+  0% {
+    transform: translate3d(0%, 0%, 0) scale(1);
+    opacity: var(--m3-aurora-opacity-low, 0.72);
+  }
+  50% {
+    transform: translate3d(-24%, 14%, 0) scale(1.14);
+    opacity: var(--m3-aurora-opacity-high, 0.94);
+  }
+  100% {
+    transform: translate3d(-10%, -8%, 0) scale(0.96);
+    opacity: var(--m3-aurora-opacity-low, 0.72);
+  }
+}
+
+@keyframes m3AuroraOrbTwo {
+  0% {
+    transform: translate3d(0%, 0%, 0) scale(1);
+    opacity: var(--m3-aurora-opacity-low, 0.68);
+  }
+  50% {
+    transform: translate3d(26%, -18%, 0) scale(1.16);
+    opacity: var(--m3-aurora-opacity-high, 0.92);
+  }
+  100% {
+    transform: translate3d(8%, 8%, 0) scale(0.95);
+    opacity: var(--m3-aurora-opacity-low, 0.68);
+  }
+}
+
+@keyframes m3AuroraOrbThree {
+  0% {
+    transform: translate3d(-12%, 8%, 0) scale(0.94);
+    opacity: var(--m3-aurora-opacity-low, 0.62);
+  }
+  50% {
+    transform: translate3d(24%, -10%, 0) scale(1.18);
+    opacity: var(--m3-aurora-opacity-high, 0.9);
+  }
+  100% {
+    transform: translate3d(6%, 16%, 0) scale(1.04);
+    opacity: var(--m3-aurora-opacity-low, 0.62);
+  }
+}
+
+@layer components {
+  .m3-aurora-glow {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    --m3-aurora-opacity-low: 0.72;
+    --m3-aurora-opacity-high: 0.94;
+  }
+
+  .m3-aurora-glow > :not(.m3-aurora-layer) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .m3-aurora-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .m3-aurora-orb {
+    position: absolute;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    pointer-events: none;
+    will-change: transform, opacity;
+    --m3-orb-color: var(--md-sys-hero-glow, oklch(70% 0.18 var(--seed-hue) / 0.34));
+    background: radial-gradient(
+      closest-side,
+      var(--m3-orb-color) 0%,
+      color-mix(in oklch, var(--m3-orb-color) 70%, transparent) 32%,
+      color-mix(in oklch, var(--m3-orb-color) 30%, transparent) 62%,
+      color-mix(in oklch, var(--m3-orb-color) 8%, transparent) 84%,
+      transparent 100%
+    );
+    transition: opacity var(--md-sys-motion-duration-long2) var(--md-sys-motion-easing-emphasized);
+  }
+
+  .m3-aurora-orb-1 {
+    top: -30%;
+    right: -14%;
+    width: 68%;
+    --m3-orb-color: var(--md-sys-hero-glow, oklch(70% 0.18 var(--seed-hue) / 0.34));
+  }
+
+  .m3-aurora-orb-2 {
+    bottom: -36%;
+    left: -14%;
+    width: 66%;
+    --m3-orb-color: var(--md-sys-hero-glow-ambient, oklch(76% 0.14 calc(var(--seed-hue) - 24) / 0.28));
+  }
+
+  .m3-aurora-orb-3 {
+    top: 8%;
+    left: 24%;
+    width: 54%;
+    --m3-orb-color: var(--md-sys-hero-glow-secondary, oklch(74% 0.16 var(--tertiary-hue) / 0.30));
+  }
+
+  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-1 {
+    animation: m3AuroraOrbOne 12s ease-in-out infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-2 {
+    animation: m3AuroraOrbTwo 15s ease-in-out infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-3 {
+    animation: m3AuroraOrbThree 18s ease-in-out infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-thinking {
+    --m3-aurora-opacity-low: 0.85;
+    --m3-aurora-opacity-high: 1;
+  }
+
+  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-1 {
+    animation: m3AuroraOrbOne 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-2 {
+    animation: m3AuroraOrbTwo 3.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-3 {
+    animation: m3AuroraOrbThree 3.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+
+  .m3-aurora-glow.is-aurora-paused .m3-aurora-orb {
+    animation: none;
+    opacity: 0.52;
+  }
 }
 
 
