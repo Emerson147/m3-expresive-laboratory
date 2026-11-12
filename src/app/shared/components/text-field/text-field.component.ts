@@ -1,11 +1,13 @@
 import { 
   Component, 
+  ElementRef,
   computed, 
   forwardRef, 
   input, 
   model, 
   output, 
-  signal 
+  signal,
+  viewChild
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -50,10 +52,12 @@ let nextUniqueId = 0;
 
           @if (!multiline()) {
             <input
+              #controlEl
               [id]="actualId()"
               [type]="type()"
               [value]="value()"
               [disabled]="disabled()"
+              [attr.inputmode]="inputMode()"
               [attr.placeholder]="isFloated() ? placeholder() : ''"
               [attr.maxlength]="maxlength() || null"
               [attr.aria-invalid]="effectiveError() ? 'true' : null"
@@ -64,6 +68,7 @@ let nextUniqueId = 0;
               (blur)="onBlur($event)" />
           } @else {
             <textarea
+              #controlEl
               [id]="actualId()"
               [rows]="rows()"
               [value]="value()"
@@ -134,6 +139,9 @@ export class M3TextFieldComponent implements ControlValueAccessor {
   /** HTML input type: 'text', 'password', 'email', 'number', etc. */
   readonly type = input<string>('text');
 
+  /** Virtual keyboard hint (e.g. 'numeric', 'decimal', 'search') */
+  readonly inputMode = input<string | null>(null);
+
   /** Leading Material Symbol icon */
   readonly icon = input<string | null>(null);
 
@@ -177,7 +185,12 @@ export class M3TextFieldComponent implements ControlValueAccessor {
 
   /** Internal state */
   readonly isFocused = signal<boolean>(false);
+  private readonly controlEl = viewChild<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('controlEl');
   private readonly internalId = `m3-input-${++nextUniqueId}`;
+
+  focus(): void {
+    this.controlEl()?.nativeElement.focus();
+  }
 
   // ControlValueAccessor callbacks
   private onChange: (val: string) => void = () => {};
