@@ -25,6 +25,9 @@ describe('HeroDetailModalComponent', () => {
 
     expect(dialog).toBeTruthy();
     expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.classList.contains('hero-mesh-m3')).toBe(true);
+    expect(dialog.classList.contains('m3-aurora-glow')).toBe(true);
+    expect(dialog.querySelectorAll('.m3-aurora-layer .m3-aurora-orb').length).toBe(3);
     expect(fixture.nativeElement.querySelector('m3-linear-progress')).toBeTruthy();
   });
 

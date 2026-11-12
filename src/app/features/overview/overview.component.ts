@@ -8,8 +8,6 @@ import { M3CardComponent } from '../../shared/components/card/card.component';
 import { M3ChipComponent } from '../../shared/components/chip/chip.component';
 import { M3LinearProgressComponent } from '../../shared/components/progress';
 
-export type AuroraMode = 'ambient' | 'thinking' | 'paused';
-
 @Component({
   selector: 'app-overview-page',
   standalone: true,
@@ -17,7 +15,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
   template: `
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-      <!-- 1. HERO CARD EXPANDIBLE (BENTO 7 COLS) CON AURORA GPU ESTILO GEMINI + CONTAINER TRANSFORM -->
+      <!-- 1. HERO CARD EXPANDIBLE (BENTO 7 COLS) CON AURORA GPU + CONTAINER TRANSFORM -->
       <section
         role="button"
         tabindex="0"
@@ -27,11 +25,8 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
         (keydown.enter)="dialogService.toggleHeroDetail(true)"
         (keydown.space)="$event.preventDefault(); dialogService.toggleHeroDetail(true)"
         [class.invisible]="dialogService.isHeroExpanded()"
-        [class.is-aurora-ambient]="auroraMode() === 'ambient'"
-        [class.is-aurora-thinking]="auroraMode() === 'thinking'"
-        [class.is-aurora-paused]="auroraMode() === 'paused'"
         [style.view-transition-name]="dialogService.activeTransition() === 'hero' && !dialogService.isHeroExpanded() ? 'hero-transform' : null"
-        class="card-interactive hero-mesh-m3 m3-aurora-glow focus-ring-m3 lg:col-span-7 border border-outline-sub rounded-m3-xl p-8 flex flex-col justify-between min-h-[340px] shadow-xs cursor-pointer group hover:border-primary/50 m3-transition-standard">
+        class="card-interactive hero-mesh-m3 m3-aurora-glow focus-ring-m3 lg:col-span-7 min-w-0 border border-outline-sub rounded-m3-xl p-8 flex flex-col justify-between min-h-[340px] shadow-xs cursor-pointer group hover:border-primary/50 m3-transition-standard">
 
           <div class="m3-aurora-layer" aria-hidden="true">
             <span class="m3-aurora-orb m3-aurora-orb-1"></span>
@@ -51,34 +46,20 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
               <span class="px-3 py-1.5 bg-surface/70 backdrop-blur-md border border-outline-sub rounded-full text-xs font-semibold text-primary">
                 {{ taskService.completionRate() }}% avance
               </span>
-              <span
-                [class]="auroraMode() === 'thinking'
-                  ? 'bg-tertiary-box text-on-tertiary-box border-tertiary/30'
-                  : 'bg-surface/70 text-muted border-outline-sub'"
-                class="px-3 py-1.5 backdrop-blur-md border rounded-full text-xs font-medium inline-flex items-center gap-1.5 m3-transition-fast">
-                <span class="material-symbols-rounded text-sm" aria-hidden="true">
-                  {{ auroraMode() === 'thinking' ? 'auto_awesome' : (auroraMode() === 'paused' ? 'pause_circle' : 'blur_on') }}
-                </span>
-                <span>{{ auroraBadgeLabel() }}</span>
-              </span>
             </div>
 
             <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight pt-1">
               Diseño accesible y armónico
             </h2>
             <p class="text-muted text-sm md:text-base leading-relaxed">
-              @if (auroraMode() === 'thinking') {
-                Modo pensando activo: lóbulos OKLCH animados en GPU (<code class="font-mono text-xs text-primary">transform</code> + <code class="font-mono text-xs text-primary">opacity</code>) sin repintar desenfoques.
-              } @else {
-                Superficies tonales, legibilidad garantizada por color science OKLCH y elevaciones sutiles sin sobrecargar la vista.
-              }
+              Superficies tonales, legibilidad garantizada por color science OKLCH y elevaciones sutiles sin sobrecargar la vista.
             </p>
 
             <div class="pt-1 space-y-1.5">
               <m3-linear-progress
                 [value]="taskService.completionRate()"
-                [color]="auroraMode() === 'thinking' ? 'tertiary' : 'primary'"
-                [wavy]="auroraMode() === 'thinking'"
+                color="primary"
+                [wavy]="true"
                 size="sm"
                 ariaLabel="Avance general de tareas" />
             </div>
@@ -89,37 +70,16 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
             (click)="$event.stopPropagation()"
             (keydown.enter)="$event.stopPropagation()"
             (keydown.space)="$event.stopPropagation()">
-            <div class="flex flex-wrap items-center gap-2.5">
-              <button
-                id="trigger-bento-center"
-                type="button"
-                (click)="dialogService.openFrom('bento-center')"
-                [class.invisible]="dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center'"
-                [style.view-transition-name]="dialogService.activeTransition() === 'dialog' && !dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center' ? 'dialog-transform' : null"
-                class="btn-m3 px-5 py-2.5 bg-primary text-on-primary font-medium rounded-full text-sm shadow-sm inline-flex items-center gap-2 cursor-pointer">
-                <span class="material-symbols-rounded text-base">add</span>
-                <span>Crear registro</span>
-              </button>
-
-              <div
-                class="flex items-center gap-1 bg-surface/75 backdrop-blur-md p-1 rounded-full border border-outline-sub"
-                role="group"
-                aria-label="Modo de aurora de fondo">
-                @for (mode of auroraModes; track mode.id) {
-                  <button
-                    type="button"
-                    (click)="setAuroraMode(mode.id)"
-                    [attr.aria-pressed]="auroraMode() === mode.id"
-                    [class]="auroraMode() === mode.id
-                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                      : 'text-muted hover:text-main'"
-                    class="btn-m3 px-2.5 py-1 rounded-full text-xs inline-flex items-center gap-1 cursor-pointer">
-                    <span class="material-symbols-rounded text-sm" aria-hidden="true">{{ mode.icon }}</span>
-                    <span>{{ mode.label }}</span>
-                  </button>
-                }
-              </div>
-            </div>
+            <button
+              id="trigger-bento-center"
+              type="button"
+              (click)="dialogService.openFrom('bento-center')"
+              [class.invisible]="dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center'"
+              [style.view-transition-name]="dialogService.activeTransition() === 'dialog' && !dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center' ? 'dialog-transform' : null"
+              class="btn-m3 px-5 py-2.5 bg-primary text-on-primary font-medium rounded-full text-sm shadow-sm inline-flex items-center gap-2 cursor-pointer">
+              <span class="material-symbols-rounded text-base">add</span>
+              <span>Crear registro</span>
+            </button>
 
             <m3-button
               variant="tonal"
@@ -134,7 +94,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
       <!-- 2. TARJETA TERCIARIA + CONTROL DE CONTRASTE M3 (BENTO 5 COLS) -->
       <section
         style="animation-delay: 40ms;"
-        class="card-m3 m3-anim-item-in lg:col-span-5 bg-tertiary-box border border-outline-sub rounded-m3-xl p-8 flex flex-col justify-between gap-4 text-on-tertiary-box min-h-[340px] shadow-xs">
+        class="card-m3 m3-anim-item-in lg:col-span-5 min-w-0 bg-tertiary-box border border-outline-sub rounded-m3-xl p-6 xl:p-8 flex flex-col justify-between gap-4 text-on-tertiary-box min-h-[340px] shadow-xs">
         <div class="space-y-2">
           <span class="text-xs font-semibold uppercase tracking-widest opacity-80 flex items-center gap-1">
             <span class="material-symbols-rounded text-base">palette</span>
@@ -147,12 +107,12 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
         </div>
 
         <div class="space-y-3">
-          <div class="bg-surface/65 backdrop-blur-md p-3 rounded-m3-lg border border-outline-sub flex items-center justify-between gap-2 text-main">
+          <div class="bg-surface/65 backdrop-blur-md p-3 rounded-m3-lg border border-outline-sub flex flex-wrap items-center justify-between gap-2 text-main">
             <span class="text-xs font-medium text-muted flex items-center gap-1.5">
               <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
               Contraste M3
             </span>
-            <div class="flex items-center gap-1 bg-surface-high p-1 rounded-full border border-outline-sub" role="group" aria-label="Nivel de contraste M3">
+            <div class="flex flex-wrap items-center gap-1 bg-surface-high p-1 rounded-full border border-outline-sub" role="group" aria-label="Nivel de contraste M3">
               @for (lvl of contrastLevels; track lvl.id) {
                 <button
                   type="button"
@@ -168,7 +128,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
             </div>
           </div>
 
-          <div class="bg-surface/60 backdrop-blur-md p-4 rounded-m3-lg border border-outline-sub flex items-center justify-between gap-3 text-main">
+          <div class="bg-surface/60 backdrop-blur-md p-4 rounded-m3-lg border border-outline-sub flex flex-wrap items-center justify-between gap-3 text-main">
             <div class="space-y-1">
               <div class="text-xs text-muted">Semilla Actual</div>
               <div class="flex items-center gap-2.5">
@@ -226,7 +186,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
         <!-- CHECKLIST RÁPIDA DE TAREAS VINCULADA A TASKSERVICE -->
         <div
           style="animation-delay: 160ms;"
-          class="lg:col-span-7 m3-anim-item-in">
+          class="lg:col-span-7 min-w-0 m3-anim-item-in">
           <m3-card
             variant="filled"
             padding="lg"
@@ -277,7 +237,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
         <!-- CASO 3 INLINE: CONTAINER TRANSFORM EN DOM PERSISTENTE (500ms ABRIR / 250ms VOLVER) -->
         <div
           style="animation-delay: 200ms;"
-          class="lg:col-span-5 m3-anim-item-in">
+          class="lg:col-span-5 min-w-0 m3-anim-item-in">
           <m3-card
             variant="outlined"
             padding="lg"
@@ -344,7 +304,7 @@ export type AuroraMode = 'ambient' | 'thinking' | 'paused';
               </div>
             </div>
 
-            <div class="pt-3 border-t border-outline-sub flex items-center justify-between text-[11px] font-mono text-muted">
+            <div class="pt-3 border-t border-outline-sub flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted">
               <span>Arriba: ViewTransition</span>
               <span class="text-primary font-semibold">Aquí: CSS Transitions</span>
             </div>
@@ -361,31 +321,13 @@ export class OverviewComponent {
   readonly themeService = inject(ThemeService);
   readonly dialogService = inject(DialogService);
 
-  readonly auroraMode = signal<AuroraMode>('ambient');
   readonly isInlineSpecExpanded = signal<boolean>(false);
-
-  readonly auroraModes: readonly { id: AuroraMode; label: string; icon: string }[] = [
-    { id: 'ambient', label: 'Reposo', icon: 'blur_on' },
-    { id: 'thinking', label: 'Buscando', icon: 'auto_awesome' },
-    { id: 'paused', label: 'Pausa', icon: 'pause_circle' }
-  ];
 
   readonly contrastLevels: readonly { id: ContrastLevel; label: string }[] = [
     { id: 'standard', label: 'Estándar' },
     { id: 'medium', label: 'Medio' },
     { id: 'high', label: 'Alto' }
   ];
-
-  readonly auroraBadgeLabel = computed(() => {
-    switch (this.auroraMode()) {
-      case 'thinking':
-        return 'Gemini buscando...';
-      case 'paused':
-        return 'Aurora pausada';
-      default:
-        return 'Aurora GPU';
-    }
-  });
 
   readonly previewTasks = computed(() => this.taskService.tasks().slice(0, 4));
 
@@ -409,10 +351,6 @@ export class OverviewComponent {
       iconClass: 'text-secondary'
     }
   ]);
-
-  setAuroraMode(mode: AuroraMode): void {
-    this.auroraMode.set(mode);
-  }
 
   setContrastLevel(level: ContrastLevel): void {
     this.themeService.setContrastLevel(level);

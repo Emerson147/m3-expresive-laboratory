@@ -132,7 +132,7 @@ Before writing any transition or animation in a feature module, apply this 3-fil
 
 #### GPU-Composited Ambient Aurora Layers (`.m3-aurora-glow` + `.m3-aurora-layer`)
 * Never animate `filter: blur(...)` or `background-position` per frame, and **never** attach aurora layers to `::before`/`::after` on `.card-interactive` or `.state-layer` hosts (those pseudo-elements carry `background-color: currentColor` state overlays).
-* Render circular `closest-side` multi-stop OKLCH radial gradients (`.m3-aurora-orb-1..3`, fading smoothly to `transparent 100%` without hard edges) inside `<div class="m3-aurora-layer" aria-hidden="true">` under `overflow: hidden; isolation: isolate`, animate strictly `transform` and `opacity` on the GPU compositor (`.is-aurora-ambient` &harr; `.is-aurora-thinking`), expose `.is-aurora-paused`, and disable animations cleanly under `@media (prefers-reduced-motion: reduce)`.
+* Render circular `closest-side` multi-stop OKLCH radial gradients (`.m3-aurora-orb-1..3`, fading smoothly to `transparent 100%` without hard edges) inside `<div class="m3-aurora-layer" aria-hidden="true">` under `overflow: hidden; isolation: isolate` on both the Hero Card and its expanded modal (`HeroDetailModalComponent`), animate strictly `transform` and `opacity` on the GPU compositor, and disable animations cleanly under `@media (prefers-reduced-motion: reduce)`.
 
 ---
 

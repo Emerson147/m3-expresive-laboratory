@@ -157,6 +157,7 @@
   /* Keep continuous ambient aurora orbs static under reduced motion */
   .m3-aurora-orb {
     animation: none !important;
+    opacity: 0.52;
   }
 }
 
@@ -491,8 +492,8 @@
     position: relative;
     overflow: hidden;
     isolation: isolate;
-    --m3-aurora-opacity-low: 0.72;
-    --m3-aurora-opacity-high: 0.94;
+    --m3-aurora-opacity-low: 0.85;
+    --m3-aurora-opacity-high: 1;
   }
 
   .m3-aurora-glow > :not(.m3-aurora-layer) {
@@ -524,7 +525,6 @@
       color-mix(in oklch, var(--m3-orb-color) 8%, transparent) 84%,
       transparent 100%
     );
-    transition: opacity var(--md-sys-motion-duration-long2) var(--md-sys-motion-easing-emphasized);
   }
 
   .m3-aurora-orb-1 {
@@ -548,38 +548,16 @@
     --m3-orb-color: var(--md-sys-hero-glow-secondary, oklch(74% 0.16 var(--tertiary-hue) / 0.30));
   }
 
-  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-1 {
-    animation: m3AuroraOrbOne 12s ease-in-out infinite alternate;
-  }
-
-  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-2 {
-    animation: m3AuroraOrbTwo 15s ease-in-out infinite alternate;
-  }
-
-  .m3-aurora-glow.is-aurora-ambient .m3-aurora-orb-3 {
-    animation: m3AuroraOrbThree 18s ease-in-out infinite alternate;
-  }
-
-  .m3-aurora-glow.is-aurora-thinking {
-    --m3-aurora-opacity-low: 0.85;
-    --m3-aurora-opacity-high: 1;
-  }
-
-  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-1 {
+  .m3-aurora-glow .m3-aurora-orb-1 {
     animation: m3AuroraOrbOne 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
   }
 
-  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-2 {
+  .m3-aurora-glow .m3-aurora-orb-2 {
     animation: m3AuroraOrbTwo 3.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
   }
 
-  .m3-aurora-glow.is-aurora-thinking .m3-aurora-orb-3 {
+  .m3-aurora-glow .m3-aurora-orb-3 {
     animation: m3AuroraOrbThree 3.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-  }
-
-  .m3-aurora-glow.is-aurora-paused .m3-aurora-orb {
-    animation: none;
-    opacity: 0.52;
   }
 }
 

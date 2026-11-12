@@ -56,35 +56,16 @@ describe('OverviewComponent', () => {
     expect(heroCard.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('switches Gemini aurora glow modes without triggering hero modal expansion', () => {
+  it('renders the animated GPU aurora layer on the hero card without manual toggle controls', () => {
     const fixture = TestBed.createComponent(OverviewComponent);
-    const dialogService = TestBed.inject(DialogService);
-    const heroSpy = vi.spyOn(dialogService, 'toggleHeroDetail');
     fixture.detectChanges();
 
     const heroCard = fixture.nativeElement.querySelector('[role="button"][tabindex="0"]') as HTMLElement;
-    expect(heroCard.classList.contains('is-aurora-ambient')).toBe(true);
+    expect(heroCard.classList.contains('hero-mesh-m3')).toBe(true);
+    expect(heroCard.classList.contains('m3-aurora-glow')).toBe(true);
     expect(heroCard.querySelectorAll('.m3-aurora-layer .m3-aurora-orb').length).toBe(3);
-
-    const auroraGroup = fixture.nativeElement.querySelector('[aria-label="Modo de aurora de fondo"]') as HTMLElement;
-    const buttons = Array.from(auroraGroup.querySelectorAll('button'));
-    const thinkingBtn = buttons.find(btn => btn.textContent?.includes('Buscando')) as HTMLButtonElement;
-    const pauseBtn = buttons.find(btn => btn.textContent?.includes('Pausa')) as HTMLButtonElement;
-
-    thinkingBtn.click();
-    fixture.detectChanges();
-
-    expect(heroSpy).not.toHaveBeenCalled();
-    expect(heroCard.classList.contains('is-aurora-thinking')).toBe(true);
-    expect(thinkingBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(fixture.nativeElement.textContent).toContain('Gemini buscando...');
-
-    pauseBtn.click();
-    fixture.detectChanges();
-
-    expect(heroSpy).not.toHaveBeenCalled();
-    expect(heroCard.classList.contains('is-aurora-paused')).toBe(true);
-    expect(pauseBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.nativeElement.querySelector('[aria-label="Modo de aurora de fondo"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Gemini buscando...');
   });
 
   it('updates M3 contrast level directly via ThemeService from the tertiary card', () => {
