@@ -1,8 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, inject, input, output, viewChild } from '@angular/core';
-import { CompletedSale } from '../../../core/pos/pos.service';
+import { CompletedSale, PaymentMethod } from '../../../core/pos/pos.service';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: 'Efectivo',
+  yape: 'Yape / Plin',
+  card: 'Tarjeta'
+};
 
 @Component({
   selector: 'app-pos-receipt-modal',
@@ -65,11 +71,18 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
           <span class="flex-1">DESCRIPCIÓN</span>
           <span class="w-14 text-right">TOTAL</span>
         </div>
-        @for (item of sale().items; track item.product.id) {
-          <div class="flex justify-between text-[10px]">
-            <span class="w-6 font-bold">{{ item.quantity }}</span>
-            <span class="flex-1 truncate pr-2">{{ item.product.name }}</span>
-            <span class="w-14 text-right">S/ {{ (item.product.price * item.quantity).toFixed(2) }}</span>
+        @for (item of sale().items; track item.lineId) {
+          <div class="space-y-0.5 text-[10px]">
+            <div class="flex justify-between">
+              <span class="w-6 font-bold">{{ item.quantity }}</span>
+              <span class="flex-1 truncate pr-2">{{ item.product.name }}</span>
+              <span class="w-14 text-right">S/ {{ (item.unitPrice * item.quantity).toFixed(2) }}</span>
+            </div>
+            @if (item.notes) {
+              <div class="pl-6 text-[9px] text-zinc-600 italic truncate">
+                {{ item.notes }}
+              </div>
+            }
           </div>
         }
       </div>
@@ -97,7 +110,7 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
         <div class="pt-1.5 border-t border-dashed border-zinc-400 space-y-0.5 text-[9px] text-zinc-700">
           <div class="flex justify-between">
             <span>FORMA DE PAGO:</span>
-            <span class="uppercase font-bold">{{ sale().paymentMethod }}</span>
+            <span class="uppercase font-bold">{{ paymentMethodLabel(sale().paymentMethod) }}</span>
           </div>
           @if (sale().paymentMethod === 'cash') {
             <div class="flex justify-between">
@@ -159,6 +172,10 @@ export class PosReceiptModalComponent {
 
   constructor() {
     queueMicrotask(() => this.modalHeading()?.nativeElement.focus());
+  }
+
+  paymentMethodLabel(method: PaymentMethod): string {
+    return PAYMENT_METHOD_LABELS[method];
   }
 }
 

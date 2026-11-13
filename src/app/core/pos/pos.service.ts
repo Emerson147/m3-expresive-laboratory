@@ -14,9 +14,15 @@ export interface PosProduct {
 }
 
 export interface CartItem {
+  lineId: string;
   product: PosProduct;
+  unitPrice: number;
   quantity: number;
   notes?: string;
+}
+
+function createCartLineId(productId: number, unitPrice: number, notes?: string): string {
+  return `${productId}::${unitPrice.toFixed(2)}::${notes?.trim() ?? ''}`;
 }
 
 export interface PosCustomer {
@@ -33,6 +39,9 @@ export type VoucherType = 'boleta' | 'factura' | 'ticket';
 
 export interface CompletedSale {
   saleId: string;
+  orderCode?: string;
+  serviceChannel?: 'dine-in' | 'takeaway' | 'delivery';
+  tableNumber?: string;
   date: Date;
   voucherType: VoucherType;
   customer: PosCustomer;
@@ -236,8 +245,23 @@ export class PosService {
     sunatOnline: true
   });
 
+  readonly availableTables = [
+    'Mesa 01',
+    'Mesa 02',
+    'Mesa 03',
+    'Mesa 04',
+    'Mesa 05',
+    'Mesa 06',
+    'Terraza 01',
+    'Barra'
+  ] as const;
+
   readonly serviceChannel = signal<'dine-in' | 'takeaway' | 'delivery'>('dine-in');
   readonly tableNumber = signal<string>('Mesa 04');
+  readonly ticketSequence = signal<number>(842);
+  readonly activeOrderCode = computed(
+    () => `#ORD-2026-${String(this.ticketSequence()).padStart(4, '0')}`
+  );
 
   // 4. Carrito Reactivo y Cálculos
   readonly cart = signal<CartItem[]>([]);
@@ -248,7 +272,7 @@ export class PosService {
   );
 
   readonly grossTotal = computed(() => 
-    this.cart().reduce((acc, item) => acc + (item.product.price * item.quantity), 0)
+    this.cart().reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0)
   );
 
   readonly discount = computed(() => 
@@ -269,8 +293,16 @@ export class PosService {
   );
 
   getItemQuantity(productId: number): number {
-    const found = this.cart().find(i => i.product.id === productId);
-    return found ? found.quantity : 0;
+    return this.cart().reduce(
+      (sum, item) => (item.product.id === productId ? sum + item.quantity : sum),
+      0
+    );
+  }
+
+  remainingStock(productId: number): number {
+    const product = this.products().find(p => p.id === productId);
+    if (!product) return 0;
+    return Math.max(0, product.stock - this.getItemQuantity(productId));
   }
 
   // 4. Datos del Comprobante Fiscal y Cliente
@@ -319,38 +351,73 @@ export class PosService {
 
   // --- MÉTODOS DEL CARRITO ---
   addToCart(product: PosProduct): void {
-    this.cart.update(current => {
-      const existing = current.find(item => item.product.id === product.id);
-      if (existing) {
-        return current.map(item => 
-          item.product.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...current, { product, quantity: 1 }];
-    });
+    this.addToCartWithCustomization(product);
   }
 
   addToCartWithNotes(product: PosProduct, notes?: string): void {
+    this.addToCartWithCustomization(product, notes, product.price);
+  }
+
+  addToCartWithCustomization(product: PosProduct, notes?: string, unitPrice?: number): void {
+    const normalizedNotes = notes?.trim() || undefined;
+    const effectivePrice = Number((unitPrice ?? product.price).toFixed(2));
+    const lineId = createCartLineId(product.id, effectivePrice, normalizedNotes);
+
     this.cart.update(current => {
-      const existing = current.find(item => item.product.id === product.id);
+      const liveProduct = this.products().find(p => p.id === product.id) ?? product;
+      const totalQty = current.reduce(
+        (sum, item) => (item.product.id === product.id ? sum + item.quantity : sum),
+        0
+      );
+      if (totalQty >= liveProduct.stock) {
+        return current;
+      }
+
+      const existing = current.find(item => item.lineId === lineId);
       if (existing) {
-        return current.map(item => 
-          item.product.id === product.id 
-            ? { ...item, quantity: item.quantity + 1, notes: notes || item.notes }
-            : item
+        return current.map(item =>
+          item.lineId === lineId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...current, { product, quantity: 1, notes }];
+
+      return [
+        ...current,
+        {
+          lineId,
+          product: liveProduct,
+          unitPrice: effectivePrice,
+          quantity: 1,
+          notes: normalizedNotes
+        }
+      ];
     });
   }
 
-  updateQuantity(productId: number, delta: number): void {
+  updateLineQuantity(lineId: string, delta: number): void {
+    if (delta === 0) return;
+
     this.cart.update(current => {
+      const target = current.find(item => item.lineId === lineId);
+      if (!target) return current;
+
+      if (delta > 0) {
+        const liveProduct = this.products().find(p => p.id === target.product.id) ?? target.product;
+        const totalQty = current.reduce(
+          (sum, item) => (item.product.id === target.product.id ? sum + item.quantity : sum),
+          0
+        );
+        if (totalQty >= liveProduct.stock) {
+          return current;
+        }
+        const cappedDelta = Math.min(delta, liveProduct.stock - totalQty);
+        return current.map(item =>
+          item.lineId === lineId ? { ...item, quantity: item.quantity + cappedDelta } : item
+        );
+      }
+
       return current
         .map(item => {
-          if (item.product.id === productId) {
+          if (item.lineId === lineId) {
             const newQty = item.quantity + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
@@ -360,16 +427,43 @@ export class PosService {
     });
   }
 
+  removeLine(lineId: string): void {
+    this.cart.update(current => current.filter(item => item.lineId !== lineId));
+  }
+
+  updateQuantity(productId: number, delta: number): void {
+    const current = this.cart();
+    const target =
+      current.find(
+        item =>
+          item.product.id === productId &&
+          item.lineId === createCartLineId(productId, item.product.price)
+      ) ?? [...current].reverse().find(item => item.product.id === productId);
+
+    if (!target) return;
+    this.updateLineQuantity(target.lineId, delta);
+  }
+
   removeFromCart(productId: number): void {
     this.cart.update(current => current.filter(item => item.product.id !== productId));
   }
 
   updateItemNotes(productId: number, notes: string): void {
-    this.cart.update(current => 
-      current.map(item => 
-        item.product.id === productId ? { ...item, notes } : item
-      )
+    const normalizedNotes = notes.trim() || undefined;
+    this.cart.update(current =>
+      current.map(item => {
+        if (item.product.id !== productId) return item;
+        return {
+          ...item,
+          notes: normalizedNotes,
+          lineId: createCartLineId(item.product.id, item.unitPrice, normalizedNotes)
+        };
+      })
     );
+  }
+
+  setTableNumber(table: string): void {
+    this.tableNumber.set(table);
   }
 
   clearCart(): void {
@@ -432,13 +526,21 @@ export class PosService {
   completeSale(): void {
     if (!this.isPaymentValid()) return;
 
-    const saleId = `B001-${Math.floor(100000 + Math.random() * 900000)}`;
+    const soldItems = this.cart().map(item => ({ ...item }));
+    const series = this.voucherType() === 'factura' ? 'F001' : 'B001';
+    const folio = String(this.ticketSequence()).padStart(6, '0');
+    const saleId = `${series}-${folio}`;
+    const channel = this.serviceChannel();
+
     const sale: CompletedSale = {
       saleId,
+      orderCode: this.activeOrderCode(),
+      serviceChannel: channel,
+      tableNumber: channel === 'dine-in' ? this.tableNumber() : undefined,
       date: new Date(),
       voucherType: this.voucherType(),
       customer: this.customer(),
-      items: [...this.cart()],
+      items: soldItems,
       subtotal: this.subtotal(),
       tax: this.tax(),
       discount: this.discount(),
@@ -449,16 +551,41 @@ export class PosService {
       yapeCode: this.paymentMethod() === 'yape' ? this.yapeCode() : undefined
     };
 
+    const soldQtyByProduct = new Map<number, number>();
+    for (const item of soldItems) {
+      soldQtyByProduct.set(
+        item.product.id,
+        (soldQtyByProduct.get(item.product.id) ?? 0) + item.quantity
+      );
+    }
+
+    this.products.update(catalog =>
+      catalog.map(product => {
+        const soldQty = soldQtyByProduct.get(product.id);
+        if (!soldQty) return product;
+        return { ...product, stock: Math.max(0, product.stock - soldQty) };
+      })
+    );
+
+    this.shiftInfo.update(info => ({
+      ...info,
+      salesCountToday: info.salesCountToday + 1
+    }));
+
     this.lastCompletedSale.set(sale);
     this.isCheckoutOpen.set(false);
     this.isReceiptOpen.set(true);
   }
 
   newSale(): void {
+    const hadCompletedSale = this.lastCompletedSale() !== null;
     this.clearCart();
     this.customer.set(this.defaultCustomer);
     this.voucherType.set('boleta');
     this.lastCompletedSale.set(null);
     this.isReceiptOpen.set(false);
+    if (hadCompletedSale) {
+      this.ticketSequence.update(seq => seq + 1);
+    }
   }
 }

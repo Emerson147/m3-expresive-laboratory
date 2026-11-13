@@ -13,6 +13,13 @@ export interface PosCategoryOption {
   readonly icon: string;
 }
 
+export interface PosShiftSummary {
+  readonly register: string;
+  readonly shift: string;
+  readonly cashier: string;
+  readonly salesCountToday: number;
+}
+
 @Component({
   selector: 'app-pos-catalog',
   standalone: true,
@@ -21,12 +28,19 @@ export interface PosCategoryOption {
     class: 'flex flex-col h-full min-h-0 space-y-3 overflow-hidden'
   },
   template: `
-    <div class="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-      <div class="flex items-center gap-3 shrink-0">
+    <div class="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+      <div class="flex flex-wrap items-center gap-2 shrink-0">
         <h2 class="text-2xl font-black text-main tracking-tight">Menú</h2>
         <span class="text-xs font-mono font-bold text-muted px-2.5 py-0.5 rounded-full bg-surface-box border border-outline-sub shadow-2xs">
           {{ products().length }} productos
         </span>
+        @if (shiftInfo(); as shift) {
+          <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-muted px-2.5 py-0.5 rounded-full bg-surface-high border border-outline-sub">
+            <span class="w-1.5 h-1.5 rounded-full bg-success shrink-0" aria-hidden="true"></span>
+            <span class="font-mono font-bold text-main">{{ shift.register }}</span>
+            <span>· {{ shift.shift }} · {{ shift.salesCountToday }} ventas</span>
+          </span>
+        }
       </div>
 
       <div class="flex items-center gap-2 flex-1 sm:max-w-lg justify-end">
@@ -67,23 +81,27 @@ export interface PosCategoryOption {
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar p-1 pr-1.5 space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
         @for (product of products(); track product.id) {
           @let qty = quantityMap().get(product.id) ?? 0;
+          @let isOutOfStock = product.stock <= 0;
+          @let canAddMore = qty < product.stock;
           @let theme = categoryThemes[product.category];
 
           <m3-card
             variant="outlined"
             padding="none"
             shape="lg"
-            [customClass]="qty > 0
-              ? 'group relative flex flex-col justify-between overflow-hidden ring-2 ring-inset ring-primary border-primary bg-primary/10 shadow-sm'
-              : 'group relative flex flex-col justify-between overflow-hidden bg-surface-box shadow-2xs hover:shadow-md hover:border-outline'">
+            [customClass]="isOutOfStock
+              ? 'group relative flex flex-col justify-between overflow-hidden bg-surface-box/70 opacity-75 border-outline-sub'
+              : qty > 0
+                ? 'group relative flex flex-col justify-between overflow-hidden ring-2 ring-inset ring-primary border-primary bg-primary/10 shadow-sm'
+                : 'group relative flex flex-col justify-between overflow-hidden bg-surface-box shadow-2xs hover:shadow-md hover:border-outline'">
 
             @if (qty > 0) {
               <div
                 aria-hidden="true"
-                class="absolute top-2.5 right-2.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-mono font-black shadow-lg flex items-center gap-1.5 z-20 m3-anim-spring-pop pointer-events-none">
+                class="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-primary text-on-primary text-xs font-mono font-black shadow-lg flex items-center gap-1 z-20 m3-anim-spring-pop pointer-events-none">
                 <span class="material-symbols-rounded text-sm">shopping_bag</span>
                 <span>{{ qty }}x</span>
               </div>
@@ -91,54 +109,63 @@ export interface PosCategoryOption {
 
             <button
               type="button"
-              [attr.aria-label]="'Agregar ' + product.name + ' a la comanda'"
+              [disabled]="!canAddMore"
+              [attr.aria-label]="isOutOfStock ? product.name + ' agotado' : 'Agregar ' + product.name + ' a la comanda'"
               (click)="addProduct.emit(product)"
-              class="state-layer focus-ring-m3 w-full text-left flex-1 flex flex-col cursor-pointer bg-transparent border-0 p-0">
+              class="state-layer focus-ring-m3 w-full text-left flex-1 flex flex-col cursor-pointer disabled:cursor-not-allowed bg-transparent border-0 p-0">
 
-              <div class="relative w-full h-60 bg-surface-high overflow-hidden shrink-0">
+              <div class="relative w-full h-36 sm:h-40 bg-surface-high overflow-hidden shrink-0">
                 @if (!failedImages()[product.id]) {
                   <img
                     [src]="product.imageUrl"
                     [alt]="product.name"
                     (error)="markImageFailed(product.id)"
                     loading="lazy"
+                    [class.grayscale]="isOutOfStock"
                     class="w-full h-full object-cover transition-transform m3-transition-emphasized group-hover:scale-105" />
                 } @else {
                   <div
                     [class]="theme.bg + ' ' + theme.text"
                     class="w-full h-full grid place-items-center">
-                    <span class="material-symbols-rounded text-6xl" aria-hidden="true">{{ product.icon }}</span>
+                    <span class="material-symbols-rounded text-5xl" aria-hidden="true">{{ product.icon }}</span>
                   </div>
                 }
 
-                <div class="absolute inset-0 bg-gradient-to-t from-[oklch(0%_0_0_/_0.88)] via-[oklch(0%_0_0_/_0.25)] to-transparent pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[oklch(0%_0_0_/_0.88)] via-[oklch(0%_0_0_/_0.22)] to-transparent pointer-events-none"></div>
 
-                <div class="absolute top-2.5 inset-x-2.5 flex items-center justify-between text-xs z-10">
-                  <span class="px-2.5 py-0.5 rounded-full bg-surface-box/90 backdrop-blur-xs text-main font-bold text-[10px] uppercase tracking-wider border border-outline-sub shadow-xs">
-                    {{ product.categoryLabel }}
-                  </span>
-                  <span
-                    [class]="product.stock <= 20 ? 'bg-warning-box text-on-warning-box font-black border-warning/40' : 'bg-surface-dim/90 backdrop-blur-xs text-main font-semibold border-outline-sub'"
-                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] border shadow-xs">
+                <span
+                  [class]="isOutOfStock
+                    ? 'bg-error-box text-on-error-box font-black border-error/40'
+                    : product.stock <= 20
+                      ? 'bg-warning-box text-on-warning-box font-black border-warning/40'
+                      : 'bg-surface-box/90 backdrop-blur-xs text-main font-semibold border-outline-sub'"
+                  class="absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] border shadow-xs">
+                  @if (isOutOfStock) {
+                    <span class="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">block</span>
+                    <span>Agotado</span>
+                  } @else {
                     @if (product.stock <= 20) {
                       <span class="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">warning</span>
                     }
                     <span>{{ product.stock }} disp.</span>
-                  </span>
-                </div>
+                  }
+                </span>
 
-                <div class="absolute bottom-2.5 inset-x-3 z-10 text-[oklch(98%_0_0)] forced-colors:bg-[Canvas] forced-colors:text-[CanvasText] forced-colors:px-2 forced-colors:py-1 forced-colors:rounded-m3-sm forced-colors:border forced-colors:border-[CanvasText]">
+                <div class="absolute bottom-2 inset-x-3 z-10 text-[oklch(98%_0_0)] forced-colors:bg-[Canvas] forced-colors:text-[CanvasText] forced-colors:px-2 forced-colors:py-1 forced-colors:rounded-m3-sm forced-colors:border forced-colors:border-[CanvasText]">
                   <span class="text-[10px] font-mono opacity-80 font-bold tracking-wider uppercase block">
                     {{ product.sku }}
                   </span>
-                  <div class="font-mono font-black text-2xl tracking-tight leading-none mt-0.5 drop-shadow-md">
+                  <div class="font-mono font-black text-xl sm:text-2xl tracking-tight leading-none mt-0.5 drop-shadow-md">
                     S/ {{ product.price.toFixed(2) }}
                   </div>
                 </div>
               </div>
 
-              <div class="p-3.5 pb-2.5 space-y-0.5 w-full">
-                <h4 class="font-extrabold text-sm text-main group-hover:text-primary transition-colors m3-transition-fast line-clamp-1 leading-snug">
+              <div class="p-3 pb-2 space-y-0.5 w-full">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-primary block leading-none">
+                  {{ product.categoryLabel }}
+                </span>
+                <h4 class="font-extrabold text-sm text-main group-hover:text-primary transition-colors m3-transition-fast line-clamp-1 leading-snug pt-0.5">
                   {{ product.name }}
                 </h4>
                 <p class="text-xs text-muted line-clamp-1 font-normal">
@@ -147,12 +174,13 @@ export interface PosCategoryOption {
               </div>
             </button>
 
-            <div class="px-3.5 pb-3.5 pt-2 flex items-center gap-2 border-t border-outline-sub/60">
+            <div class="px-3 pb-3 pt-2 flex items-center gap-2 border-t border-outline-sub/60">
               <m3-button
                 variant="tonal"
                 size="sm"
                 icon="tune"
                 customClass="flex-1"
+                [disabled]="!canAddMore"
                 [invisible]="hiddenCustomizerOriginId() === product.id"
                 [viewTransitionName]="activeCustomizerOriginId() === product.id ? 'dialog-transform' : null"
                 [ariaLabel]="'Personalizar ' + product.name"
@@ -172,9 +200,10 @@ export interface PosCategoryOption {
                   <span class="text-xs font-mono font-bold w-5 text-center">{{ qty }}</span>
                   <button
                     type="button"
+                    [disabled]="!canAddMore"
                     [attr.aria-label]="'Sumar uno de ' + product.name"
                     (click)="updateQuantity.emit({ productId: product.id, delta: 1 })"
-                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-on-primary/15 text-on-primary grid place-items-center cursor-pointer">
+                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-on-primary/15 text-on-primary grid place-items-center cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed">
                     <span class="material-symbols-rounded text-sm font-bold" aria-hidden="true">add</span>
                   </button>
                 </div>
@@ -182,11 +211,12 @@ export interface PosCategoryOption {
                 <m3-button
                   variant="filled"
                   size="sm"
-                  icon="shopping_bag"
+                  [icon]="isOutOfStock ? 'block' : 'shopping_bag'"
                   customClass="flex-1"
-                  [ariaLabel]="'Añadir ' + product.name + ' al pedido'"
+                  [disabled]="!canAddMore"
+                  [ariaLabel]="isOutOfStock ? product.name + ' agotado' : 'Añadir ' + product.name + ' al pedido'"
                   (action)="addProduct.emit(product)">
-                  Añadir
+                  {{ isOutOfStock ? 'Agotado' : 'Añadir' }}
                 </m3-button>
               }
             </div>
@@ -210,6 +240,7 @@ export class PosCatalogComponent {
   readonly selectedCategory = input.required<string>();
   readonly searchQuery = input.required<string>();
   readonly cart = input.required<readonly CartItem[]>();
+  readonly shiftInfo = input<PosShiftSummary | null>(null);
   readonly activeCustomizerOriginId = input<number | null>(null);
   readonly hiddenCustomizerOriginId = input<number | null>(null);
 
@@ -226,7 +257,7 @@ export class PosCatalogComponent {
   readonly quantityMap = computed(() => {
     const map = new Map<number, number>();
     for (const item of this.cart()) {
-      map.set(item.product.id, item.quantity);
+      map.set(item.product.id, (map.get(item.product.id) ?? 0) + item.quantity);
     }
     return map;
   });

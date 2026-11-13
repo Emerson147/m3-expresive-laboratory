@@ -39,17 +39,44 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
     PosCustomizerModalComponent
   ],
   host: {
-    class: 'flex-1 h-full min-h-0 flex flex-col overflow-hidden'
+    class: 'flex-1 h-full min-h-0 flex flex-col overflow-hidden gap-3'
   },
   template: `
-    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch h-full overflow-hidden">
+    <div
+      role="tablist"
+      aria-label="Vistas del punto de venta"
+      class="lg:hidden shrink-0 grid grid-cols-2 gap-1 p-1 rounded-full bg-surface-high border border-outline-sub">
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="mobilePane() === 'catalog'"
+        (click)="mobilePane.set('catalog')"
+        [class]="mobilePane() === 'catalog' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
+        class="btn-m3 state-layer focus-ring-m3 min-h-10 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
+        <span>Menú ({{ posService.filteredProducts().length }})</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="mobilePane() === 'ticket'"
+        (click)="mobilePane.set('ticket')"
+        [class]="mobilePane() === 'ticket' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
+        class="btn-m3 state-layer focus-ring-m3 min-h-10 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-rounded text-sm" aria-hidden="true">receipt_long</span>
+        <span>Comanda ({{ posService.cartCount() }})</span>
+      </button>
+    </div>
+
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden">
       <app-pos-catalog
-        class="lg:col-span-7 xl:col-span-8 min-w-0"
+        [class]="(mobilePane() === 'catalog' ? 'flex' : 'hidden lg:flex') + ' lg:col-span-7 xl:col-span-8 min-w-0 min-h-0'"
         [products]="posService.filteredProducts()"
         [categories]="posService.categories"
         [selectedCategory]="posService.selectedCategory()"
         [searchQuery]="posService.searchQuery()"
         [cart]="posService.cart()"
+        [shiftInfo]="posService.shiftInfo()"
         [activeCustomizerOriginId]="customizerMorphOwner() === 'catalog' ? morphProductId() : null"
         [hiddenCustomizerOriginId]="customizingProduct()?.id ?? null"
         (searchChange)="posService.searchQuery.set($event)"
@@ -60,10 +87,12 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
         (customizeProduct)="openCustomizer($event)" />
 
       <app-pos-ticket
-        class="lg:col-span-5 xl:col-span-4 min-w-0"
+        [class]="(mobilePane() === 'ticket' ? 'flex' : 'hidden lg:flex') + ' lg:col-span-5 xl:col-span-4 min-w-0 min-h-0'"
         [cart]="posService.cart()"
         [cartCount]="posService.cartCount()"
+        [orderCode]="posService.activeOrderCode()"
         [tableNumber]="posService.tableNumber()"
+        [availableTables]="posService.availableTables"
         [serviceChannel]="posService.serviceChannel()"
         [voucherType]="posService.voucherType()"
         [customer]="posService.customer()"
@@ -75,14 +104,33 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
         [isCheckoutTransitionOrigin]="checkoutMorphOwner() === 'ticket'"
         [isCheckoutTriggerInvisible]="posService.isCheckoutOpen() || posService.isReceiptOpen()"
         (channelChange)="setChannel($event)"
+        (tableChange)="posService.setTableNumber($event)"
         (voucherTypeChange)="posService.setVoucherType($event)"
         (editCustomer)="openCustomerModal()"
-        (updateQuantity)="posService.updateQuantity($event.productId, $event.delta)"
-        (removeItem)="posService.removeFromCart($event)"
+        (updateLineQuantity)="posService.updateLineQuantity($event.lineId, $event.delta)"
+        (removeLine)="posService.removeLine($event)"
         (discountChange)="posService.discountPercent.set($event)"
         (clearCart)="posService.clearCart()"
         (checkout)="openCheckout()" />
     </div>
+
+    @if (mobilePane() === 'catalog' && posService.cartCount() > 0) {
+      <div class="lg:hidden shrink-0 m3-anim-item-in">
+        <button
+          type="button"
+          (click)="mobilePane.set('ticket')"
+          class="btn-m3 state-layer focus-ring-m3 w-full min-h-12 px-4 py-2.5 rounded-m3-lg bg-primary text-on-primary shadow-lg flex items-center justify-between gap-3 cursor-pointer">
+          <div class="flex items-center gap-2 text-xs font-bold">
+            <span class="material-symbols-rounded text-lg" aria-hidden="true">shopping_bag</span>
+            <span>Ver Comanda · {{ posService.cartCount() }} {{ posService.cartCount() === 1 ? 'ítem' : 'ítems' }}</span>
+          </div>
+          <div class="flex items-center gap-1.5 font-mono font-black text-sm">
+            <span>S/ {{ posService.total().toFixed(2) }}</span>
+            <span class="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
+          </div>
+        </button>
+      </div>
+    }
 
     <ng-template #posModalsTemplate>
       @if (posService.isCheckoutOpen()) {
@@ -139,6 +187,7 @@ export class PosComponent {
   private readonly posModalsTemplate = viewChild<TemplateRef<unknown>>('posModalsTemplate');
   private returnFocusEl: HTMLElement | null = null;
 
+  readonly mobilePane = signal<'catalog' | 'ticket'>('catalog');
   readonly isCustomerModalOpen = signal<boolean>(false);
   readonly isShortcutsModalOpen = signal<boolean>(false);
   readonly customizingProduct = signal<PosProduct | null>(null);
@@ -196,6 +245,9 @@ export class PosComponent {
       else if (this.isShortcutsModalOpen()) this.closeShortcutsModal();
       else if (this.posService.isCheckoutOpen()) this.closeCheckout();
       else if (this.posService.isReceiptOpen()) this.dismissReceipt(false);
+      else if (this.posService.searchQuery().trim()) {
+        this.posService.searchQuery.set('');
+      }
     } else if (event.key === 'Enter' && event.ctrlKey) {
       event.preventDefault();
       if (!this.hasAnyModalOpen() && this.posService.cart().length > 0) {
@@ -209,7 +261,7 @@ export class PosComponent {
   }
 
   openCustomizer(product: PosProduct): void {
-    if (this.hasAnyModalOpen()) return;
+    if (this.hasAnyModalOpen() || this.posService.remainingStock(product.id) <= 0) return;
     this.captureReturnFocus();
     this.morphProductId.set(product.id);
     this.customizerMorphOwner.set('catalog');
@@ -251,8 +303,8 @@ export class PosComponent {
     );
   }
 
-  addCustomizedToCart(payload: { product: PosProduct; notes: string }): void {
-    this.posService.addToCartWithNotes(payload.product, payload.notes);
+  addCustomizedToCart(payload: { product: PosProduct; notes: string; unitPrice?: number }): void {
+    this.posService.addToCartWithCustomization(payload.product, payload.notes, payload.unitPrice);
     this.closeCustomizer();
   }
 
@@ -319,6 +371,7 @@ export class PosComponent {
       () => {
         if (resetSale) {
           this.posService.newSale();
+          this.mobilePane.set('catalog');
         } else {
           this.posService.isReceiptOpen.set(false);
         }

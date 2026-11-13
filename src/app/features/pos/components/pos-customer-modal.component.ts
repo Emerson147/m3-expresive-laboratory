@@ -1,4 +1,4 @@
-import { Component, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PosCustomer } from '../../../core/pos/pos.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
@@ -39,7 +39,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
           (action)="close.emit()" />
       </div>
 
-      <form (ngSubmit)="submitCustomer()" class="space-y-4">
+      <form (ngSubmit)="submitCustomer()" novalidate class="space-y-4">
         <div class="space-y-3">
           <div
             role="group"
@@ -64,20 +64,28 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
           </div>
 
           <m3-text-field
+            #docField
             variant="filled"
             inputMode="numeric"
             [label]="docType() === 'RUC' ? 'RUC de la Empresa (11 dígitos)' : 'DNI del Cliente (8 dígitos)'"
             [placeholder]="docType() === 'RUC' ? '20601234567' : '72345678'"
             icon="badge"
             [maxlength]="docType() === 'RUC' ? 11 : 8"
-            [(value)]="docNumber" />
+            [(value)]="docNumber"
+            (inputBlur)="docTouched.set(true)"
+            [errorText]="docError()"
+            [supportingText]="docType() === 'RUC' ? 'Ingresá 11 dígitos numéricos del RUC.' : 'Ingresá 8 dígitos numéricos del DNI.'" />
 
           <m3-text-field
+            #nameField
             variant="filled"
             [label]="docType() === 'RUC' ? 'Razón Social' : 'Nombre Completo'"
             [placeholder]="docType() === 'RUC' ? 'CORPORACIÓN ALIMENTARIA S.A.C.' : 'Carlos Mendoza Rojas'"
             icon="person"
-            [(value)]="customerName" />
+            [(value)]="customerName"
+            (inputBlur)="nameTouched.set(true)"
+            [errorText]="nameError()"
+            [supportingText]="docType() === 'RUC' ? 'Razón social registrada para facturación.' : 'Nombre completo o Clientes Varios.'" />
         </div>
 
         <div class="flex justify-end gap-2 pt-3 border-t border-outline-sub">
@@ -92,6 +100,8 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
 })
 export class PosCustomerModalComponent {
   private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
+  private readonly docField = viewChild<M3TextFieldComponent>('docField');
+  private readonly nameField = viewChild<M3TextFieldComponent>('nameField');
 
   readonly initialCustomer = input.required<PosCustomer>();
   readonly close = output<void>();
@@ -100,6 +110,34 @@ export class PosCustomerModalComponent {
   readonly docType = signal<'DNI' | 'RUC'>('DNI');
   readonly docNumber = signal<string>('');
   readonly customerName = signal<string>('');
+  readonly docTouched = signal<boolean>(false);
+  readonly nameTouched = signal<boolean>(false);
+  readonly submitted = signal<boolean>(false);
+
+  private readonly docErrorRaw = computed<string | null>(() => {
+    const value = this.docNumber().trim();
+    if (!value) {
+      return 'Ingresá el número de documento.';
+    }
+    if (this.docType() === 'RUC') {
+      return /^\d{11}$/.test(value) ? null : 'El RUC debe tener exactamente 11 dígitos.';
+    }
+    return /^\d{8}$/.test(value) ? null : 'El DNI debe tener exactamente 8 dígitos.';
+  });
+
+  private readonly nameErrorRaw = computed<string | null>(() => {
+    return this.customerName().trim().length >= 2
+      ? null
+      : 'Ingresá el nombre o razón social del cliente.';
+  });
+
+  readonly docError = computed<string | null>(() =>
+    this.docTouched() || this.submitted() ? this.docErrorRaw() : null
+  );
+
+  readonly nameError = computed<string | null>(() =>
+    this.nameTouched() || this.submitted() ? this.nameErrorRaw() : null
+  );
 
   constructor() {
     queueMicrotask(() => {
@@ -113,21 +151,50 @@ export class PosCustomerModalComponent {
 
   setDocType(type: 'DNI' | 'RUC'): void {
     this.docType.set(type);
-    if (type === 'RUC' && this.docNumber().length <= 8) {
-      this.docNumber.set('20601234567');
-      this.customerName.set('EMPRESA GASTRONOMICA S.A.C.');
-    } else if (type === 'DNI' && this.docNumber().length > 8) {
-      this.docNumber.set('72345678');
-      this.customerName.set('Carlos Mendoza Rojas');
+    this.docTouched.set(false);
+    this.submitted.set(false);
+
+    const currentDoc = this.docNumber().trim();
+    const currentName = this.customerName().trim();
+
+    if (type === 'RUC') {
+      if (!currentDoc || currentDoc === '00000000' || currentDoc === '72345678') {
+        this.docNumber.set('20601234567');
+      }
+      if (!currentName || currentName === 'Clientes Varios' || currentName === 'Carlos Mendoza Rojas') {
+        this.customerName.set('INVERSIONES GASTRONOMICAS S.A.C.');
+      }
+      return;
+    }
+
+    if (!currentDoc || currentDoc === '20601234567') {
+      this.docNumber.set('00000000');
+    }
+    if (
+      !currentName ||
+      currentName === 'INVERSIONES GASTRONOMICAS S.A.C.' ||
+      currentName === 'EMPRESA GASTRONOMICA S.A.C.'
+    ) {
+      this.customerName.set('Clientes Varios');
     }
   }
 
   submitCustomer(): void {
+    this.submitted.set(true);
+    if (this.docErrorRaw()) {
+      this.docField()?.focus();
+      return;
+    }
+    if (this.nameErrorRaw()) {
+      this.nameField()?.focus();
+      return;
+    }
+
     const type = this.docType();
     this.save.emit({
       docType: type,
-      docNumber: this.docNumber().trim() || '00000000',
-      name: this.customerName().trim() || 'Clientes Varios',
+      docNumber: this.docNumber().trim(),
+      name: this.customerName().trim(),
       isCompany: type === 'RUC'
     });
   }

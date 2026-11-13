@@ -40,32 +40,41 @@ describe('PosService', () => {
     expect(service.filteredProducts()).toEqual([]);
   });
 
-  it('adds items, merges quantities, supports customization notes, and decrements/removes items', () => {
+  it('adds items, splits customized variants by unitPrice/notes, enforces stock ceiling, and removes lines', () => {
     const [espresso, cappuccino] = service.products();
 
     service.addToCart(espresso);
     service.addToCart(espresso);
-    service.addToCartWithNotes(cappuccino, 'Extra shot, almond milk');
+    service.addToCartWithCustomization(cappuccino, 'Leche de Almendra (+S/ 3.00)', 15);
+    service.addToCart(cappuccino);
 
-    expect(service.cartCount()).toBe(3);
+    expect(service.cartCount()).toBe(4);
+    expect(service.cart().length).toBe(3);
     expect(service.getItemQuantity(espresso.id)).toBe(2);
-    expect(service.getItemQuantity(cappuccino.id)).toBe(1);
-    expect(service.cart().find(i => i.product.id === cappuccino.id)?.notes).toBe('Extra shot, almond milk');
-
-    service.addToCartWithNotes(cappuccino);
     expect(service.getItemQuantity(cappuccino.id)).toBe(2);
-    expect(service.cart().find(i => i.product.id === cappuccino.id)?.notes).toBe('Extra shot, almond milk');
 
-    service.updateItemNotes(espresso.id, 'No sugar');
-    expect(service.cart().find(i => i.product.id === espresso.id)?.notes).toBe('No sugar');
+    const customLine = service.cart().find(i => i.unitPrice === 15);
+    const stdLine = service.cart().find(i => i.product.id === cappuccino.id && !i.notes);
+    expect(customLine?.notes).toBe('Leche de Almendra (+S/ 3.00)');
+    expect(stdLine?.unitPrice).toBe(cappuccino.price);
+    expect(service.grossTotal()).toBe(8.5 * 2 + 15 + 12);
 
-    service.updateQuantity(cappuccino.id, -2);
-    expect(service.getItemQuantity(cappuccino.id)).toBe(0);
-    expect(service.cart().length).toBe(1);
+    // Repeating exact same variant merges onto existing line
+    service.addToCartWithCustomization(cappuccino, 'Leche de Almendra (+S/ 3.00)', 15);
+    expect(service.getItemQuantity(cappuccino.id)).toBe(3);
+    expect(service.cart().find(i => i.lineId === customLine!.lineId)?.quantity).toBe(2);
+
+    // Stock ceiling prevents exceeding available stock
+    service.updateLineQuantity(customLine!.lineId, 999);
+    expect(service.getItemQuantity(cappuccino.id)).toBe(cappuccino.stock);
+    expect(service.remainingStock(cappuccino.id)).toBe(0);
+
+    service.removeLine(customLine!.lineId);
+    expect(service.getItemQuantity(cappuccino.id)).toBe(1);
 
     service.removeFromCart(espresso.id);
+    service.removeFromCart(cappuccino.id);
     expect(service.cart()).toEqual([]);
-    expect(service.getItemQuantity(espresso.id)).toBe(0);
   });
 
   it('computes Peruvian 18% IGV breakdown and percentage discounts accurately', () => {
@@ -146,8 +155,16 @@ describe('PosService', () => {
     expect(service.isCheckoutOpen()).toBe(false);
   });
 
-  it('completes a valid sale into a receipt snapshot and resets cleanly on newSale', () => {
+  it('completes a valid sale into a receipt snapshot, decrements stock, advances sequence/series, and resets cleanly on newSale', () => {
     const [espresso] = service.products();
+    const initialStock = espresso.stock;
+    const initialSales = service.shiftInfo().salesCountToday;
+    const initialSeq = service.ticketSequence();
+
+    service.setTableNumber('Terraza 01');
+    expect(service.tableNumber()).toBe('Terraza 01');
+
+    service.addToCart(espresso);
     service.addToCart(espresso);
     service.setQuickCash(5);
     service.completeSale();
@@ -159,15 +176,21 @@ describe('PosService', () => {
 
     const sale = service.lastCompletedSale();
     expect(sale).not.toBeNull();
-    expect(sale?.saleId).toMatch(/^B001-\d{6}$/);
-    expect(sale?.total).toBe(8.5);
+    expect(sale?.saleId).toBe(`B001-${String(initialSeq).padStart(6, '0')}`);
+    expect(sale?.orderCode).toBe(`#ORD-2026-${String(initialSeq).padStart(4, '0')}`);
+    expect(sale?.tableNumber).toBe('Terraza 01');
+    expect(sale?.total).toBe(17);
     expect(sale?.cashReceived).toBe(20);
-    expect(sale?.change).toBe(11.5);
+    expect(sale?.change).toBe(3);
     expect(sale?.yapeCode).toBeUndefined();
+    expect(service.products()[0].stock).toBe(initialStock - 2);
+    expect(service.shiftInfo().salesCountToday).toBe(initialSales + 1);
     expect(service.isCheckoutOpen()).toBe(false);
     expect(service.isReceiptOpen()).toBe(true);
 
     service.newSale();
+    expect(service.ticketSequence()).toBe(initialSeq + 1);
+    expect(service.activeOrderCode()).toBe(`#ORD-2026-${String(initialSeq + 1).padStart(4, '0')}`);
     expect(service.cart()).toEqual([]);
     expect(service.discountPercent()).toBe(0);
     expect(service.cashReceived()).toBe(0);
@@ -176,6 +199,13 @@ describe('PosService', () => {
     expect(service.customer()).toEqual(service.defaultCustomer);
     expect(service.lastCompletedSale()).toBeNull();
     expect(service.isReceiptOpen()).toBe(false);
+
+    // Factura emits F001 series
+    service.setVoucherType('factura');
+    service.addToCart(espresso);
+    service.setPaymentMethod('card');
+    service.completeSale();
+    expect(service.lastCompletedSale()?.saleId).toMatch(/^F001-\d{6}$/);
   });
 });
 

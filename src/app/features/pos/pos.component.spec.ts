@@ -50,8 +50,12 @@ describe('PosComponent', () => {
     expect(ticketMinus.classList.contains('touch-target-48')).toBe(true);
   });
 
-  it('opens the accessible customizer dialog with M3 filter chips and adds customization notes', () => {
+  it('opens the accessible customizer dialog, applies extra pricing, and splits variant cart lines', () => {
     const { fixture, posService } = setup();
+    const espresso = posService.products()[0];
+    posService.addToCart(espresso);
+    fixture.detectChanges();
+
     const optionsBtn = fixture.nativeElement.querySelector('app-pos-catalog m3-button[icon="tune"] button') as HTMLButtonElement;
 
     optionsBtn.click();
@@ -63,7 +67,7 @@ describe('PosComponent', () => {
 
     const extraChips = Array.from(dialog.querySelectorAll('m3-chip button')) as HTMLButtonElement[];
     expect(extraChips.length).toBeGreaterThan(0);
-    extraChips[0].click();
+    extraChips[0].click(); // Double Charge (+3.00)
     fixture.detectChanges();
 
     const addCustomizedBtn = dialog.querySelector('m3-button[icon="shopping_bag"] button') as HTMLButtonElement;
@@ -71,8 +75,10 @@ describe('PosComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('app-pos-customizer-modal')).toBeNull();
-    expect(posService.cart().length).toBe(1);
-    expect(posService.cart()[0].notes).toBeTruthy();
+    expect(posService.cart().length).toBe(2);
+    expect(posService.cart()[0].unitPrice).toBe(espresso.price);
+    expect(posService.cart()[1].notes).toBeTruthy();
+    expect(posService.cart()[1].unitPrice).toBeGreaterThan(espresso.price);
   });
 
   it('opens checkout via Ctrl+Enter, renders GPU aurora layers, and shows M3 loading indicator in card mode', () => {
@@ -236,6 +242,98 @@ describe('PosComponent', () => {
     expect(modalHtml).toContain('text-success');
     expect(modalHtml).toContain('check_circle');
     expect(modalHtml).not.toMatch(/amber-|emerald-|bg-zinc-950/);
+  });
+
+  it('clears search on Escape when no modal is open, disables exhausted stock cards, and switches mobile panes', () => {
+    const { fixture, posService } = setup();
+    posService.searchQuery.set('Espresso');
+    fixture.detectChanges();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(posService.searchQuery()).toBe('');
+
+    // Exhaust first product stock and verify UI locks out adding more
+    const first = posService.products()[0];
+    posService.products.update(list => list.map(p => (p.id === first.id ? { ...p, stock: 0 } : p)));
+    fixture.detectChanges();
+
+    const firstCard = fixture.nativeElement.querySelector('app-pos-catalog m3-card') as HTMLElement;
+    expect(firstCard.textContent).toContain('Agotado');
+    expect(firstCard.querySelector('.bg-error-box')).toBeTruthy();
+    const addBtn = firstCard.querySelector('m3-card > button') as HTMLButtonElement;
+    expect(addBtn.disabled).toBe(true);
+
+    // Mobile tab toggle and bottom summary bar
+    const second = posService.products()[1];
+    posService.addToCart(second);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Ver Comanda');
+
+    const comandaTab = Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]'))
+      .find(el => (el as HTMLElement).textContent?.includes('Comanda')) as HTMLButtonElement;
+    comandaTab.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.mobilePane()).toBe('ticket');
+  });
+
+  it('validates customer DNI/RUC after interaction, preserves manual values on type toggle, and formats receipt in Spanish', () => {
+    const { fixture, posService } = setup();
+    const first = posService.products()[0];
+    posService.addToCartWithCustomization(first, 'Extra frío', 11.5);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openCustomerModal();
+    fixture.detectChanges();
+
+    const customerDialog = fixture.nativeElement.querySelector('app-pos-customer-modal [role="dialog"]') as HTMLElement;
+    const inputs = Array.from(customerDialog.querySelectorAll('m3-text-field input')) as HTMLInputElement[];
+    const [docInput, nameInput] = inputs;
+
+    // No premature validation error on open
+    expect(customerDialog.textContent).not.toContain('El DNI debe tener');
+
+    // Type partial DNI and blur => error shown post-interaction
+    docInput.value = '1234';
+    docInput.dispatchEvent(new Event('input'));
+    docInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(customerDialog.textContent).toContain('El DNI debe tener exactamente 8 dígitos.');
+    expect(docInput.getAttribute('aria-invalid')).toBe('true');
+
+    // Switching DNI -> RUC preserves typed name
+    nameInput.value = 'Elena Quispe';
+    nameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    const rucBtn = Array.from(customerDialog.querySelectorAll('[aria-label="Tipo de documento del cliente"] button'))
+      .find(b => b.textContent?.includes('RUC')) as HTMLButtonElement;
+    rucBtn.click();
+    fixture.detectChanges();
+    expect(nameInput.value).toBe('Elena Quispe');
+    expect(docInput.value).toBe('1234');
+
+    // Fix valid 11-digit RUC => error clears immediately and saves cleanly
+    docInput.value = '20123456789';
+    docInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(docInput.getAttribute('aria-invalid')).toBeNull();
+
+    const saveBtn = customerDialog.querySelector('m3-button[type="submit"] button') as HTMLButtonElement;
+    saveBtn.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-pos-customer-modal')).toBeNull();
+    expect(posService.customer().docNumber).toBe('20123456789');
+
+    // Complete sale and verify Spanish payment method + notes on thermal receipt
+    posService.setPaymentMethod('cash');
+    posService.setQuickCash(20);
+    posService.completeSale();
+    fixture.detectChanges();
+
+    const receipt = fixture.nativeElement.querySelector('app-pos-receipt-modal [role="dialog"]') as HTMLElement;
+    expect(receipt.textContent).toContain('Efectivo');
+    expect(receipt.textContent).toContain('Extra frío');
+    expect(receipt.textContent).toContain('11.50');
   });
 });
 

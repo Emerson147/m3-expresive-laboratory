@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PaymentMethod, PosService } from '../../../core/pos/pos.service';
 import { ThemeService } from '../../../core/theme/theme.service';
@@ -77,7 +77,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
               <button
                 type="button"
                 [attr.aria-pressed]="posService.paymentMethod() === method.id"
-                (click)="posService.setPaymentMethod(method.id)"
+                (click)="selectPaymentMethod(method.id)"
                 [class]="posService.paymentMethod() === method.id ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-main hover:bg-surface-highest'"
                 class="btn-m3 state-layer focus-ring-m3 py-2 px-3 rounded-full flex items-center justify-center gap-1.5 cursor-pointer text-xs">
                 <span class="material-symbols-rounded text-base" aria-hidden="true">{{ method.icon }}</span>
@@ -109,13 +109,22 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
               (valueChange)="onCashChange($event)" />
 
             <div class="flex items-center gap-2">
-              @for (bill of [20, 50, 100]; track bill) {
+              @for (bill of quickCashBills(); track bill) {
                 <m3-button
                   variant="outlined"
                   size="sm"
                   customClass="flex-1 font-mono"
                   (action)="posService.setQuickCash(bill)">
                   S/ {{ bill }}
+                </m3-button>
+              }
+              @for (extra of [10, 20]; track extra) {
+                <m3-button
+                  variant="tonal"
+                  size="sm"
+                  customClass="font-mono"
+                  (action)="posService.addQuickCash(extra)">
+                  +{{ extra }}
                 </m3-button>
               }
             </div>
@@ -162,13 +171,15 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
 
             <m3-text-field
               variant="filled"
-              label="Código de Aprobación (4 dígitos)"
+              label="Código de Aprobación (4-6 dígitos)"
               placeholder="Ej. 8492"
               inputMode="numeric"
               icon="verified"
               [maxlength]="6"
               [(value)]="posService.yapeCode"
-              supportingText="Verificá los 4 dígitos mostrados en el celular del cliente" />
+              (inputBlur)="yapeTouched.set(true)"
+              [errorText]="yapeError()"
+              supportingText="Verificá los 4 a 6 dígitos mostrados en el celular del cliente" />
           </div>
         }
 
@@ -225,6 +236,32 @@ export class PosCheckoutModalComponent {
   readonly saleConfirmed = output<void>();
 
   readonly cashDraft = signal<string>('');
+  readonly yapeTouched = signal<boolean>(false);
+
+  readonly quickCashBills = computed<readonly number[]>(() => {
+    const minNeeded = Math.ceil(this.posService.total());
+    const candidates = [10, 20, 50, 100, 200].filter(bill => bill >= minNeeded);
+    if (candidates.length >= 3) {
+      return candidates.slice(0, 3);
+    }
+    const roundedTen = Math.ceil(minNeeded / 10) * 10;
+    const roundedFifty = Math.ceil(minNeeded / 50) * 50;
+    const unique = Array.from(new Set([...candidates, roundedTen, roundedFifty, minNeeded + 50]))
+      .sort((a, b) => a - b);
+    return unique.slice(0, 3);
+  });
+
+  readonly yapeError = computed<string | null>(() => {
+    if (!this.yapeTouched()) return null;
+    const code = this.posService.yapeCode().trim();
+    if (!code) {
+      return 'Ingresá el código de aprobación de Yape o Plin.';
+    }
+    if (code.length < 4 || !/^\d+$/.test(code)) {
+      return 'El código debe contener al menos 4 dígitos numéricos.';
+    }
+    return null;
+  });
 
   readonly paymentMethods: readonly { id: PaymentMethod; label: string; icon: string }[] = [
     { id: 'cash', label: 'Efectivo', icon: 'payments' },
@@ -245,6 +282,11 @@ export class PosCheckoutModalComponent {
         this.cashDraft.set(received.toString());
       }
     });
+  }
+
+  selectPaymentMethod(method: PaymentMethod): void {
+    this.yapeTouched.set(false);
+    this.posService.setPaymentMethod(method);
   }
 
   onCashChange(raw: string): void {

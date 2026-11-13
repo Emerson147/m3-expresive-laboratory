@@ -1,4 +1,5 @@
 import { Component, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { PosProduct } from '../../../core/pos/pos.service';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
@@ -9,7 +10,7 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
 @Component({
   selector: 'app-pos-customizer-modal',
   standalone: true,
-  imports: [M3ButtonComponent, M3ChipComponent, M3TextFieldComponent],
+  imports: [FormsModule, M3ButtonComponent, M3ChipComponent, M3TextFieldComponent],
   host: {
     class: 'contents'
   },
@@ -27,7 +28,7 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
       [class.m3-dialog-surface]="!themeService.hasViewTransitions()"
       class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[520px] h-fit max-h-[92vh] bg-surface-box border border-outline-sub rounded-m3-xl shadow-2xl z-50 overflow-hidden flex flex-col">
 
-      <div class="relative w-full h-64 sm:h-72 bg-surface-dim overflow-hidden shrink-0">
+      <div class="relative w-full h-44 sm:h-48 bg-surface-dim overflow-hidden shrink-0">
         <img
           [src]="product().imageUrl"
           [alt]="product().name"
@@ -60,11 +61,11 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
               </span>
               <span class="text-xs text-muted/60">•</span>
               <span
-                [class]="(product().stock <= 20 ? 'text-warning' : 'text-success') + ' text-xs font-semibold inline-flex items-center gap-1'">
+                [class]="(product().stock === 0 ? 'text-error' : product().stock <= 20 ? 'text-warning' : 'text-success') + ' text-xs font-semibold inline-flex items-center gap-1'">
                 <span class="material-symbols-rounded text-sm leading-none" aria-hidden="true">
-                  {{ product().stock <= 20 ? 'warning' : 'check_circle' }}
+                  {{ product().stock === 0 ? 'block' : product().stock <= 20 ? 'warning' : 'check_circle' }}
                 </span>
-                <span>{{ product().stock }} disponibles</span>
+                <span>{{ product().stock === 0 ? 'Agotado' : product().stock + ' disponibles' }}</span>
               </span>
             </div>
             <h3
@@ -88,66 +89,69 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
         </div>
       </div>
 
-      <div class="p-6 space-y-4 overflow-y-auto m3-scrollbar max-h-[calc(88vh-23rem)]">
-        <div class="space-y-2">
-          <span class="text-xs font-bold text-main block uppercase tracking-wide">
-            {{ modifiers().baseLabel }}
-          </span>
-          <div class="grid grid-cols-2 gap-2" role="group" [attr.aria-label]="modifiers().baseLabel">
-            @for (base of modifiers().bases; track base.id) {
-              <button
-                type="button"
-                [attr.aria-pressed]="selectedBaseOption() === base.label"
-                (click)="selectedBaseOption.set(base.label)"
-                [class]="selectedBaseOption() === base.label ? 'bg-primary text-on-primary font-bold shadow-xs border-primary' : 'bg-surface-high hover:bg-surface-highest text-main border-outline-sub'"
-                class="btn-m3 state-layer focus-ring-m3 py-2 px-3 rounded-m3-md border text-xs text-left flex items-center justify-between cursor-pointer">
-                <span class="truncate">{{ base.name }}</span>
-                <span class="font-mono text-[11px] opacity-85 shrink-0 ml-1">
-                  {{ base.extraPrice > 0 ? '+S/ ' + base.extraPrice.toFixed(2) : 'Incl.' }}
-                </span>
-              </button>
-            }
+      <form (ngSubmit)="submitCustomization()" novalidate class="flex flex-col flex-1 min-h-0">
+        <div class="p-6 space-y-4 flex-1 min-h-0 overflow-y-auto m3-scrollbar">
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-main block uppercase tracking-wide">
+              {{ modifiers().baseLabel }}
+            </span>
+            <div class="grid grid-cols-2 gap-2" role="group" [attr.aria-label]="modifiers().baseLabel">
+              @for (base of modifiers().bases; track base.id) {
+                <button
+                  type="button"
+                  [attr.aria-pressed]="selectedBaseOption() === base.label"
+                  (click)="selectedBaseOption.set(base.label)"
+                  [class]="selectedBaseOption() === base.label ? 'bg-primary text-on-primary font-bold shadow-xs border-primary' : 'bg-surface-high hover:bg-surface-highest text-main border-outline-sub'"
+                  class="btn-m3 state-layer focus-ring-m3 py-2 px-3 rounded-m3-md border text-xs text-left flex items-center justify-between cursor-pointer">
+                  <span class="truncate">{{ base.name }}</span>
+                  <span class="font-mono text-[11px] opacity-85 shrink-0 ml-1">
+                    {{ base.extraPrice > 0 ? '+S/ ' + base.extraPrice.toFixed(2) : 'Incl.' }}
+                  </span>
+                </button>
+              }
+            </div>
           </div>
+
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-main block uppercase tracking-wide">
+              Extras y Adicionales
+            </span>
+            <div class="flex flex-wrap gap-2">
+              @for (extra of modifiers().extras; track extra.id) {
+                <m3-chip
+                  type="filter"
+                  [selected]="selectedExtras().includes(extra.label)"
+                  (action)="toggleExtra(extra.label)">
+                  {{ extra.name }}{{ extra.extraPrice > 0 ? ' (+S/ ' + extra.extraPrice.toFixed(2) + ')' : '' }}
+                </m3-chip>
+              }
+            </div>
+          </div>
+
+          <m3-text-field
+            variant="filled"
+            label="Indicaciones para Cocina / Barra"
+            placeholder="Ej. Sin azúcar, bien caliente, salsa aparte..."
+            icon="edit_note"
+            [clearable]="true"
+            [(value)]="customizeNotes" />
         </div>
 
-        <div class="space-y-2">
-          <span class="text-xs font-bold text-main block uppercase tracking-wide">
-            Extras y Adicionales
-          </span>
-          <div class="flex flex-wrap gap-2">
-            @for (extra of modifiers().extras; track extra.id) {
-              <m3-chip
-                type="filter"
-                [selected]="selectedExtras().includes(extra.label)"
-                (action)="toggleExtra(extra.label)">
-                {{ extra.name }}{{ extra.extraPrice > 0 ? ' (+S/ ' + extra.extraPrice.toFixed(2) + ')' : '' }}
-              </m3-chip>
-            }
-          </div>
+        <div class="p-4 bg-surface-high/60 border-t border-outline-sub flex items-center justify-end gap-3 shrink-0">
+          <m3-button variant="text" (action)="close.emit()">
+            Cancelar
+          </m3-button>
+          <m3-button
+            type="submit"
+            variant="filled"
+            size="md"
+            icon="shopping_bag"
+            [disabled]="product().stock <= 0"
+            [morph]="true">
+            Añadir a Comanda (S/ {{ calculatedPrice().toFixed(2) }})
+          </m3-button>
         </div>
-
-        <m3-text-field
-          variant="filled"
-          label="Indicaciones para Cocina / Barra"
-          placeholder="Ej. Sin azúcar, bien caliente, salsa aparte..."
-          icon="edit_note"
-          [clearable]="true"
-          [(value)]="customizeNotes" />
-      </div>
-
-      <div class="p-4 bg-surface-high/60 border-t border-outline-sub flex items-center justify-end gap-3 shrink-0">
-        <m3-button variant="text" (action)="close.emit()">
-          Cancelar
-        </m3-button>
-        <m3-button
-          variant="filled"
-          size="md"
-          icon="shopping_bag"
-          [morph]="true"
-          (action)="submitCustomization()">
-          Añadir a Comanda (S/ {{ calculatedPrice().toFixed(2) }})
-        </m3-button>
-      </div>
+      </form>
     </div>
   `
 })
@@ -158,7 +162,7 @@ export class PosCustomizerModalComponent {
   readonly product = input.required<PosProduct>();
   readonly isDialogTransitionActive = input<boolean>(false);
   readonly close = output<void>();
-  readonly confirm = output<{ product: PosProduct; notes: string }>();
+  readonly confirm = output<{ product: PosProduct; notes: string; unitPrice: number }>();
 
   readonly selectedBaseOption = signal<string>('');
   readonly selectedExtras = signal<string[]>([]);
@@ -183,7 +187,7 @@ export class PosCustomizerModalComponent {
       }
     }
 
-    return total;
+    return Number(total.toFixed(2));
   });
 
   constructor() {
@@ -225,7 +229,11 @@ export class PosCustomizerModalComponent {
       parts.push(`"${note}"`);
     }
 
-    this.confirm.emit({ product: prod, notes: parts.join(' • ') });
+    this.confirm.emit({
+      product: prod,
+      notes: parts.join(' • '),
+      unitPrice: this.calculatedPrice()
+    });
   }
 }
 
