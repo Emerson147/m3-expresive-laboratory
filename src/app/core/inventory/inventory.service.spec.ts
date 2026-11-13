@@ -158,4 +158,103 @@ describe('InventoryService', () => {
     });
     expect(success).toBe(false);
   });
+
+  it('should align matrix low threshold and activeLowThreshold across warehouses', () => {
+    service.setWarehouse('ALL');
+    expect(service.activeLowThreshold()).toBe(30);
+    const allCells = service.matrixRows().flatMap(r => r.cells);
+    expect(allCells.every(c => c.minThreshold === 30)).toBe(true);
+
+    service.setWarehouse('WH-CENTRAL');
+    expect(service.activeLowThreshold()).toBe(15);
+    const centralCells = service.matrixRows().flatMap(r => r.cells);
+    expect(centralCells.every(c => c.minThreshold === 15)).toBe(true);
+
+    service.setWarehouse('WH-MIRAFLORES');
+    expect(service.activeLowThreshold()).toBe(5);
+    const storeCells = service.matrixRows().flatMap(r => r.cells);
+    expect(storeCells.every(c => c.minThreshold === 5)).toBe(true);
+  });
+
+  it('should replenish low-stock variants inside the currently selected store warehouse', () => {
+    service.setWarehouse('WH-MIRAFLORES');
+    const selectedId = service.selectedProduct().id;
+
+    // Force one store cell below its threshold (5) and leave central untouched
+    const targetSku = service.matrixRows()[0].cells[0].variantSku;
+    while (
+      (service.selectedProduct().cells.find(
+        c => c.warehouseId === 'WH-MIRAFLORES' && c.variantSku === targetSku
+      )?.stock ?? 0) >= 5
+    ) {
+      service.adjustStock(targetSku, -1);
+    }
+
+    const beforeCentralStock =
+      service.selectedProduct().cells.find(
+        c => c.warehouseId === 'WH-CENTRAL' && c.variantSku === targetSku
+      )?.stock ?? 0;
+
+    service.batchReplenishLowStock();
+
+    const updatedProd = service.masterProducts().find(p => p.id === selectedId)!;
+    const updatedStoreStock =
+      updatedProd.cells.find(
+        c => c.warehouseId === 'WH-MIRAFLORES' && c.variantSku === targetSku
+      )?.stock ?? 0;
+    const afterCentralStock =
+      updatedProd.cells.find(
+        c => c.warehouseId === 'WH-CENTRAL' && c.variantSku === targetSku
+      )?.stock ?? 0;
+
+    expect(updatedStoreStock).toBeGreaterThanOrEqual(25);
+    expect(afterCentralStock).toBe(beforeCentralStock);
+  });
+
+  it('should reject duplicate SKUs case-insensitively and negative values', () => {
+    const existingSku = service.masterProducts()[0].sku.toLowerCase();
+    const duplicate = service.createMasterProduct({
+      name: 'Prenda Duplicada',
+      sku: existingSku,
+      category: 'shirts',
+      categoryLabel: 'Camisería',
+      brand: 'Atelier',
+      season: '2026',
+      basePrice: 80,
+      sizes: ['M'],
+      colors: [{ code: 'BLK', name: 'Negro', hex: '#000000' }],
+      initialStockPerCell: 10,
+      targetWarehouseId: 'WH-CENTRAL'
+    });
+    expect(duplicate).toBe(false);
+    expect(service.hasDuplicateSku(existingSku)).toBe(true);
+
+    const negativePrice = service.createMasterProduct({
+      name: 'Precio Negativo',
+      sku: 'NEW-NEG-1',
+      category: 'shirts',
+      categoryLabel: 'Camisería',
+      brand: 'Atelier',
+      season: '2026',
+      basePrice: -10,
+      sizes: ['M'],
+      colors: [{ code: 'BLK', name: 'Negro', hex: '#000000' }],
+      initialStockPerCell: 10,
+      targetWarehouseId: 'WH-CENTRAL'
+    });
+    expect(negativePrice).toBe(false);
+  });
+
+  it('should assign unique sequential transfer IDs without collisions', () => {
+    const sku = 'OXF-802-NVY-M';
+    service.openTransferModal(sku, 'M', 'Azul Marino');
+    service.executeTransfer('WH-CENTRAL', 'WH-MIRAFLORES', sku, 1, 'Op A');
+
+    service.openTransferModal(sku, 'M', 'Azul Marino');
+    service.executeTransfer('WH-CENTRAL', 'WH-SANISIDRO', sku, 1, 'Op B');
+
+    const [latest, previous] = service.stockTransfers();
+    expect(latest.id).not.toBe(previous.id);
+    expect(latest.id).toMatch(/^TRF-\d+$/);
+  });
 });

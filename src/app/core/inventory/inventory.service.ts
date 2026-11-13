@@ -1,4 +1,5 @@
-import { Injectable, computed, signal, inject, ApplicationRef } from '@angular/core';
+import { ApplicationRef, DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { StageOverlayService } from '../dialog/stage-overlay.service';
 import {
   CreateMasterProductDto,
   InventoryKpiSummary,
@@ -267,10 +268,50 @@ export class InventoryService {
   readonly isAuditHistoryOpen = signal<boolean>(false);
   readonly toastMessage = signal<string | null>(null);
 
-  // View Transition Shared Element state
+  // Dependencies & Transition state
   private readonly appRef = inject(ApplicationRef);
+  private readonly stageOverlay = inject(StageOverlayService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly transferSequence = signal(1093);
+  private toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
   readonly transitioningProductId = signal<number | null>(null);
   readonly transitionPhase = signal<'before' | 'after' | null>(null);
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.clearToastTimer());
+  }
+
+  readonly activeLowThreshold = computed<number>(() => {
+    const whId = this.selectedWarehouseId();
+    const product = this.selectedProduct();
+    const sampleSize = product.availableSizes[0];
+    const sampleColor = product.availableColors[0];
+    if (!sampleSize || !sampleColor) return whId === 'ALL' ? 30 : whId === 'WH-CENTRAL' ? 15 : 5;
+
+    if (whId === 'ALL') {
+      const cells = product.cells.filter(
+        c => c.size === sampleSize && c.colorCode === sampleColor.code
+      );
+      return this.aggregateCellThreshold(cells);
+    }
+
+    const cell = product.cells.find(
+      c => c.warehouseId === whId && c.size === sampleSize && c.colorCode === sampleColor.code
+    );
+    return cell?.minThreshold ?? (whId === 'WH-CENTRAL' ? 15 : 5);
+  });
+
+  private aggregateCellThreshold(cells: StockCell[]): number {
+    if (cells.length === 0) return 5;
+    return cells.reduce((sum, cell) => sum + cell.minThreshold, 0);
+  }
+
+  private resolveStockStatus(stock: number, minThreshold: number): StockStatus {
+    if (stock <= 0) return 'out_of_stock';
+    if (stock < minThreshold) return 'low';
+    return 'healthy';
+  }
 
   // Selected Master Product
   readonly selectedProduct = computed<MasterProduct>(() => {
@@ -333,9 +374,8 @@ export class InventoryService {
           matchingCells.forEach(c => {
             stock += c.stock;
             reserved += c.reserved;
-            minThreshold = Math.max(minThreshold, c.minThreshold);
           });
-          minThreshold = minThreshold * 2; // threshold for global
+          minThreshold = this.aggregateCellThreshold(matchingCells);
         } else {
           // Specific warehouse
           const cell = product.cells.find(
@@ -348,12 +388,7 @@ export class InventoryService {
           }
         }
 
-        let status: StockStatus = 'healthy';
-        if (stock === 0) {
-          status = 'out_of_stock';
-        } else if (stock < minThreshold) {
-          status = 'low';
-        }
+        const status = this.resolveStockStatus(stock, minThreshold);
 
         rowTotalStock += stock;
         rowTotalReserved += reserved;
@@ -429,7 +464,7 @@ export class InventoryService {
             cells.forEach(c => {
               skuStock += c.stock;
             });
-            threshold = 15;
+            threshold = this.aggregateCellThreshold(cells);
           } else {
             const cell = prod.cells.find(
               c => c.warehouseId === whId && c.size === sz && c.colorCode === col.code
@@ -468,7 +503,7 @@ export class InventoryService {
   // Action methods
   setWarehouse(id: string): void {
     if (this.selectedWarehouseId() === id) return;
-    this.runViewTransition(() => {
+    this.stageOverlay.runViewTransition(() => {
       this.selectedWarehouseId.set(id);
     });
   }
@@ -480,7 +515,7 @@ export class InventoryService {
     this.transitionPhase.set('before');
     this.appRef.tick();
 
-    this.runViewTransition(
+    this.stageOverlay.runViewTransition(
       () => {
         this.selectedProductId.set(id);
         this.transitionPhase.set('after');
@@ -498,26 +533,17 @@ export class InventoryService {
 
   setCategory(c: string): void {
     if (this.selectedCategory() === c) return;
-    this.runViewTransition(() => {
+    this.stageOverlay.runViewTransition(() => {
       this.selectedCategory.set(c);
     });
   }
 
-  private runViewTransition(update: () => void, cleanup?: () => void): void {
-    const doc = typeof document !== 'undefined' ? (document as any) : null;
-    if (doc && typeof doc.startViewTransition === 'function') {
-      const transition = doc.startViewTransition(() => {
-        update();
-        this.appRef.tick();
-      });
-      transition.finished.finally(() => {
-        cleanup?.();
-        this.appRef.tick();
-      });
-    } else {
-      update();
-      cleanup?.();
-    }
+  getVariantStockInWarehouse(productId: number, variantSku: string, warehouseId: string): number {
+    const product = this.masterProducts().find(p => p.id === productId);
+    const cell = product?.cells.find(
+      c => c.variantSku === variantSku && c.warehouseId === warehouseId
+    );
+    return cell?.stock ?? 0;
   }
 
   toggleAuditHistory(): void {
@@ -632,8 +658,11 @@ export class InventoryService {
     const fromName = this.warehouses().find(w => w.id === fromWhId)?.name ?? fromWhId;
     const toName = this.warehouses().find(w => w.id === toWhId)?.name ?? toWhId;
 
+    const nextSeq = this.transferSequence() + 1;
+    this.transferSequence.set(nextSeq);
+
     const newTransfer: StockTransfer = {
-      id: `TRF-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `TRF-${nextSeq}`,
       date: new Date(),
       productId: prod.id,
       productName: prod.name,
@@ -657,7 +686,12 @@ export class InventoryService {
    */
   batchReplenishLowStock(): void {
     const prod = this.selectedProduct();
-    let replenishedCount = 0;
+    const activeWhId = this.selectedWarehouseId();
+    const targetWhId = activeWhId === 'ALL' ? 'WH-CENTRAL' : activeWhId;
+    const targetWhName =
+      this.warehouses().find(w => w.id === targetWhId)?.name ?? 'Almacén Central';
+    let replenishedUnits = 0;
+    let replenishedCells = 0;
 
     this.masterProducts.update(products => {
       return products.map(p => {
@@ -666,8 +700,9 @@ export class InventoryService {
         return {
           ...p,
           cells: p.cells.map(c => {
-            if (c.warehouseId === 'WH-CENTRAL' && c.stock < 15) {
-              replenishedCount += 25;
+            if (c.warehouseId === targetWhId && c.stock < c.minThreshold) {
+              replenishedUnits += 25;
+              replenishedCells += 1;
               return { ...c, stock: c.stock + 25 };
             }
             return c;
@@ -676,7 +711,14 @@ export class InventoryService {
       });
     });
 
-    this.showToast(`Lote completado: +${replenishedCount} unidades ingresadas a Almacén Central`);
+    if (replenishedUnits === 0) {
+      this.showToast(`Sin quiebres bajo umbral en ${targetWhName} para ${prod.name}`);
+      return;
+    }
+
+    this.showToast(
+      `Lote completado: +${replenishedUnits} uds (${replenishedCells} variantes) ingresadas a ${targetWhName}`
+    );
   }
 
   openCreateModal(): void {
@@ -690,13 +732,27 @@ export class InventoryService {
   /**
    * Generates a new master garment and its full 2D matrix of variants across warehouses
    */
+  hasDuplicateSku(sku: string): boolean {
+    const normalized = sku.trim().toUpperCase();
+    if (!normalized) return false;
+    return this.masterProducts().some(p => p.sku.toUpperCase() === normalized);
+  }
+
   createMasterProduct(dto: CreateMasterProductDto): boolean {
     if (!dto.name.trim() || !dto.sku.trim()) {
       this.showToast('El nombre y el SKU son obligatorios');
       return false;
     }
+    if (this.hasDuplicateSku(dto.sku)) {
+      this.showToast(`Ya existe un producto con el SKU ${dto.sku.trim().toUpperCase()}`);
+      return false;
+    }
     if (dto.sizes.length === 0 || dto.colors.length === 0) {
       this.showToast('Debes seleccionar al menos una talla y un color');
+      return false;
+    }
+    if (dto.basePrice < 0 || dto.initialStockPerCell < 0) {
+      this.showToast('El precio base y el stock inicial no pueden ser negativos');
       return false;
     }
 
@@ -755,11 +811,25 @@ export class InventoryService {
   }
 
   showToast(message: string): void {
+    this.clearToastTimer();
     this.toastMessage.set(message);
-    setTimeout(() => {
+    this.toastTimeoutId = setTimeout(() => {
+      this.toastTimeoutId = null;
       if (this.toastMessage() === message) {
         this.toastMessage.set(null);
       }
     }, 4000);
+  }
+
+  dismissToast(): void {
+    this.clearToastTimer();
+    this.toastMessage.set(null);
+  }
+
+  private clearToastTimer(): void {
+    if (this.toastTimeoutId !== null) {
+      clearTimeout(this.toastTimeoutId);
+      this.toastTimeoutId = null;
+    }
   }
 }
