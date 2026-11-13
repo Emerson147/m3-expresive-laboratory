@@ -69,24 +69,24 @@ export const CATEGORY_MODIFIERS: Record<PosProduct['category'], PosCategoryModif
 
 export const CATEGORY_FALLBACK_THEMES: Record<PosProduct['category'], PosCategoryFallbackTheme> = {
   coffee: {
-    bg: 'bg-amber-500/15',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-500/30'
+    bg: 'bg-warning-box',
+    text: 'text-on-warning-box',
+    border: 'border-warning/40'
   },
   sandwiches: {
-    bg: 'bg-emerald-500/15',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-500/30'
+    bg: 'bg-success-box',
+    text: 'text-on-success-box',
+    border: 'border-success/40'
   },
   pastries: {
-    bg: 'bg-rose-500/15',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-500/30'
+    bg: 'bg-tertiary-box',
+    text: 'text-on-tertiary-box',
+    border: 'border-tertiary/40'
   },
   drinks: {
-    bg: 'bg-sky-500/15',
-    text: 'text-sky-700 dark:text-sky-300',
-    border: 'border-sky-500/30'
+    bg: 'bg-primary-box',
+    text: 'text-on-primary-box',
+    border: 'border-primary/40'
   }
 };
 

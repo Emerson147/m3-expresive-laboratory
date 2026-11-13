@@ -353,6 +353,10 @@
   --md-sys-color-on-primary-container: var(--md-ref-palette-primary10);
   --md-sys-color-on-secondary-container: var(--md-ref-palette-secondary10);
   --md-sys-color-on-tertiary-container: var(--md-ref-palette-tertiary10);
+  --md-sys-color-success: var(--md-ref-palette-success30);
+  --md-sys-color-on-success-container: var(--md-ref-palette-success10);
+  --md-sys-color-warning: var(--md-ref-palette-warning30);
+  --md-sys-color-on-warning-container: var(--md-ref-palette-warning10);
   --md-sys-color-on-surface-variant: var(--md-ref-palette-neutral-variant20);
   --md-sys-color-outline: var(--md-ref-palette-neutral-variant40);
   --md-sys-color-outline-variant: var(--md-ref-palette-neutral-variant60);
@@ -372,6 +376,12 @@
   --md-sys-color-primary: var(--md-ref-palette-primary20);
   --md-sys-color-primary-container: var(--md-ref-palette-primary30);
   --md-sys-color-on-primary-container: var(--md-ref-palette-primary100);
+  --md-sys-color-success: var(--md-ref-palette-success20);
+  --md-sys-color-success-container: var(--md-ref-palette-success30);
+  --md-sys-color-on-success-container: var(--md-ref-palette-success100);
+  --md-sys-color-warning: var(--md-ref-palette-warning20);
+  --md-sys-color-warning-container: var(--md-ref-palette-warning30);
+  --md-sys-color-on-warning-container: var(--md-ref-palette-warning100);
   --md-sys-color-on-surface: var(--md-ref-palette-neutral0);
   --md-sys-color-on-surface-variant: var(--md-ref-palette-neutral-variant10);
   --md-sys-color-outline: var(--md-ref-palette-neutral-variant20);
@@ -384,6 +394,14 @@
   --md-sys-color-on-primary: var(--md-ref-palette-primary0);
   --md-sys-color-primary-container: var(--md-ref-palette-primary80);
   --md-sys-color-on-primary-container: var(--md-ref-palette-primary0);
+  --md-sys-color-success: var(--md-ref-palette-success90);
+  --md-sys-color-on-success: var(--md-ref-palette-success10);
+  --md-sys-color-success-container: var(--md-ref-palette-success80);
+  --md-sys-color-on-success-container: var(--md-ref-palette-success10);
+  --md-sys-color-warning: var(--md-ref-palette-warning90);
+  --md-sys-color-on-warning: var(--md-ref-palette-warning10);
+  --md-sys-color-warning-container: var(--md-ref-palette-warning80);
+  --md-sys-color-on-warning-container: var(--md-ref-palette-warning10);
   --md-sys-color-on-surface: var(--md-ref-palette-neutral100);
   --md-sys-color-on-surface-variant: var(--md-ref-palette-neutral-variant95);
   --md-sys-color-outline: var(--md-ref-palette-neutral-variant90);
@@ -392,12 +410,16 @@
 
 @media (prefers-contrast: more) {
   :root:not([data-contrast="standard"]):not(.dark):not([data-theme="dark"]) {
+    --md-sys-color-success: var(--md-ref-palette-success20);
+    --md-sys-color-warning: var(--md-ref-palette-warning20);
     --md-sys-color-on-surface-variant: var(--md-ref-palette-neutral-variant20);
     --md-sys-color-outline: var(--md-ref-palette-neutral-variant30);
     --md-sys-color-outline-variant: var(--md-ref-palette-neutral-variant50);
   }
   .dark:not([data-contrast="standard"]),
   [data-theme="dark"]:not([data-contrast="standard"]) {
+    --md-sys-color-success: var(--md-ref-palette-success90);
+    --md-sys-color-warning: var(--md-ref-palette-warning90);
     --md-sys-color-on-surface-variant: var(--md-ref-palette-neutral-variant90);
     --md-sys-color-outline: var(--md-ref-palette-neutral-variant80);
     --md-sys-color-outline-variant: var(--md-ref-palette-neutral-variant50);
@@ -423,6 +445,24 @@
     --md-sys-color-on-surface-variant: CanvasText;
     --md-sys-color-primary: Highlight;
     --md-sys-color-on-primary: HighlightText;
+    --md-sys-color-primary-container: Canvas;
+    --md-sys-color-on-primary-container: CanvasText;
+    --md-sys-color-secondary-container: Canvas;
+    --md-sys-color-on-secondary-container: CanvasText;
+    --md-sys-color-tertiary-container: Canvas;
+    --md-sys-color-on-tertiary-container: CanvasText;
+    --md-sys-color-success: CanvasText;
+    --md-sys-color-on-success: Canvas;
+    --md-sys-color-success-container: Canvas;
+    --md-sys-color-on-success-container: CanvasText;
+    --md-sys-color-warning: Highlight;
+    --md-sys-color-on-warning: HighlightText;
+    --md-sys-color-warning-container: Canvas;
+    --md-sys-color-on-warning-container: CanvasText;
+    --md-sys-color-error: CanvasText;
+    --md-sys-color-on-error: Canvas;
+    --md-sys-color-error-container: Canvas;
+    --md-sys-color-on-error-container: CanvasText;
     --md-sys-color-outline: CanvasText;
     --md-sys-color-outline-variant: GrayText;
   }

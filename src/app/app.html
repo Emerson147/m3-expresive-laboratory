@@ -1,10 +1,12 @@
 <div class="h-screen w-screen overflow-hidden bg-black text-main select-none relative">
+  @let isStageRecessed = dialogService.isDialogOpen() || dialogService.isHeroExpanded() || stageOverlay.isOverlayOpen();
 
   <!-- =========================================================================
        STAGE PRINCIPAL (Se desenfoca y retrocede en bloque con stage-recessed)
        ========================================================================= -->
   <div id="app-stage"
-    [class]="dialogService.isDialogOpen() || dialogService.isHeroExpanded() ? 'stage-recessed' : 'stage-normal'"
+    [class]="isStageRecessed ? 'stage-recessed' : 'stage-normal'"
+    [attr.inert]="isStageRecessed ? '' : null"
     class="flex h-full w-full overflow-hidden bg-surface">
 
     <!-- 1. NAVEGACIÓN (Rail / Tunnel / Dock) -->
@@ -48,5 +50,12 @@
     (deleteTask)="dialogService.deleteActiveTask()"
     (morphView)="dialogService.morphDialogInternalView($event.targetView, $event.moveCenter)"
     (navStyleChange)="dialogService.setNavStyle($event)" />
+
+  <!-- 5. PORTAL EXTERNO PARA MODALES DE MÓDULOS LAZY (POS, etc.) -->
+  @if (stageOverlay.overlayTemplate(); as featureOverlay) {
+    <ng-container
+      [ngTemplateOutlet]="featureOverlay"
+      [ngTemplateOutletInjector]="stageOverlay.overlayInjector()" />
+  }
 
 </div>

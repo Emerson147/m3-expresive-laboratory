@@ -1,6 +1,7 @@
 import { Component, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PaymentMethod, PosService } from '../../../core/pos/pos.service';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3LoadingIndicatorComponent } from '../../../shared/components/progress';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
@@ -15,13 +16,16 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
   template: `
     <div
       (click)="close.emit()"
-      class="fixed inset-0 bg-black/65 backdrop-blur-md z-40 m3-dialog-backdrop cursor-pointer"></div>
+      [class.m3-dialog-backdrop]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 bg-scrim z-40 cursor-pointer"></div>
 
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="pos-checkout-title"
-      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[500px] h-fit max-h-[calc(100vh-3rem)] bg-surface-box border border-outline-sub p-6 rounded-m3-xl shadow-2xl z-50 flex flex-col justify-between overflow-y-auto m3-dialog-surface">
+      [style.view-transition-name]="isSurfaceTransitionActive() ? 'dialog-transform' : null"
+      [class.m3-dialog-surface]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[500px] h-fit max-h-[calc(100vh-3rem)] bg-surface-box border border-outline-sub p-6 rounded-m3-xl shadow-2xl z-50 flex flex-col justify-between overflow-y-auto">
 
       <div class="space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-outline-sub">
@@ -44,15 +48,20 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
             (action)="close.emit()" />
         </div>
 
-        <div class="p-4 bg-primary-box text-on-primary-box rounded-m3-lg flex items-center justify-between shadow-xs">
-          <div>
-            <div class="text-[10px] font-semibold uppercase tracking-wider opacity-80">Monto a Liquidar</div>
-            <div class="text-3xl font-black font-mono">S/ {{ posService.total().toFixed(2) }}</div>
+        <div class="hero-mesh-m3 m3-aurora-glow border border-primary/25 text-main p-4 rounded-m3-lg flex items-center justify-between shadow-xs">
+          <div class="m3-aurora-layer" aria-hidden="true">
+            <span class="m3-aurora-orb m3-aurora-orb-1"></span>
+            <span class="m3-aurora-orb m3-aurora-orb-2"></span>
+            <span class="m3-aurora-orb m3-aurora-orb-3"></span>
           </div>
-          <div class="text-right text-xs opacity-90">
+          <div class="relative z-10">
+            <div class="text-[10px] font-semibold uppercase tracking-wider text-muted">Monto a Liquidar</div>
+            <div class="text-3xl font-black font-mono text-primary">S/ {{ posService.total().toFixed(2) }}</div>
+          </div>
+          <div class="relative z-10 text-right text-xs text-main">
             <div class="font-bold">{{ posService.customer().name }}</div>
-            <div class="font-mono text-xs">{{ posService.customer().docType }}: {{ posService.customer().docNumber }}</div>
-            <div class="font-semibold text-[10px] mt-0.5 uppercase tracking-wide">
+            <div class="font-mono text-xs text-muted">{{ posService.customer().docType }}: {{ posService.customer().docNumber }}</div>
+            <div class="font-semibold text-[10px] mt-0.5 uppercase tracking-wide text-primary">
               Canal: {{ channelLabel() }}
             </div>
           </div>
@@ -114,12 +123,14 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
             <div class="pt-2.5 border-t border-outline-sub flex items-center justify-between">
               <span class="text-xs font-semibold text-muted">Vuelto a Devolver:</span>
               @if (posService.change() >= 0) {
-                <span class="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                  S/ {{ posService.change().toFixed(2) }}
+                <span class="text-xl font-black font-mono text-success inline-flex items-center gap-1.5">
+                  <span class="material-symbols-rounded text-lg leading-none" aria-hidden="true">check_circle</span>
+                  <span>S/ {{ posService.change().toFixed(2) }}</span>
                 </span>
               } @else {
-                <span class="text-xs font-bold text-error">
-                  Faltan S/ {{ absChange().toFixed(2) }}
+                <span class="text-xs font-bold text-error inline-flex items-center gap-1">
+                  <span class="material-symbols-rounded text-base leading-none" aria-hidden="true">error</span>
+                  <span>Faltan S/ {{ absChange().toFixed(2) }}</span>
                 </span>
               }
             </div>
@@ -130,7 +141,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
           <div class="space-y-3 p-4 bg-surface-high/60 rounded-m3-lg border border-outline-sub text-center m3-anim-lateral">
             <div class="flex flex-col items-center justify-center space-y-1">
               <div class="w-32 h-32 bg-white p-2 rounded-m3-md border border-outline-sub grid place-items-center shadow-sm">
-                <svg class="w-full h-full text-[#742284]" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
+                <svg class="w-full h-full text-on-primary-fixed" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
                   <rect x="5" y="5" width="25" height="25" rx="3" />
                   <rect x="10" y="10" width="15" height="15" fill="white" />
                   <rect x="70" y="5" width="25" height="25" rx="3" />
@@ -162,19 +173,24 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
         }
 
         @if (posService.paymentMethod() === 'card') {
-          <div class="space-y-3 p-5 bg-surface-high/60 rounded-m3-lg border border-outline-sub text-center m3-anim-lateral">
-            <div class="flex justify-center">
+          <div class="space-y-3 p-5 hero-mesh-m3 m3-aurora-glow rounded-m3-lg border border-primary/25 text-center m3-anim-lateral">
+            <div class="m3-aurora-layer" aria-hidden="true">
+              <span class="m3-aurora-orb m3-aurora-orb-1"></span>
+              <span class="m3-aurora-orb m3-aurora-orb-2"></span>
+              <span class="m3-aurora-orb m3-aurora-orb-3"></span>
+            </div>
+            <div class="relative z-10 flex justify-center">
               <m3-loading-indicator
                 size="md"
                 color="primary"
                 [contained]="true"
                 ariaLabel="Sincronizando terminal inalámbrico Izipay o Niubiz" />
             </div>
-            <div>
+            <div class="relative z-10">
               <h4 class="font-bold text-sm text-main">Acercar o Insertar Tarjeta</h4>
               <p class="text-xs text-muted mt-0.5">Terminal inalámbrico Izipay / Niubiz sincronizado</p>
             </div>
-            <div class="text-[10px] font-mono text-muted bg-surface-box p-1.5 rounded-m3-sm border border-outline-sub">
+            <div class="relative z-10 text-[10px] font-mono text-muted bg-surface-box/85 p-1.5 rounded-m3-sm border border-outline-sub">
               Terminal ID: POS-TID-88491 • Acepta Visa, Mastercard, Amex
             </div>
           </div>
@@ -191,7 +207,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
           icon="check_circle"
           [morph]="true"
           [disabled]="!posService.isPaymentValid()"
-          (action)="posService.completeSale()">
+          (action)="saleConfirmed.emit()">
           Confirmar y Emitir Comprobante
         </m3-button>
       </div>
@@ -200,10 +216,13 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
 })
 export class PosCheckoutModalComponent {
   readonly posService = inject(PosService);
+  readonly themeService = inject(ThemeService);
   private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
 
   readonly channelLabel = input.required<string>();
+  readonly isSurfaceTransitionActive = input<boolean>(false);
   readonly close = output<void>();
+  readonly saleConfirmed = output<void>();
 
   readonly cashDraft = signal<string>('');
 

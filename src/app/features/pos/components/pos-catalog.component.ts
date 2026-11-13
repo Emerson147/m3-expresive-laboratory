@@ -111,24 +111,27 @@ export interface PosCategoryOption {
                   </div>
                 }
 
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[oklch(0%_0_0_/_0.88)] via-[oklch(0%_0_0_/_0.25)] to-transparent pointer-events-none"></div>
 
-                <div class="absolute top-2.5 inset-x-2.5 flex items-center justify-between text-xs text-white z-10">
-                  <span class="px-2.5 py-0.5 rounded-full bg-zinc-950/85 font-bold text-[10px] uppercase tracking-wider border border-white/15 shadow-xs">
+                <div class="absolute top-2.5 inset-x-2.5 flex items-center justify-between text-xs z-10">
+                  <span class="px-2.5 py-0.5 rounded-full bg-surface-box/90 backdrop-blur-xs text-main font-bold text-[10px] uppercase tracking-wider border border-outline-sub shadow-xs">
                     {{ product.categoryLabel }}
                   </span>
                   <span
-                    [class]="product.stock <= 20 ? 'bg-amber-600 text-white font-black' : 'bg-zinc-950/85 text-white/90 font-semibold'"
-                    class="px-2.5 py-0.5 rounded-full font-mono text-[10px] border border-white/15 shadow-xs">
-                    {{ product.stock }} disp.
+                    [class]="product.stock <= 20 ? 'bg-warning-box text-on-warning-box font-black border-warning/40' : 'bg-surface-dim/90 backdrop-blur-xs text-main font-semibold border-outline-sub'"
+                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] border shadow-xs">
+                    @if (product.stock <= 20) {
+                      <span class="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">warning</span>
+                    }
+                    <span>{{ product.stock }} disp.</span>
                   </span>
                 </div>
 
-                <div class="absolute bottom-2.5 inset-x-3 z-10">
-                  <span class="text-[10px] font-mono text-white/80 font-bold tracking-wider uppercase block">
+                <div class="absolute bottom-2.5 inset-x-3 z-10 text-[oklch(98%_0_0)] forced-colors:bg-[Canvas] forced-colors:text-[CanvasText] forced-colors:px-2 forced-colors:py-1 forced-colors:rounded-m3-sm forced-colors:border forced-colors:border-[CanvasText]">
+                  <span class="text-[10px] font-mono opacity-80 font-bold tracking-wider uppercase block">
                     {{ product.sku }}
                   </span>
-                  <div class="font-mono font-black text-2xl text-white tracking-tight leading-none mt-0.5 drop-shadow-md">
+                  <div class="font-mono font-black text-2xl tracking-tight leading-none mt-0.5 drop-shadow-md">
                     S/ {{ product.price.toFixed(2) }}
                   </div>
                 </div>
@@ -150,6 +153,8 @@ export interface PosCategoryOption {
                 size="sm"
                 icon="tune"
                 customClass="flex-1"
+                [invisible]="hiddenCustomizerOriginId() === product.id"
+                [viewTransitionName]="activeCustomizerOriginId() === product.id ? 'dialog-transform' : null"
                 [ariaLabel]="'Personalizar ' + product.name"
                 (action)="customizeProduct.emit(product)">
                 Opciones
@@ -161,7 +166,7 @@ export interface PosCategoryOption {
                     type="button"
                     [attr.aria-label]="'Restar uno de ' + product.name"
                     (click)="updateQuantity.emit({ productId: product.id, delta: -1 })"
-                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer">
+                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-on-primary/15 text-on-primary grid place-items-center cursor-pointer">
                     <span class="material-symbols-rounded text-sm font-bold" aria-hidden="true">remove</span>
                   </button>
                   <span class="text-xs font-mono font-bold w-5 text-center">{{ qty }}</span>
@@ -169,7 +174,7 @@ export interface PosCategoryOption {
                     type="button"
                     [attr.aria-label]="'Sumar uno de ' + product.name"
                     (click)="updateQuantity.emit({ productId: product.id, delta: 1 })"
-                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-black/20 text-on-primary grid place-items-center cursor-pointer">
+                    class="btn-m3 state-layer focus-ring-m3 touch-target-48 w-7 h-7 rounded-full hover:bg-on-primary/15 text-on-primary grid place-items-center cursor-pointer">
                     <span class="material-symbols-rounded text-sm font-bold" aria-hidden="true">add</span>
                   </button>
                 </div>
@@ -205,6 +210,8 @@ export class PosCatalogComponent {
   readonly selectedCategory = input.required<string>();
   readonly searchQuery = input.required<string>();
   readonly cart = input.required<readonly CartItem[]>();
+  readonly activeCustomizerOriginId = input<number | null>(null);
+  readonly hiddenCustomizerOriginId = input<number | null>(null);
 
   readonly searchChange = output<string>();
   readonly categoryChange = output<string>();

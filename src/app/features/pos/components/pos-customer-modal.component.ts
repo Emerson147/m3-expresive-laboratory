@@ -14,7 +14,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
   template: `
     <div
       (click)="close.emit()"
-      class="fixed inset-0 bg-black/65 backdrop-blur-md z-40 m3-dialog-backdrop cursor-pointer"></div>
+      class="fixed inset-0 bg-scrim z-40 m3-dialog-backdrop cursor-pointer"></div>
 
     <div
       role="dialog"

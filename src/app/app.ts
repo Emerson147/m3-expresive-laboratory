@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { DialogService } from './core/dialog/dialog.service';
+import { StageOverlayService } from './core/dialog/stage-overlay.service';
 import { TaskService } from './core/tasks/task.service';
 import { ThemeService } from './core/theme/theme.service';
 import { AppSection } from './shared/models/ui.models';
@@ -18,6 +20,7 @@ export type { ThemeOption } from './core/theme/theme.service';
   selector: 'app-root',
   standalone: true,
   imports: [
+    NgTemplateOutlet,
     RouterOutlet,
     NavigationComponent,
     HeaderComponent,
@@ -30,14 +33,19 @@ export type { ThemeOption } from './core/theme/theme.service';
 export class App {
   private readonly router = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
   readonly themeService = inject(ThemeService);
   readonly taskService = inject(TaskService);
   readonly dialogService = inject(DialogService);
+  readonly stageOverlay = inject(StageOverlayService);
 
   readonly currentSection = signal<AppSection>(this.detectSection(this.router.url));
   readonly routeMeta = signal<{ title?: string; subtitle?: string }>(this.readActiveRouteMeta());
 
   constructor() {
+    this.stageOverlay.registerHost();
+    this.destroyRef.onDestroy(() => this.stageOverlay.unregisterHost());
+
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => {

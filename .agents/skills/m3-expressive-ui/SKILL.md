@@ -330,14 +330,20 @@ Never use raw `:hover { opacity }` or `:hover { background }`. In M3, state laye
 * **Focus**: 10% opacity (`var(--md-sys-state-focus-state-layer-opacity)`) + dual focus ring
 * **Pressed**: 12% opacity (`var(--md-sys-state-pressed-state-layer-opacity)`) + spring scaling (`scale(0.975)`)
 * **Dragged / Disabled**: 16% dragged (`--md-sys-state-dragged-state-layer-opacity`); disabled `0.38` content / `0.12` container (`--md-sys-state-disabled-*`)
-* **Touch Target**: 48×48dp minimum accessible hitbox via `.touch-target-48`.
+* **Touch Target & Spacing**: 48×48dp minimum accessible hitbox via `.touch-target-48` (`min-inline-size` / `min-block-size: 48px`) + minimum **8dp gap** (`.touch-gap-8`) between adjacent hitboxes. Use `touch-action: pan-y` on horizontal swipes (never `none` if vertical scroll matters).
+* **Focus Ring & Forced Colors**: `.focus-ring-m3:focus-visible` uses a dual `box-shadow` plus an `@media (forced-colors: active)` **`outline: 3px solid Highlight`** fallback (never `outline: none` + `box-shadow` alone, or focus disappears in High Contrast Mode).
+* **Keyboard & Reduced Motion**: Use Roving Tabindex (`tabindex="0"` active, `-1` siblings, Arrow keys within groups), native `<dialog>.showModal()` / `inert` overlays, `aria-live="polite"`, sequential headings (`h1 → h2 → h3`), and `@media (prefers-reduced-motion: reduce)`.
+* **Bidirectionality (LTR / RTL)**: Use CSS logical properties (`inline-start`, `ps-*`, `pe-*`, `border-s-*`). Mirror directional icons (`arrow_back`) in RTL; never mirror clocks (`schedule`) or checkmarks (`check_circle`).
 
-### Window Size Classes
+### Window Size Classes (5 Width Breakpoints & Canonical Layouts)
 
-Material 3 breaks viewports into 3 canonical buckets:
-* **Compact (< 600dp)**: Mobile phones $\to$ Bottom Navigation Bar / Floating Dock.
-* **Medium (600dp – 839dp)**: Tablets & foldables $\to$ Navigation Rail.
-* **Expanded (≥ 840dp)**: Desktop $\to$ Expanded Rail or Drawer + 12-column Bento Grid.
+Material 3 Expressive (`AdaptiveLayoutService`) categorizes viewports into **5 Width Breakpoints** (`16dp` outer margin in Compact, `24dp` in Medium+):
+* **Compact (< 600dp)**: 1 pane, `16dp` margin/spacer $\to$ Bottom Navigation Bar / Floating Dock.
+* **Medium (600dp – 839dp)**: 1–2 panes, `24dp` margin/spacer $\to$ Navigation Rail.
+* **Expanded (840dp – 1199dp)**: 2 panes $\to$ Rail / Modal Drawer (*List-Detail*, *Supporting Pane*, *Feed*).
+* **Large (1200dp – 1599dp)**: 2 wide panes $\to$ Expanded Rail / Persistent Drawer + 12-col Bento.
+* **Extra-Large (≥ 1600dp)**: 2–3 panes $\to$ Persistent Drawer + multi-pane workspace.
+* **Height Breakpoints**: `compact (<480dp)`, `medium (480–899dp)`, `expanded (≥900dp)`.
 
 ---
 

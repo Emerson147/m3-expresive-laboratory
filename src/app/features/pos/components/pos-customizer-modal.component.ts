@@ -1,5 +1,6 @@
-import { Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { PosProduct } from '../../../core/pos/pos.service';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
@@ -15,23 +16,26 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
   template: `
     <div
       (click)="close.emit()"
-      class="fixed inset-0 bg-black/65 backdrop-blur-md z-40 m3-dialog-backdrop cursor-pointer"></div>
+      [class.m3-dialog-backdrop]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 bg-scrim z-40 cursor-pointer"></div>
 
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="pos-customizer-title"
-      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[520px] h-fit max-h-[92vh] bg-surface-box border border-outline-sub rounded-m3-xl shadow-2xl z-50 overflow-hidden flex flex-col m3-dialog-surface">
+      [style.view-transition-name]="isDialogTransitionActive() ? 'dialog-transform' : null"
+      [class.m3-dialog-surface]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[520px] h-fit max-h-[92vh] bg-surface-box border border-outline-sub rounded-m3-xl shadow-2xl z-50 overflow-hidden flex flex-col">
 
-      <div class="relative w-full h-64 sm:h-72 bg-zinc-950 overflow-hidden shrink-0">
+      <div class="relative w-full h-64 sm:h-72 bg-surface-dim overflow-hidden shrink-0">
         <img
           [src]="product().imageUrl"
           [alt]="product().name"
           class="w-full h-full object-cover object-center transition-transform m3-transition-spatial hover:scale-105" />
 
-        <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"></div>
+        <div class="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[oklch(0%_0_0_/_0.58)] to-transparent pointer-events-none"></div>
 
-        <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider border border-white/20 shadow-md">
+        <div class="absolute top-3.5 left-3.5 z-10 flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-box/90 backdrop-blur-md text-main text-[11px] font-bold uppercase tracking-wider border border-outline-sub shadow-md">
           <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">{{ product().icon }}</span>
           <span>{{ product().categoryLabel }}</span>
         </div>
@@ -55,9 +59,12 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
                 {{ product().sku }}
               </span>
               <span class="text-xs text-muted/60">•</span>
-              <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {{ product().stock }} disponibles
+              <span
+                [class]="(product().stock <= 20 ? 'text-warning' : 'text-success') + ' text-xs font-semibold inline-flex items-center gap-1'">
+                <span class="material-symbols-rounded text-sm leading-none" aria-hidden="true">
+                  {{ product().stock <= 20 ? 'warning' : 'check_circle' }}
+                </span>
+                <span>{{ product().stock }} disponibles</span>
               </span>
             </div>
             <h3
@@ -145,9 +152,11 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
   `
 })
 export class PosCustomizerModalComponent {
+  readonly themeService = inject(ThemeService);
   private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
 
   readonly product = input.required<PosProduct>();
+  readonly isDialogTransitionActive = input<boolean>(false);
   readonly close = output<void>();
   readonly confirm = output<{ product: PosProduct; notes: string }>();
 

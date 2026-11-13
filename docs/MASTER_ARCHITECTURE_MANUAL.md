@@ -290,7 +290,7 @@ dialogService.setNavStyle('dock');      // Switches global shell layout
 ```
 
 ### 3.4 `AdaptiveLayoutService` (`src/app/core/layout/adaptive-layout.service.ts`)
-Monitors browser resizing and categorizes screens according to official M3 Window Size Classes.
+Monitors browser resizing and categorizes screens according to all **5 Material 3 Width Breakpoints** and **3 Height Breakpoints**, plus canonical margins and pane capacities.
 
 ```typescript
 import { inject } from '@angular/core';
@@ -298,8 +298,15 @@ import { AdaptiveLayoutService } from './core/layout/adaptive-layout.service';
 
 const layout = inject(AdaptiveLayoutService);
 
-layout.windowWidth();       // Current window width in px
-layout.windowSizeClass();   // 'compact' (< 600px) | 'medium' (600 - 839px) | 'expanded' (>= 840px)
+layout.windowWidth();           // Current window width in px
+layout.windowHeight();          // Current window height in px
+layout.windowSizeClass();       // 'compact' (<600) | 'medium' (600-839) | 'expanded' (840-1199) | 'large' (1200-1599) | 'extra-large' (>=1600)
+layout.heightSizeClass();       // 'compact' (<480) | 'medium' (480-899) | 'expanded' (>=900)
+layout.isExpandedOrLarger();    // boolean (width >= 840px)
+layout.marginDp();              // 16 (Compact) | 24 (Medium+)
+layout.spacerDp();              // 16 (Compact) | 24 (Medium+)
+layout.recommendedPanes();      // 1 | 2 | 3
+layout.recommendedNavigation(); // 'Navigation Bar / Floating Dock' | 'Navigation Rail' | 'Expanded Rail / Persistent Drawer'
 ```
 
 ---

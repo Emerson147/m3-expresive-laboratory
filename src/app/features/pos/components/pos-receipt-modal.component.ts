@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, input, output, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, input, output, viewChild } from '@angular/core';
 import { CompletedSale } from '../../../core/pos/pos.service';
+import { ThemeService } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 
 @Component({
@@ -13,16 +14,19 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
   template: `
     <div
       (click)="newSale.emit()"
-      class="fixed inset-0 bg-black/65 backdrop-blur-md z-40 m3-dialog-backdrop cursor-pointer"></div>
+      [class.m3-dialog-backdrop]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 bg-scrim z-40 cursor-pointer"></div>
 
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="pos-receipt-title"
-      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[400px] h-fit max-h-[calc(100vh-3rem)] bg-white text-zinc-900 border border-zinc-300 p-6 rounded-m3-xl shadow-2xl z-50 overflow-y-auto font-mono text-xs space-y-3.5 m3-dialog-surface">
+      [style.view-transition-name]="isSurfaceTransitionActive() ? 'dialog-transform' : null"
+      [class.m3-dialog-surface]="!themeService.hasViewTransitions()"
+      class="fixed inset-0 m-auto w-[calc(100%-2rem)] sm:w-[400px] h-fit max-h-[calc(100vh-3rem)] bg-white text-zinc-900 border border-zinc-300 p-6 rounded-m3-xl shadow-2xl z-50 overflow-y-auto font-mono text-xs space-y-3.5">
 
       <div class="text-center space-y-0.5 border-b border-dashed border-zinc-400 pb-2.5">
-        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mb-1 m3-anim-spring-pop">
+        <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-success-box text-on-success-box border border-success/30 text-[10px] font-bold mb-1 m3-anim-spring-pop">
           <span class="material-symbols-rounded text-xs" aria-hidden="true">check_circle</span>
           <span>VENTA COMPLETADA</span>
         </div>
@@ -143,10 +147,12 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
   `
 })
 export class PosReceiptModalComponent {
+  readonly themeService = inject(ThemeService);
   private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
 
   readonly sale = input.required<CompletedSale>();
   readonly channelLabel = input.required<string>();
+  readonly isSurfaceTransitionActive = input<boolean>(false);
 
   readonly print = output<void>();
   readonly newSale = output<void>();

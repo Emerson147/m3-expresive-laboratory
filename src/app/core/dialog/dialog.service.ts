@@ -1,7 +1,8 @@
-import { ApplicationRef, computed, inject, Injectable, signal } from '@angular/core';
+import { ApplicationRef, inject, Injectable, signal } from '@angular/core';
 import { DialogView, NavStyle, TransitionType, TriggerMode } from '../../shared/models/ui.models';
 import { TaskItem, TaskPriority, TaskService } from '../tasks/task.service';
 import { ThemeService } from '../theme/theme.service';
+import { StageOverlayService } from './stage-overlay.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ export class DialogService {
   private readonly appRef = inject(ApplicationRef);
   private readonly taskService = inject(TaskService);
   private readonly themeService = inject(ThemeService);
+  private readonly stageOverlay = inject(StageOverlayService);
 
   readonly isDialogOpen = signal<boolean>(false);
   readonly activeTrigger = signal<TriggerMode | null>(null);
@@ -155,28 +157,9 @@ export class DialogService {
   }
 
   private runViewTransition(update: () => void, cleanup: () => void, isExiting = false): void {
-    const doc = document as any;
-    if (typeof doc !== 'undefined' && typeof doc.startViewTransition === 'function') {
-      doc.documentElement?.classList.add('vt-running');
-      if (this.activeTransition() === 'hero') {
-        doc.documentElement?.classList.add('vt-hero');
-      }
-      if (isExiting) {
-        doc.documentElement?.classList.add('vt-exiting');
-      }
-      const transition = doc.startViewTransition(() => {
-        update();
-        this.appRef.tick();
-      });
-      transition.finished.finally(() => {
-        doc.documentElement?.classList.remove('vt-exiting', 'vt-running', 'vt-hero');
-        cleanup();
-        this.appRef.tick();
-      });
-    } else {
-      update();
-      this.appRef.tick();
-      cleanup();
-    }
+    this.stageOverlay.runViewTransition(update, cleanup, {
+      isExiting,
+      rootClass: this.activeTransition() === 'hero' ? 'vt-hero' : undefined
+    });
   }
 }

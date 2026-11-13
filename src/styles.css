@@ -77,6 +77,7 @@
   --color-muted: var(--md-sys-color-on-surface-variant);
   --color-outline: var(--md-sys-color-outline);
   --color-outline-sub: var(--md-sys-color-outline-variant);
+  --color-scrim: var(--md-sys-color-scrim);
 
   /* Shape Corners (10-Step M3 Expressive Scale) */
   --radius-m3-none: var(--md-sys-shape-corner-none);

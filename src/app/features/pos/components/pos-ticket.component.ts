@@ -167,7 +167,7 @@ export type PosServiceChannel = 'dine-in' | 'takeaway' | 'delivery';
             <span class="font-mono">S/ {{ subtotal().toFixed(2) }}</span>
           </div>
           @if (discount() > 0) {
-            <div class="flex items-center justify-between text-amber-600 dark:text-amber-400 font-semibold text-xs m3-anim-fade-through">
+            <div class="flex items-center justify-between text-warning font-semibold text-xs m3-anim-fade-through">
               <span>Descuento Aplicado ({{ discountPercent() }}%)</span>
               <span class="font-mono">- S/ {{ discount().toFixed(2) }}</span>
             </div>
@@ -198,6 +198,8 @@ export type PosServiceChannel = 'dine-in' | 'takeaway' | 'delivery';
             icon="payments"
             [morph]="true"
             customClass="flex-1"
+            [invisible]="isCheckoutTriggerInvisible()"
+            [viewTransitionName]="isCheckoutTransitionOrigin() ? 'dialog-transform' : null"
             [disabled]="cart().length === 0"
             (action)="checkout.emit()">
             Cobrar S/ {{ total().toFixed(2) }} [Enter]
@@ -219,6 +221,8 @@ export class PosTicketComponent {
   readonly discount = input.required<number>();
   readonly tax = input.required<number>();
   readonly total = input.required<number>();
+  readonly isCheckoutTransitionOrigin = input<boolean>(false);
+  readonly isCheckoutTriggerInvisible = input<boolean>(false);
 
   readonly channelChange = output<PosServiceChannel>();
   readonly voucherTypeChange = output<VoucherType>();
