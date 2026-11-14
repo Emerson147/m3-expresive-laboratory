@@ -4,12 +4,14 @@ import {
   ElementRef,
   afterNextRender,
   computed,
+  inject,
   input,
   output,
   signal,
   viewChild
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { StageOverlayService } from '../../../core/dialog/stage-overlay.service';
 import {
   CreateMasterProductDto,
   MasterProduct,
@@ -17,424 +19,432 @@ import {
   STANDARD_COLORS,
   Warehouse
 } from '../../../core/inventory/inventory.models';
+import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
+import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
+import { INVENTORY_SELECT_STYLES } from './inventory-select.styles';
 
 @Component({
   selector: 'app-inventory-create-modal',
   standalone: true,
-  imports: [FormsModule],
+  imports: [
+    FormsModule,
+    M3ButtonComponent,
+    M3ChipComponent,
+    M3TextFieldComponent
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [INVENTORY_SELECT_STYLES],
   host: {
     class: 'contents'
   },
   template: `
     <div
       (click)="close.emit()"
-      class="fixed inset-0 z-40 bg-black/70 backdrop-blur-md m3-dialog-backdrop cursor-pointer"></div>
+      [class.m3-dialog-backdrop]="!stageOverlay.hasViewTransitions()"
+      class="fixed inset-0 z-40 bg-scrim cursor-pointer"></div>
 
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="inventory-create-title"
-      class="fixed inset-0 m-auto z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-3rem)] max-w-5xl h-[90vh] max-h-[840px] flex flex-col rounded-[32px] bg-surface-box border border-outline-sub shadow-2xl overflow-hidden m3-dialog-surface">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-sub shrink-0 bg-surface/50">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-primary text-on-primary grid place-items-center shadow-xs">
+      [style.view-transition-name]="isDialogTransitionActive() ? 'dialog-transform' : null"
+      [class.m3-dialog-surface]="!stageOverlay.hasViewTransitions()"
+      [class.shadow-m3-level3]="!isDialogTransitionActive()"
+      class="fixed inset-0 m-auto z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-5xl h-fit max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col rounded-m3-xl bg-surface-box">
+
+      <!-- Floating Tonal Header (Aligned with Transfer Dialog) -->
+      <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-2 shrink-0">
+        <header class="bg-surface rounded-m3-xl p-3.5 sm:p-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3.5 min-w-0">
+          <div class="w-11 h-11 rounded-m3-lg bg-primary text-on-primary grid place-items-center shrink-0">
             <span class="material-symbols-rounded text-xl" aria-hidden="true">auto_awesome</span>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h3
-                #modalHeading
-                id="inventory-create-title"
-                tabindex="-1"
-                class="text-base sm:text-lg font-black text-main tracking-tight outline-none">
-                Product Studio • Alta de Modelo
-              </h3>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary uppercase">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+              <span class="px-2 py-0.5 rounded-m3-xs bg-primary-box text-on-primary-box text-label-sm-emphasized font-mono uppercase tracking-wider">
                 Generador 2D
               </span>
+              <span class="text-label-sm text-muted">Alta rápida por curva</span>
             </div>
-            <p class="text-xs text-muted">Configura el estilo base y proyecta en tiempo real la cuadrícula de variantes</p>
+            <h2
+              #modalHeading
+              id="inventory-create-title"
+              tabindex="-1"
+              class="text-title-lg-emphasized text-main outline-none leading-tight">
+              Product Studio • Alta de Modelo
+            </h2>
+            <p class="text-body-sm text-muted truncate mt-0.5">
+              Define identidad, curva de tallas, colores y lote inicial
+            </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <div class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface border border-outline-sub text-xs font-mono font-bold text-muted">
-            <span>{{ selectedSizes().length }} Tallas</span>
-            <span aria-hidden="true">×</span>
-            <span>{{ selectedColors().length }} Colores</span>
-            <span aria-hidden="true">=</span>
-            <span class="text-primary">{{ totalVariants() }} Variantes</span>
-          </div>
-
-          <button
-            type="button"
-            aria-label="Cerrar estudio de producto"
-            (click)="close.emit()"
-            class="w-9 h-9 rounded-full bg-surface hover:bg-surface-high border border-outline-sub grid place-items-center text-muted hover:text-main cursor-pointer transition-all">
-            <span class="material-symbols-rounded text-lg" aria-hidden="true">close</span>
-          </button>
-        </div>
+        <m3-button
+          [iconOnly]="true"
+          variant="text"
+          size="sm"
+          icon="close"
+          ariaLabel="Cerrar estudio de producto"
+          (action)="close.emit()" />
+        </header>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 min-h-0 flex-1 overflow-hidden">
-        <div class="lg:col-span-7 overflow-y-auto p-5 sm:p-6 space-y-5 m3-scrollbar">
-          <div class="space-y-3">
-            <div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary grid place-items-center text-[10px]">1</span>
-              <span>Identidad de Prenda</span>
-            </div>
+      <form (ngSubmit)="submit()" novalidate class="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar px-5 sm:px-6 py-2">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <label for="create-product-name" class="text-[11px] font-bold text-muted">Nombre del Modelo *</label>
-                <input
-                  id="create-product-name"
-                  type="text"
-                  [ngModel]="newProductName()"
-                  (ngModelChange)="newProductName.set($event)"
+          <!-- Left Configurator Column (Tonal Capsules on bg-surface-box, zero divider lines) -->
+          <div class="lg:col-span-7 space-y-4">
+
+            <!-- Capsule 1: Identity & Lookbook -->
+            <section aria-label="Identidad de prenda" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3.5">
+              <h3 class="flex items-center gap-2 text-label-md-emphasized text-muted uppercase tracking-wider">
+                <span class="w-5 h-5 rounded-m3-full bg-primary-box text-on-primary-box grid place-items-center text-label-sm-emphasized">1</span>
+                <span>Identidad de Prenda</span>
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+                <m3-text-field
+                  [id]="'create-product-name'"
+                  name="productName"
+                  variant="filled"
+                  label="Nombre del Modelo *"
                   placeholder="ej. Sobrecamisa Pana Heavyweight"
-                  class="w-full text-xs px-3 py-2.5 rounded-xl bg-surface border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary font-medium" />
-              </div>
+                  [required]="true"
+                  [showValidState]="true"
+                  [value]="newProductName()"
+                  (valueChange)="newProductName.set($event)" />
 
-              <div class="space-y-1">
-                <label for="create-product-sku" class="text-[11px] font-bold text-muted">SKU Base *</label>
-                <input
-                  id="create-product-sku"
-                  type="text"
-                  [ngModel]="newProductSku()"
-                  (ngModelChange)="newProductSku.set($event)"
-                  [attr.aria-invalid]="isDuplicateSku() ? 'true' : null"
+                <m3-text-field
+                  [id]="'create-product-sku'"
+                  name="productSku"
+                  variant="filled"
+                  label="SKU Base *"
                   placeholder="ej. OVS-700"
-                  [class.border-rose-500]="isDuplicateSku()"
-                  class="w-full text-xs px-3 py-2.5 font-mono uppercase rounded-xl bg-surface border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary font-bold" />
-                @if (isDuplicateSku()) {
-                  <p role="alert" class="text-[11px] font-medium text-rose-500">
-                    Ya existe una prenda con el SKU {{ newProductSku().trim().toUpperCase() }}.
-                  </p>
-                }
-              </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2.5 pt-1">
-              <div class="space-y-1">
-                <label for="create-product-category" class="text-[11px] font-bold text-muted">Categoría</label>
-                <select
-                  id="create-product-category"
-                  [ngModel]="newProductCategory()"
-                  (ngModelChange)="onCategoryChange($event)"
-                  class="w-full text-xs px-2.5 py-2.5 rounded-xl bg-surface border border-outline-sub text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer font-medium">
-                  <option value="shirts">Camisería Fina</option>
-                  <option value="polos">Polos Piqué</option>
-                  <option value="pants">Pantalones Chinos</option>
-                  <option value="jackets">Casacas & Outerwear</option>
-                </select>
+                  [required]="true"
+                  [showValidState]="true"
+                  [errorText]="isDuplicateSku() ? 'Ya existe una prenda con el SKU ' + newProductSku().trim().toUpperCase() + '.' : null"
+                  [value]="newProductSku()"
+                  (valueChange)="newProductSku.set($event)" />
               </div>
 
-              <div class="space-y-1">
-                <label for="create-product-price" class="text-[11px] font-bold text-muted">PVP Base ($ USD)</label>
-                <input
-                  id="create-product-price"
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+                <div class="inv-filled-select">
+                  <label for="create-product-category" class="inv-filled-select__label">Categoría</label>
+                  <select
+                    id="create-product-category"
+                    name="category"
+                    [value]="newProductCategory()"
+                    (change)="onCategoryChange($any($event.target).value)"
+                    class="m3-select">
+                    <option value="shirts">Camisería Fina</option>
+                    <option value="polos">Polos Piqué</option>
+                    <option value="pants">Pantalones Chinos</option>
+                    <option value="jackets">Casacas & Outerwear</option>
+                  </select>
+                </div>
+
+                <m3-text-field
+                  [id]="'create-product-price'"
+                  name="basePrice"
+                  variant="filled"
+                  label="PVP Base *"
                   type="number"
-                  [ngModel]="newProductPrice()"
-                  (ngModelChange)="onPriceChange($event)"
-                  min="1"
-                  step="0.5"
-                  class="w-full text-xs px-2.5 py-2.5 font-mono font-bold rounded-xl bg-surface border border-outline-sub text-main focus:outline-none focus:ring-2 focus:ring-primary" />
+                  inputMode="decimal"
+                  prefix="$"
+                  suffix="USD"
+                  [required]="true"
+                  [value]="newProductPrice().toString()"
+                  (valueChange)="onPriceChange($event)" />
+
+                <m3-text-field
+                  [id]="'create-product-brand'"
+                  name="brand"
+                  variant="filled"
+                  label="Marca"
+                  [value]="newProductBrand()"
+                  (valueChange)="newProductBrand.set($event)" />
               </div>
 
-              <div class="space-y-1">
-                <label for="create-product-brand" class="text-[11px] font-bold text-muted">Marca</label>
-                <input
-                  id="create-product-brand"
-                  type="text"
-                  [ngModel]="newProductBrand()"
-                  (ngModelChange)="newProductBrand.set($event)"
-                  class="w-full text-xs px-2.5 py-2.5 rounded-xl bg-surface border border-outline-sub text-main focus:outline-none focus:ring-2 focus:ring-primary font-medium" />
+              <div class="space-y-2">
+                <span class="text-label-sm-emphasized text-muted uppercase tracking-wider block">Foto de Lookbook</span>
+                <div class="grid grid-cols-5 gap-2">
+                  @for (preset of lookbookPresets; track preset.label) {
+                    <button
+                      type="button"
+                      [attr.aria-pressed]="newProductImageUrl() === preset.url"
+                      (click)="newProductImageUrl.set(preset.url)"
+                      [class.is-selected]="newProductImageUrl() === preset.url"
+                      [class]="newProductImageUrl() === preset.url
+                        ? 'inv-swatch-tile state-layer focus-ring-m3 p-1.5 bg-primary-box text-on-primary-box flex flex-col items-center gap-1 cursor-pointer group'
+                        : 'inv-swatch-tile state-layer focus-ring-m3 p-1.5 bg-surface-low text-muted hover:bg-surface-high hover:text-main flex flex-col items-center gap-1 cursor-pointer group'">
+                      <div class="w-full h-10 rounded-m3-sm overflow-hidden bg-surface-high">
+                        <img [src]="preset.url" [alt]="preset.label" class="w-full h-full object-cover group-hover:scale-105 transition-transform m3-transition-emphasized" />
+                      </div>
+                      <span class="text-label-sm-emphasized truncate w-full text-center px-0.5">
+                        {{ preset.label }}
+                      </span>
+                    </button>
+                  }
+                </div>
               </div>
-            </div>
+            </section>
 
-            <div class="space-y-1.5 pt-1">
-              <span class="text-[11px] font-bold text-muted block">Foto de Lookbook (Selector Rápido)</span>
-              <div class="grid grid-cols-5 gap-2">
-                @for (preset of lookbookPresets; track preset.label) {
+            <!-- Capsule 2: Size Curve -->
+            <section aria-label="Curva de tallas" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="flex items-center gap-2 text-label-md-emphasized text-muted uppercase tracking-wider">
+                  <span class="w-5 h-5 rounded-m3-full bg-primary-box text-on-primary-box grid place-items-center text-label-sm-emphasized">2</span>
+                  <span>Curva de Tallas ({{ selectedSizes().length }})</span>
+                </h3>
+
+                <div class="flex items-center gap-1">
+                  <m3-button variant="text" size="xs" (action)="selectAllSizes()">Todas</m3-button>
+                  <m3-button variant="text" size="xs" (action)="selectCoreCurve()">Curva Central</m3-button>
+                </div>
+              </div>
+
+              <div role="group" aria-label="Selector de tallas disponibles" class="flex flex-wrap gap-2">
+                @for (size of contextualSizes(); track size) {
+                  <m3-chip
+                    type="filter"
+                    [selected]="selectedSizes().includes(size)"
+                    (action)="toggleSize(size)">
+                    {{ size }}
+                  </m3-chip>
+                }
+              </div>
+            </section>
+
+            <!-- Capsule 3: Swatches -->
+            <section aria-label="Paleta textil" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3">
+              <h3 class="flex items-center gap-2 text-label-md-emphasized text-muted uppercase tracking-wider">
+                <span class="w-5 h-5 rounded-m3-full bg-primary-box text-on-primary-box grid place-items-center text-label-sm-emphasized">3</span>
+                <span>Paleta Textil ({{ selectedColors().length }})</span>
+              </h3>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                @for (col of standardColors; track col.code) {
                   <button
                     type="button"
-                    [attr.aria-pressed]="newProductImageUrl() === preset.url"
-                    (click)="newProductImageUrl.set(preset.url)"
-                    [class.border-primary]="newProductImageUrl() === preset.url"
-                    [class.ring-2]="newProductImageUrl() === preset.url"
-                    [class.ring-primary]="newProductImageUrl() === preset.url"
-                    class="h-14 rounded-xl overflow-hidden border border-outline-sub cursor-pointer relative group transition-all">
-                    <img [src]="preset.url" [alt]="preset.label" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    <span class="absolute inset-x-0 bottom-0 text-[8px] font-bold text-white bg-black/60 py-0.5 truncate px-1 text-center">
-                      {{ preset.label }}
-                    </span>
+                    [attr.aria-pressed]="isColorSelected(col)"
+                    (click)="toggleColor(col)"
+                    [class.is-selected]="isColorSelected(col)"
+                    [class]="isColorSelected(col)
+                      ? 'inv-swatch-tile state-layer focus-ring-m3 p-2.5 bg-primary-box text-on-primary-box text-left flex items-center gap-2.5 cursor-pointer group'
+                      : 'inv-swatch-tile state-layer focus-ring-m3 p-2.5 bg-surface-low text-main text-left flex items-center gap-2.5 cursor-pointer hover:bg-surface-high group'">
+                    <div
+                      class="w-6 h-6 rounded-m3-full shrink-0 grid place-items-center transition-transform m3-transition-fast group-hover:scale-110"
+                      [style.background-color]="col.hex"
+                      [style.border]="col.border ? '1.5px solid ' + col.border : '1.5px solid color-mix(in oklch, var(--md-sys-color-outline) 30%, transparent)'"
+                      aria-hidden="true">
+                      @if (isColorSelected(col)) {
+                        <span
+                          [style.color]="isLightSwatch(col.hex) ? 'oklch(18% 0 0)' : 'oklch(98% 0 0)'"
+                          class="material-symbols-rounded text-sm font-black">
+                          check
+                        </span>
+                      }
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-label-lg-emphasized leading-tight truncate">{{ col.name }}</div>
+                      <div class="text-label-sm font-mono opacity-80">{{ col.code }}</div>
+                    </div>
                   </button>
                 }
               </div>
-            </div>
+            </section>
           </div>
 
-          <div class="space-y-2.5 pt-4 border-t border-outline-sub">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-                <span class="w-5 h-5 rounded-full bg-primary/10 text-primary grid place-items-center text-[10px]">2</span>
-                <span>Eje X: Curva de Tallas ({{ selectedSizes().length }} activas)</span>
+          <!-- Right Preview & Batch Capsule Column (Balances grid, removes inner split scrollbar) -->
+          <div class="lg:col-span-5 space-y-4">
+
+            <!-- Capsule A: Model & 2D Variants Preview -->
+            <section aria-label="Vista previa del modelo y matriz" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-label-md-emphasized text-muted uppercase tracking-wider">Vista Previa</span>
+                <span class="px-2.5 py-0.5 rounded-m3-full bg-primary-box text-on-primary-box text-label-sm-emphasized font-mono tabular-nums">
+                  {{ selectedSizes().length }} × {{ selectedColors().length }} = {{ totalVariants() }} variantes
+                </span>
               </div>
 
-              <div class="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  (click)="selectAllSizes()"
-                  class="text-[11px] font-bold text-primary hover:underline cursor-pointer">
-                  Todas
-                </button>
-                <span class="text-muted text-xs" aria-hidden="true">•</span>
-                <button
-                  type="button"
-                  (click)="selectCoreCurve()"
-                  class="text-[11px] font-bold text-muted hover:text-main cursor-pointer">
-                  Curva Central
-                </button>
-              </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              @for (size of contextualSizes(); track size) {
-                <button
-                  type="button"
-                  [attr.aria-pressed]="selectedSizes().includes(size)"
-                  (click)="toggleSize(size)"
-                  [class.bg-primary]="selectedSizes().includes(size)"
-                  [class.text-on-primary]="selectedSizes().includes(size)"
-                  [class.border-primary]="selectedSizes().includes(size)"
-                  [class.shadow-xs]="selectedSizes().includes(size)"
-                  [class.bg-surface]="!selectedSizes().includes(size)"
-                  [class.text-muted]="!selectedSizes().includes(size)"
-                  class="px-4 py-2 rounded-xl text-xs font-mono font-bold border border-outline-sub cursor-pointer transition-all hover:scale-105">
-                  {{ size }}
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="space-y-2.5 pt-4 border-t border-outline-sub">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-                <span class="w-5 h-5 rounded-full bg-primary/10 text-primary grid place-items-center text-[10px]">3</span>
-                <span>Eje Y: Paleta Textil ({{ selectedColors().length }} colores activos)</span>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              @for (col of standardColors; track col.code) {
-                <button
-                  type="button"
-                  [attr.aria-pressed]="isColorSelected(col)"
-                  (click)="toggleColor(col)"
-                  [class]="isColorSelected(col) ? 'p-2.5 rounded-xl border-2 border-primary bg-primary/10 text-left flex items-center gap-2.5 cursor-pointer shadow-xs group transition-all' : 'p-2.5 rounded-xl border border-outline-sub text-left flex items-center gap-2.5 cursor-pointer hover:border-primary/50 transition-all group'">
-                  <div
-                    class="w-6 h-6 rounded-full shadow-2xs shrink-0 grid place-items-center transition-transform group-hover:scale-110"
-                    [style.background-color]="col.hex"
-                    [style.border]="col.border ? '1.5px solid ' + col.border : '1.5px solid rgba(0,0,0,0.12)'"
-                    aria-hidden="true">
-                    @if (isColorSelected(col)) {
-                      <span
-                        [class.text-white]="col.hex !== '#FFFFFF' && col.hex !== '#F8FAFC'"
-                        [class.text-black]="col.hex === '#FFFFFF' || col.hex === '#F8FAFC'"
-                        class="material-symbols-rounded text-sm font-black">
-                        check
-                      </span>
-                    }
+              <!-- Sub-tile: bg-surface-low inside bg-surface -->
+              <div class="bg-surface-low rounded-m3-lg-inc p-3 flex items-center gap-3">
+                <div class="w-14 h-14 rounded-m3-md overflow-hidden bg-surface-high shrink-0">
+                  <img
+                    [src]="newProductImageUrl()"
+                    [alt]="newProductName() || 'Vista previa del modelo'"
+                    class="w-full h-full object-cover" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-label-sm-emphasized font-mono text-on-primary bg-primary px-1.5 py-0.5 rounded-m3-xs uppercase">
+                      {{ newProductSku() || 'SKU-000' }}
+                    </span>
+                    <span class="text-label-sm text-muted truncate">{{ newProductCategoryLabel() }}</span>
                   </div>
-                  <div class="min-w-0">
-                    <div class="text-xs font-bold text-main leading-tight truncate">{{ col.name }}</div>
-                    <div class="text-[10px] font-mono text-muted">{{ col.code }}</div>
+                  <h3 class="text-title-sm-emphasized text-main truncate mt-0.5">
+                    {{ newProductName() || 'Nombre de la Prenda' }}
+                  </h3>
+                  <div class="text-label-lg-emphasized font-mono tabular-nums text-main mt-0.5">
+                    \${{ newProductPrice().toFixed(2) }} <span class="text-label-sm text-muted font-sans font-normal">USD</span>
                   </div>
-                </button>
-              }
-            </div>
-          </div>
-
-          <div class="space-y-3 pt-4 border-t border-outline-sub">
-            <div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-              <span class="w-5 h-5 rounded-full bg-primary/10 text-primary grid place-items-center text-[10px]">4</span>
-              <span>Recepción del Primer Lote</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="space-y-1">
-                <label for="create-target-wh" class="text-[11px] font-bold text-muted">Almacén de Entrada</label>
-                <select
-                  id="create-target-wh"
-                  [ngModel]="targetWarehouseId()"
-                  (ngModelChange)="targetWarehouseId.set($event)"
-                  class="w-full text-xs px-3 py-2.5 rounded-xl bg-surface border border-outline-sub text-main focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer font-medium">
-                  @for (wh of warehouses(); track wh.id) {
-                    <option [value]="wh.id">{{ wh.name }}</option>
-                  }
-                </select>
-              </div>
-
-              <div class="space-y-1">
-                <label for="create-initial-stock" class="text-[11px] font-bold text-muted">Stock por Variante (uds)</label>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Restar 5 unidades iniciales por variante"
-                    (click)="adjustInitialStock(-5)"
-                    class="w-9 h-9 rounded-xl bg-surface border border-outline-sub text-main font-bold hover:bg-surface-high grid place-items-center text-xs cursor-pointer">
-                    -5
-                  </button>
-                  <input
-                    id="create-initial-stock"
-                    type="number"
-                    [ngModel]="initialStockPerCell()"
-                    (ngModelChange)="onInitialStockInput($event)"
-                    min="0"
-                    class="flex-1 text-center font-mono font-black text-sm py-2 rounded-xl bg-surface border border-outline-sub text-main" />
-                  <button
-                    type="button"
-                    aria-label="Sumar 5 unidades iniciales por variante"
-                    (click)="adjustInitialStock(5)"
-                    class="w-9 h-9 rounded-xl bg-surface border border-outline-sub text-main font-bold hover:bg-surface-high grid place-items-center text-xs cursor-pointer">
-                    +5
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <div class="lg:col-span-5 bg-surface/80 p-5 sm:p-6 border-t lg:border-t-0 lg:border-l border-outline-sub flex flex-col justify-between overflow-y-auto m3-scrollbar space-y-4">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider">Live Matrix Canvas</span>
-              <span class="text-[10px] font-mono text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
-                Vista en Tiempo Real
-              </span>
-            </div>
-
-            <div class="p-3.5 rounded-2xl bg-surface-box border border-outline-sub shadow-xs flex items-center gap-3.5">
-              <div class="w-20 h-20 rounded-xl overflow-hidden bg-surface-high border border-outline-sub shrink-0">
-                <img
-                  [src]="newProductImageUrl()"
-                  [alt]="newProductName() || 'Vista previa del modelo'"
-                  class="w-full h-full object-cover" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5">
-                  <span class="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase">
-                    {{ newProductSku() || 'SKU-000' }}
-                  </span>
-                  <span class="text-[10px] text-muted truncate">{{ newProductCategoryLabel() }}</span>
-                </div>
-                <h4 class="text-sm font-black text-main truncate mt-0.5">
-                  {{ newProductName() || 'Nombre de la Prenda' }}
-                </h4>
-                <div class="text-xs font-mono font-bold text-main mt-1">
-                  \${{ newProductPrice().toFixed(2) }} <span class="text-[10px] font-normal text-muted">USD</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="rounded-2xl bg-surface-box border border-outline-sub overflow-hidden shadow-2xs">
-              <div class="p-2.5 bg-surface border-b border-outline-sub flex items-center justify-between text-[11px] font-bold text-muted">
-                <span>Estructura 2D de la Prenda</span>
-                <span class="font-mono text-primary">{{ selectedSizes().length }} × {{ selectedColors().length }} = {{ totalVariants() }} celdas</span>
-              </div>
-
-              <div class="overflow-x-auto max-h-56 m3-scrollbar">
-                <table class="w-full text-left border-collapse text-[11px]">
-                  <caption class="sr-only">Vista previa de variantes generadas</caption>
-                  <thead>
-                    <tr class="border-b border-outline-sub bg-surface/50 text-[10px] text-muted font-bold font-mono">
-                      <th scope="col" class="p-2">Color</th>
-                      @for (sz of selectedSizes(); track sz) {
-                        <th scope="col" class="p-2 text-center">{{ sz }}</th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline-sub font-mono">
-                    @for (col of selectedColors(); track col.code) {
-                      <tr class="hover:bg-surface/30">
-                        <th scope="row" class="p-2 font-normal text-left">
-                          <div class="flex items-center gap-1.5">
-                            <div
-                              class="w-3.5 h-3.5 rounded-full shrink-0"
-                              [style.background-color]="col.hex"
-                              [style.border]="col.border ? '1px solid ' + col.border : '1px solid rgba(0,0,0,0.1)'"
-                              aria-hidden="true">
-                            </div>
-                            <span class="text-[10px] font-bold text-main font-sans truncate max-w-[80px]">{{ col.name }}</span>
-                          </div>
-                        </th>
+              <!-- 2D Variants Matrix Sub-tile -->
+              <div class="bg-surface-low rounded-m3-lg-inc p-2 overflow-hidden">
+                <div class="overflow-x-auto max-h-52 m3-scrollbar">
+                  <table class="w-full text-left border-collapse">
+                    <caption class="sr-only">Vista previa de variantes generadas</caption>
+                    <thead>
+                      <tr class="text-label-sm-emphasized text-muted font-mono">
+                        <th scope="col" class="px-2 py-1.5">Color</th>
                         @for (sz of selectedSizes(); track sz) {
-                          <td class="p-1.5 text-center">
-                            <span class="px-2 py-0.5 rounded-lg bg-surface border border-outline-sub text-main font-bold block text-[10px]">
-                              {{ initialStockPerCell() }}
-                            </span>
-                          </td>
+                          <th scope="col" class="px-1.5 py-1.5 text-center">{{ sz }}</th>
                         }
                       </tr>
+                    </thead>
+                    <tbody class="font-mono tabular-nums">
+                      @for (col of selectedColors(); track col.code) {
+                        <tr>
+                          <th scope="row" class="px-2 py-1 font-normal text-left">
+                            <div class="flex items-center gap-1.5">
+                              <div
+                                class="w-2.5 h-2.5 rounded-m3-full shrink-0"
+                                [style.background-color]="col.hex"
+                                [style.border]="col.border ? '1px solid ' + col.border : '1px solid color-mix(in oklch, var(--md-sys-color-outline) 28%, transparent)'"
+                                aria-hidden="true">
+                              </div>
+                              <span class="text-label-sm-emphasized text-main font-sans truncate max-w-[84px]">{{ col.name }}</span>
+                            </div>
+                          </th>
+                          @for (sz of selectedSizes(); track sz) {
+                            <td class="p-1 text-center">
+                              <span class="px-2 py-0.5 rounded-m3-sm bg-surface text-main text-label-sm-emphasized block">
+                                {{ initialStockPerCell() }}
+                              </span>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- Capsule B: Initial Batch Reception + Live Balance (Transfer-style telemetry sub-cards) -->
+            <section aria-label="Recepción del primer lote" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3.5">
+              <h3 class="flex items-center gap-2 text-label-md-emphasized text-muted uppercase tracking-wider">
+                <span class="w-5 h-5 rounded-m3-full bg-primary-box text-on-primary-box grid place-items-center text-label-sm-emphasized">4</span>
+                <span>Recepción del Primer Lote</span>
+              </h3>
+
+              <div class="space-y-3">
+                <div class="inv-filled-select">
+                  <label for="create-target-wh" class="inv-filled-select__label">Almacén de Entrada</label>
+                  <select
+                    id="create-target-wh"
+                    name="targetWarehouseId"
+                    [value]="targetWarehouseId()"
+                    (change)="targetWarehouseId.set($any($event.target).value)"
+                    class="m3-select">
+                    @for (wh of warehouses(); track wh.id) {
+                      <option [value]="wh.id" [selected]="wh.id === targetWarehouseId()">{{ wh.name }}</option>
                     }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                  </select>
+                </div>
 
-          <div class="p-4 rounded-2xl bg-surface-box border border-outline-sub space-y-2">
-            <div class="text-[11px] font-bold text-muted uppercase tracking-wider">Balance Inicial del Lote</div>
-            <div class="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <div class="text-[10px] text-muted">Unidades a Ingresar</div>
-                <div class="text-lg font-black text-main font-mono">
-                  {{ previewBatchUnits() }} <span class="text-xs font-normal text-muted">uds</span>
+                <div class="flex items-start gap-2">
+                  <div class="pt-1.5 shrink-0">
+                    <m3-button
+                      variant="tonal"
+                      size="md"
+                      ariaLabel="Restar 5 unidades iniciales por variante"
+                      (action)="adjustInitialStock(-5)">
+                      -5
+                    </m3-button>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <m3-text-field
+                      [id]="'create-initial-stock'"
+                      name="initialStockPerCell"
+                      variant="filled"
+                      label="Stock / variante"
+                      type="number"
+                      inputMode="numeric"
+                      suffix="uds"
+                      [value]="initialStockPerCell().toString()"
+                      (valueChange)="onInitialStockInput($event)" />
+                  </div>
+                  <div class="pt-1.5 shrink-0">
+                    <m3-button
+                      variant="tonal"
+                      size="md"
+                      ariaLabel="Sumar 5 unidades iniciales por variante"
+                      (action)="adjustInitialStock(5)">
+                      +5
+                    </m3-button>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div class="text-[10px] text-muted">Valorización Lote</div>
-                <div class="text-lg font-black text-primary font-mono">
-                  \${{ previewBatchValuation().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-surface-low rounded-m3-lg-inc p-3">
+                  <div class="text-label-sm text-muted">Unidades</div>
+                  <div class="text-title-lg-emphasized text-main font-mono tabular-nums mt-0.5">
+                    {{ previewBatchUnits() }} <span class="text-body-sm font-sans text-muted font-normal">uds</span>
+                  </div>
+                </div>
+                <div class="bg-surface-low rounded-m3-lg-inc p-3">
+                  <div class="text-label-sm text-muted">Valorización</div>
+                  <div class="text-title-lg-emphasized text-primary font-mono tabular-nums mt-0.5">
+                    \${{ previewBatchValuation().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  </div>
                 </div>
               </div>
+            </section>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-outline-sub bg-surface shrink-0">
-        <div class="text-xs text-muted flex items-center gap-1.5">
-          <span class="material-symbols-rounded text-primary text-base" aria-hidden="true">check_circle</span>
-          <span>Recepción inmediata de <strong>{{ previewBatchUnits() }} unidades</strong> en <strong>{{ getWarehouseName(targetWarehouseId()) }}</strong></span>
-        </div>
+        <!-- Organic Dialog Footer on bg-surface-box (no divider border) -->
+        <footer class="px-5 sm:px-6 pt-2 pb-5 sm:pb-6 shrink-0 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-body-sm text-muted flex items-center gap-1.5">
+            <span class="material-symbols-rounded text-primary text-base" aria-hidden="true">check_circle</span>
+            <span>Ingreso de <strong class="font-mono tabular-nums text-main">{{ previewBatchUnits() }} uds</strong> en <strong class="text-main">{{ getWarehouseName(targetWarehouseId()) }}</strong></span>
+          </div>
 
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            (click)="close.emit()"
-            class="px-4 py-2.5 rounded-xl text-xs font-semibold text-muted hover:text-main hover:bg-surface-high cursor-pointer transition-all">
-            Cancelar
-          </button>
-          <button
-            type="button"
-            (click)="submit()"
-            [disabled]="!canSubmit()"
-            class="btn-m3 px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs flex items-center gap-2 shadow-md hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all">
-            <span class="material-symbols-rounded text-base" aria-hidden="true">rocket_launch</span>
-            <span>Generar y Abrir en Matriz</span>
-          </button>
-        </div>
-      </div>
+          <div class="flex items-center gap-3">
+            <m3-button
+              variant="text"
+              size="md"
+              (action)="close.emit()">
+              Cancelar
+            </m3-button>
+            <m3-button
+              type="submit"
+              variant="filled"
+              size="md"
+              icon="rocket_launch"
+              [morph]="true"
+              [disabled]="!canSubmit()">
+              Generar y Abrir en Matriz
+            </m3-button>
+          </div>
+        </footer>
+      </form>
     </div>
   `
 })
 export class InventoryCreateModalComponent {
+  readonly stageOverlay = inject(StageOverlayService);
+
   readonly warehouses = input.required<Warehouse[]>();
   readonly existingProducts = input.required<MasterProduct[]>();
+  readonly isDialogTransitionActive = input<boolean>(false);
 
   readonly close = output<void>();
   readonly createProduct = output<CreateMasterProductDto>();
@@ -583,6 +593,10 @@ export class InventoryCreateModalComponent {
 
   isColorSelected(color: ProductColor): boolean {
     return this.selectedColors().some(c => c.code === color.code);
+  }
+
+  isLightSwatch(hex: string): boolean {
+    return hex === '#FFFFFF' || hex === '#F8FAFC';
   }
 
   getWarehouseName(whId: string): string {

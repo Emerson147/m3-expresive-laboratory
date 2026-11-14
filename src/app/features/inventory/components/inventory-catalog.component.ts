@@ -1,144 +1,174 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { MasterProduct } from '../../../core/inventory/inventory.models';
+import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
+import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
 
 export interface InventoryCategoryOption {
   id: string;
   label: string;
+  icon?: string;
 }
 
 @Component({
   selector: 'app-inventory-catalog',
   standalone: true,
-  imports: [FormsModule],
+  imports: [M3ButtonComponent, M3ChipComponent, M3TextFieldComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'flex flex-col min-h-0'
+  },
   template: `
-    <div class="space-y-3.5">
-      <div class="p-4 rounded-3xl bg-surface-box border border-outline-sub shadow-2xs space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-bold text-main uppercase tracking-wider">Prendas & Modelos</h2>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-mono font-semibold text-muted">
-              {{ products().length }} estilos
-            </span>
-            <button
-              type="button"
-              (click)="openCreate.emit()"
-              class="text-xs font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer">
-              <span class="material-symbols-rounded text-sm" aria-hidden="true">add_circle</span>
-              Nuevo
-            </button>
-          </div>
-        </div>
+    <aside
+      aria-label="Catálogo de estilos y modelos"
+      class="flex-1 min-h-0 flex flex-col gap-3 bg-surface-low rounded-m3-xl p-3.5">
 
-        <div class="relative">
-          <span
-            class="material-symbols-rounded absolute left-3 top-2.5 text-base text-muted pointer-events-none"
-            aria-hidden="true">
-            search
+      <!-- Clean Sticky Search & Category Filter Rail -->
+      <div class="space-y-2.5 shrink-0">
+        <div class="flex items-baseline justify-between gap-2 px-0.5">
+          <h2 class="text-title-md-emphasized text-main truncate">Prendas & Modelos</h2>
+          <span class="text-label-sm font-mono tabular-nums text-muted shrink-0">
+            {{ products().length }} estilos
           </span>
-          <input
-            #searchInput
-            type="search"
-            aria-label="Buscar prenda por SKU, nombre o marca"
-            [ngModel]="searchQuery()"
-            (ngModelChange)="searchChange.emit($event)"
-            placeholder="Buscar por SKU, nombre..."
-            class="w-full text-xs pl-8 pr-8 py-2 rounded-xl bg-surface border border-outline-sub text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all" />
-          @if (searchQuery()) {
-            <button
-              type="button"
-              aria-label="Limpiar búsqueda"
-              (click)="searchChange.emit('')"
-              class="absolute right-2.5 top-2 text-muted hover:text-main cursor-pointer">
-              <span class="material-symbols-rounded text-sm" aria-hidden="true">close</span>
-            </button>
-          }
         </div>
 
-        <div role="group" aria-label="Filtrar por categoría" class="flex flex-wrap gap-1.5 pt-1">
+        <m3-text-field
+          #searchField
+          variant="outlined"
+          icon="search"
+          label="Buscar prenda"
+          placeholder="SKU, nombre o marca..."
+          [clearable]="true"
+          [value]="searchQuery()"
+          (valueChange)="searchChange.emit($event)"
+          (clear)="searchChange.emit('')" />
+
+        <div role="group" aria-label="Filtrar por categoría" class="flex flex-wrap gap-1.5">
           @for (cat of categories(); track cat.id) {
-            <button
-              type="button"
-              [attr.aria-pressed]="selectedCategory() === cat.id"
-              (click)="categoryChange.emit(cat.id)"
-              [class.bg-primary]="selectedCategory() === cat.id"
-              [class.text-on-primary]="selectedCategory() === cat.id"
-              [class.bg-surface]="selectedCategory() !== cat.id"
-              [class.text-muted]="selectedCategory() !== cat.id"
-              class="px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-outline-sub transition-all cursor-pointer hover:text-main">
+            <m3-chip
+              type="filter"
+              [selected]="selectedCategory() === cat.id"
+              [icon]="cat.icon ?? null"
+              (action)="categoryChange.emit(cat.id)">
               {{ cat.label }}
-            </button>
+            </m3-chip>
           }
         </div>
       </div>
 
-      <div class="space-y-2 max-h-[580px] overflow-y-auto pr-1 m3-scrollbar">
-        @for (prod of products(); track prod.id) {
-          <button
-            type="button"
-            (click)="selectProduct.emit(prod.id)"
-            [attr.aria-current]="selectedProductId() === prod.id ? 'true' : null"
-            [style.view-transition-name]="'product-card-' + prod.id"
-            [class]="selectedProductId() === prod.id ? 'w-full text-left p-3 rounded-2xl bg-primary/10 border-2 border-primary cursor-pointer transition-all flex gap-3 items-center group shadow-md' : 'w-full text-left p-3 rounded-2xl bg-surface-box border border-outline-sub cursor-pointer transition-all hover:border-primary/50 flex gap-3 items-center group'">
-            <div class="w-16 h-16 rounded-xl overflow-hidden bg-surface-high shrink-0 border border-outline-sub relative grid place-items-center">
-              @if (failedImages()[prod.id]) {
-                <span class="material-symbols-rounded text-muted text-xl" aria-hidden="true">checkroom</span>
-              } @else {
-                <img
-                  [src]="prod.imageUrl"
-                  [alt]="prod.name"
-                  (error)="markImageFailed(prod.id)"
+      <!-- Independent Scrollable Master List -->
+      @if (products().length > 0) {
+        <ul
+          role="list"
+          aria-label="Lista de prendas disponibles"
+          class="inv-scroll-pane flex-1 min-h-0 max-h-[540px] lg:max-h-none overflow-y-auto m3-scrollbar list-none m-0 p-0.5 space-y-2">
+          @for (prod of products(); track prod.id) {
+            @let isSelected = selectedProductId() === prod.id;
+            <li
+              class="inv-catalog-item"
+              [style.view-transition-name]="isCatalogFlipActive() ? 'inv-card-' + prod.id : null">
+              <button
+                type="button"
+                [attr.aria-pressed]="isSelected"
+                (click)="selectProduct.emit(prod.id)"
+                [class]="'inv-catalog-card state-layer focus-ring-m3 w-full text-left p-2.5 flex items-center gap-3 group cursor-pointer ' +
+                  (isSelected
+                    ? 'is-selected bg-primary-box text-on-primary-box shadow-m3-level1'
+                    : 'bg-surface hover:bg-surface-high text-main')">
+
+                <div
                   [style.view-transition-name]="transitionPhase() === 'before' && transitioningProductId() === prod.id ? 'product-hero-image' : null"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              }
-            </div>
-
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                  {{ prod.sku }}
-                </span>
-                <span class="text-[10px] text-muted truncate">{{ prod.brand }}</span>
-              </div>
-              <h3
-                [style.view-transition-name]="transitionPhase() === 'before' && transitioningProductId() === prod.id ? 'product-hero-title' : null"
-                class="text-xs font-bold text-main truncate mt-0.5 group-hover:text-primary transition-colors">
-                {{ prod.name }}
-              </h3>
-              <div class="flex items-center justify-between mt-1 text-[11px]">
-                <span class="font-mono font-bold text-main">\${{ prod.basePrice.toFixed(2) }}</span>
-                <div class="flex items-center gap-1">
-                  <span class="text-[10px] text-muted">{{ prod.availableColors.length }} cols</span>
-                  <span class="text-[10px] text-muted" aria-hidden="true">•</span>
-                  <span class="text-[10px] text-muted">{{ prod.availableSizes.length }} tallas</span>
+                  [class]="'w-14 h-14 overflow-hidden bg-surface-high shrink-0 relative transition-all m3-transition-emphasized ' +
+                    (isSelected ? 'rounded-m3-lg' : 'rounded-m3-md')">
+                  @if (failedImages()[prod.id]) {
+                    <div class="w-full h-full flex items-center justify-center">
+                      <span class="material-symbols-rounded text-muted text-xl" aria-hidden="true">checkroom</span>
+                    </div>
+                  } @else {
+                    <img
+                      [src]="prod.imageUrl"
+                      [alt]="prod.name"
+                      width="56"
+                      height="56"
+                      (error)="markImageFailed(prod.id)"
+                      class="block w-full h-full object-cover transition-transform m3-transition-emphasized group-hover:scale-105" />
+                  }
                 </div>
-              </div>
-            </div>
 
-            @if (selectedProductId() === prod.id) {
-              <span class="material-symbols-rounded text-primary text-xl shrink-0" aria-hidden="true">
-                arrow_forward_ios
-              </span>
-            }
-          </button>
-        } @empty {
-          <div class="p-6 rounded-2xl bg-surface-box border border-outline-sub text-center space-y-2.5 m3-anim-item-in">
-            <span class="material-symbols-rounded text-3xl text-muted" aria-hidden="true">inventory</span>
-            <div class="space-y-1">
-              <p class="text-xs font-bold text-main">No hay prendas con ese filtro</p>
-              <p class="text-[11px] text-muted">Prueba otro SKU o restablece la categoría.</p>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      [class]="'text-label-sm-emphasized font-mono px-1.5 py-0.5 rounded-m3-xs ' +
+                        (isSelected ? 'bg-primary text-on-primary' : 'bg-primary-box text-on-primary-box')">
+                      {{ prod.sku }}
+                    </span>
+                    <span [class]="'text-label-sm truncate ' + (isSelected ? 'opacity-80' : 'text-muted')">
+                      {{ prod.brand }}
+                    </span>
+                  </div>
+
+                  <h3
+                    [style.view-transition-name]="transitionPhase() === 'before' && transitioningProductId() === prod.id ? 'product-hero-title' : null"
+                    [class]="'inv-hero-title text-title-sm-emphasized truncate mt-0.5 ' +
+                      (isSelected ? 'text-on-primary-box' : 'text-main group-hover:text-primary')">
+                    {{ prod.name }}
+                  </h3>
+
+                  <div class="flex items-center justify-between gap-2 mt-1">
+                    <span class="text-label-lg-emphasized font-mono tabular-nums">
+                      \${{ prod.basePrice.toFixed(2) }}
+                    </span>
+
+                    <div class="flex items-center gap-1.5">
+                      <div class="flex -space-x-1" aria-hidden="true">
+                        @for (clr of prod.availableColors.slice(0, 4); track clr.code) {
+                          <span
+                            class="w-3 h-3 rounded-m3-full ring-1 ring-surface"
+                            [style.background-color]="clr.hex">
+                          </span>
+                        }
+                      </div>
+                      <span [class]="'text-label-sm ' + (isSelected ? 'opacity-85' : 'text-muted')">
+                        {{ prod.availableSizes.length }}T
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                @if (isSelected) {
+                  <span
+                    class="w-7 h-7 rounded-m3-md bg-primary text-on-primary grid place-items-center shrink-0 m3-anim-spring-pop"
+                    aria-hidden="true">
+                    <span class="material-symbols-rounded text-base">arrow_forward</span>
+                  </span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="flex-1 grid place-items-center bg-surface rounded-m3-xl p-6 text-center m3-anim-item-in">
+          <div class="space-y-3 max-w-[240px]">
+            <div class="w-12 h-12 mx-auto rounded-m3-xl bg-surface-high grid place-items-center text-muted">
+              <span class="material-symbols-rounded text-2xl" aria-hidden="true">inventory</span>
             </div>
-            <button
-              type="button"
-              (click)="clearFilters.emit()"
-              class="btn-m3 px-3 py-1.5 rounded-xl bg-surface border border-outline-sub text-xs font-semibold text-primary hover:bg-surface-high cursor-pointer">
-              Limpiar filtros
-            </button>
+            <div class="space-y-1">
+              <p class="text-title-sm-emphasized text-main">No hay prendas con ese filtro</p>
+              <p class="text-body-sm text-muted">Prueba otro SKU o restablece la categoría.</p>
+            </div>
+            <div class="flex justify-center">
+              <m3-button
+                variant="tonal"
+                size="sm"
+                icon="filter_alt_off"
+                (action)="clearFilters.emit()">
+                Limpiar filtros
+              </m3-button>
+            </div>
           </div>
-        }
-      </div>
-    </div>
+        </div>
+      }
+    </aside>
   `
 })
 export class InventoryCatalogComponent {
@@ -149,14 +179,14 @@ export class InventoryCatalogComponent {
   readonly selectedCategory = input.required<string>();
   readonly transitioningProductId = input<number | null>(null);
   readonly transitionPhase = input<'before' | 'after' | null>(null);
+  readonly isCatalogFlipActive = input<boolean>(false);
 
   readonly searchChange = output<string>();
   readonly categoryChange = output<string>();
   readonly selectProduct = output<number>();
-  readonly openCreate = output<void>();
   readonly clearFilters = output<void>();
 
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly searchField = viewChild<M3TextFieldComponent>('searchField');
   readonly failedImages = signal<Record<number, boolean>>({});
 
   markImageFailed(productId: number): void {
@@ -164,6 +194,6 @@ export class InventoryCatalogComponent {
   }
 
   focusSearch(): void {
-    this.searchInput()?.nativeElement.focus();
+    this.searchField()?.focus();
   }
 }
