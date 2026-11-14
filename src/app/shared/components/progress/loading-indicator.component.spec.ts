@@ -60,9 +60,27 @@ describe('M3LoadingIndicatorComponent', () => {
     expect(animate.getAttribute('attributeName')).toBe('d');
 
     const countCubicSegments = (d: string) => (d.match(/ C /g) ?? []).length;
+    expect(countCubicSegments(component.softBurstPath)).toBe(40);
+    expect(countCubicSegments(component.cookie8Path)).toBe(40);
     expect(countCubicSegments(component.pentagonPath)).toBe(40);
+    expect(countCubicSegments(component.pillPath)).toBe(40);
     expect(countCubicSegments(component.squirclePath)).toBe(40);
     expect(countCubicSegments(component.flowerPath)).toBe(40);
+    expect(countCubicSegments(component.ovalPath)).toBe(40);
     expect(countCubicSegments(component.circlePath)).toBe(40);
+  });
+
+  it('should scale contained wrapper with size class and disable SMIL animate under reduced motion', () => {
+    fixture.componentRef.setInput('contained', true);
+    fixture.componentRef.setInput('size', 'lg');
+    fixture.detectChanges();
+
+    const container = fixture.nativeElement.querySelector('.m3-loading-container');
+    expect(container.classList.contains('m3-loading-container-lg')).toBe(true);
+
+    component.prefersReducedMotion.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('animate')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.m3-loading-shape-path')?.getAttribute('d')).toBe(component.pentagonPath);
   });
 });

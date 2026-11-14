@@ -3,16 +3,28 @@
    m3.material.io/components/progress-indicators/specs
    ========================================================= */
 
+:where(.m3-linear-progress, .m3-circular-progress, .m3-loading-indicator) {
+  --_m3-progress-motion: var(--md-sys-motion-duration-medium4, 400ms)
+    var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+  --_m3-progress-color-motion: var(--md-sys-motion-duration-short4, 200ms)
+    var(--md-sys-motion-easing-standard);
+}
+
 /* --- 1. LINEAR PROGRESS INDICATOR --- */
 .m3-linear-progress {
   position: relative;
   width: 100%;
+  min-width: 40px; /* M3 guideline: never place linear indicators below 40dp */
   overflow: hidden;
   display: block;
   box-sizing: border-box;
   background-color: transparent;
   border-radius: var(--md-sys-shape-corner-full, 9999px);
   contain: strict;
+}
+
+:is([dir='rtl'], :dir(rtl)) .m3-linear-progress {
+  transform: scaleX(-1);
 }
 
 /* Linear Sizes */
@@ -26,86 +38,109 @@
   height: 8px; /* M3 Expressive prominent bar */
 }
 
-/* Color Themes */
+/* Color Themes (Active Indicator + Secondary-Container Track + Primary-Container Contained Badge) */
 .m3-progress-primary {
   --m3-progress-active: var(--md-sys-color-primary);
+  --m3-progress-track: var(--md-sys-color-secondary-container);
   --m3-progress-container: var(--md-sys-color-primary-container);
   --m3-progress-on-container: var(--md-sys-color-on-primary-container);
   color: var(--md-sys-color-primary);
 }
 .m3-progress-secondary {
   --m3-progress-active: var(--md-sys-color-secondary);
+  --m3-progress-track: var(--md-sys-color-secondary-container);
   --m3-progress-container: var(--md-sys-color-secondary-container);
   --m3-progress-on-container: var(--md-sys-color-on-secondary-container);
   color: var(--md-sys-color-secondary);
 }
 .m3-progress-tertiary {
   --m3-progress-active: var(--md-sys-color-tertiary);
+  --m3-progress-track: var(--md-sys-color-tertiary-container);
   --m3-progress-container: var(--md-sys-color-tertiary-container);
   --m3-progress-on-container: var(--md-sys-color-on-tertiary-container);
   color: var(--md-sys-color-tertiary);
 }
 .m3-progress-error {
   --m3-progress-active: var(--md-sys-color-error);
+  --m3-progress-track: var(--md-sys-color-error-container);
   --m3-progress-container: var(--md-sys-color-error-container);
   --m3-progress-on-container: var(--md-sys-color-on-error-container);
   color: var(--md-sys-color-error);
 }
+.m3-progress-four-color {
+  --m3-progress-active: var(--md-sys-color-primary);
+  --m3-progress-track: var(--md-sys-color-secondary-container);
+  --m3-progress-container: var(--md-sys-color-surface-container-high);
+  --m3-progress-on-container: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+}
+.m3-progress-inherit {
+  --m3-progress-active: currentColor;
+  --m3-progress-track: color-mix(in oklch, currentColor 20%, transparent);
+  --m3-progress-container: color-mix(in oklch, currentColor 16%, transparent);
+  --m3-progress-on-container: currentColor;
+  color: inherit;
+}
 
-/* Linear Active Indicator Bar */
+/* Linear Active Indicator Bar (M3 medium4 400ms emphasized-decelerate: fast launch, smooth braking) */
 .m3-linear-progress-bar {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
+  z-index: 3;
   background-color: var(--m3-progress-active, var(--md-sys-color-primary));
   border-radius: inherit;
-  transition: width var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+  transition: width var(--_m3-progress-motion);
   will-change: width;
 }
 
-/* Linear Buffer Bar */
+/* Linear Buffer Bar (distinct higher-chroma mix against empty track) */
 .m3-linear-progress-buffer {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  background-color: var(--m3-progress-container, var(--md-sys-color-primary-container));
+  z-index: 2;
+  background-color: color-mix(in oklch, var(--m3-progress-active, var(--md-sys-color-primary)) 36%, var(--m3-progress-track, var(--md-sys-color-secondary-container)));
   border-radius: inherit;
-  transition: width var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
+  transition: width var(--_m3-progress-motion);
   will-change: width;
 }
 
-/* Linear Stop Indicator Dot (M3 Canonical dot embedded at end of track line) */
-.m3-linear-progress-stop {
+/* Linear Stop Indicator Dot (M3 Canonical 4dp circle anchored inline at track terminus) */
+div.m3-linear-progress-stop {
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 4;
   width: 4px;
   height: 4px;
   border-radius: 9999px;
   background-color: var(--m3-progress-active, var(--md-sys-color-primary));
   pointer-events: none;
 }
-.m3-linear-progress-sm .m3-linear-progress-stop {
+.m3-linear-progress-sm div.m3-linear-progress-stop {
   width: 2px;
   height: 2px;
 }
-.m3-linear-progress-md .m3-linear-progress-stop {
+.m3-linear-progress-md div.m3-linear-progress-stop {
   width: 4px;
   height: 4px;
 }
-.m3-linear-progress-lg .m3-linear-progress-stop {
-  width: 8px;
-  height: 8px;
+.m3-linear-progress-lg div.m3-linear-progress-stop {
+  right: 2px; /* Centered concentrically inside 8dp track end-cap (radius 4px) */
+  width: 4px;
+  height: 4px;
 }
 
-/* Indeterminate Linear Animation (Dual Bar Emphasized Motion) */
+/* Indeterminate Linear Animation (Dual Bar Emphasized Motion above full track) */
 .m3-linear-progress-indeterminate .m3-linear-progress-bar-primary {
   position: absolute;
   top: 0;
   bottom: 0;
+  z-index: 2;
   background-color: var(--m3-progress-active, var(--md-sys-color-primary));
   border-radius: inherit;
   animation: m3LinearIndeterminate1 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
@@ -115,6 +150,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
+  z-index: 2;
   background-color: var(--m3-progress-active, var(--md-sys-color-primary));
   border-radius: inherit;
   animation: m3LinearIndeterminate2 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
@@ -169,7 +205,13 @@
 }
 .m3-circular-progress-md {
   width: 40px;
-  height: 40px; /* Canonical M3 circular diameter */
+  height: 40px; /* Canonical M3 circular flat diameter */
+}
+.m3-circular-progress-md.m3-circular-wavy {
+  width: 48px;
+  height: 48px; /* Canonical M3 Expressive circular wavy expansion (40dp -> 48dp) */
+  transition: width var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+              height var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 .m3-circular-progress-lg {
   width: 56px;
@@ -193,20 +235,27 @@
   transform-origin: center center;
 }
 
-/* Track Circle */
+/* Track Circle (M3 secondary-container token on primary) */
 .m3-circular-track {
   fill: none;
-  stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
-  opacity: 0.75;
-  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+  stroke: var(--m3-progress-track, var(--md-sys-color-secondary-container));
+  opacity: 0.85;
+  transition:
+    stroke var(--_m3-progress-color-motion),
+    stroke-dasharray var(--_m3-progress-motion),
+    stroke-dashoffset var(--_m3-progress-motion);
 }
 
-/* Active Indicator Circle */
+/* Active Indicator Circle (M3 medium4 400ms emphasized-decelerate) */
 .m3-circular-indicator {
   fill: none;
   stroke: var(--m3-progress-active, currentColor);
   stroke-linecap: round;
-  transition: stroke-dashoffset var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+  transition: stroke-dashoffset var(--_m3-progress-motion);
+}
+
+.m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-track {
+  animation: m3CircularTrackDash 1.4s var(--md-sys-motion-easing-legacy, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
 }
 
 .m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-indicator {
@@ -217,13 +266,15 @@
 
 /* Four-Color Expressive Animation */
 .m3-progress-four-color .m3-circular-indicator {
-  animation: m3CircularFourColor 5.6s ease-in-out infinite !important;
+  stroke: currentColor;
+  animation: m3ProgressFourColor 5.6s ease-in-out infinite !important;
 }
 
 .m3-progress-four-color.m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-indicator {
-  animation: 
-    m3CircularDash 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite,
-    m3CircularFourColor 5.6s ease-in-out infinite !important;
+  stroke: currentColor;
+  animation:
+    m3CircularDash 1.4s var(--md-sys-motion-easing-legacy, cubic-bezier(0.4, 0, 0.2, 1)) infinite,
+    m3ProgressFourColor 5.6s ease-in-out infinite !important;
 }
 
 @keyframes m3CircularRotate {
@@ -232,33 +283,50 @@
   }
 }
 
+/* Circumference = 2 * PI * 18 (~113.097px): 100% shifts offset by -113.1px so wraparound to 0% is seamless */
 @keyframes m3CircularDash {
   0% {
-    stroke-dasharray: 1px, 200px;
+    stroke-dasharray: 4px, 200px;
     stroke-dashoffset: 0px;
   }
   50% {
     stroke-dasharray: 85px, 200px;
-    stroke-dashoffset: -15px;
+    stroke-dashoffset: -14px;
   }
   100% {
-    stroke-dasharray: 85px, 200px;
-    stroke-dashoffset: -113px;
+    stroke-dasharray: 4px, 200px;
+    stroke-dashoffset: -113.1px;
   }
 }
 
-@keyframes m3CircularFourColor {
-  0%, 100% {
-    stroke: var(--md-sys-color-primary);
-  }
-  25% {
-    stroke: var(--md-sys-color-secondary);
+/* Synchronized disjoint track preserving ~4dp cap-to-cap gap around indeterminate flat arc */
+@keyframes m3CircularTrackDash {
+  0% {
+    stroke-dasharray: 92px, 200px;
+    stroke-dashoffset: -12.5px;
   }
   50% {
-    stroke: var(--md-sys-color-tertiary);
+    stroke-dasharray: 11px, 200px;
+    stroke-dashoffset: -107.5px;
+  }
+  100% {
+    stroke-dasharray: 92px, 200px;
+    stroke-dashoffset: -125.6px;
+  }
+}
+
+@keyframes m3ProgressFourColor {
+  0%, 100% {
+    color: var(--md-sys-color-primary);
+  }
+  25% {
+    color: var(--md-sys-color-secondary);
+  }
+  50% {
+    color: var(--md-sys-color-tertiary);
   }
   75% {
-    stroke: var(--md-sys-color-inverse-primary);
+    color: color-mix(in oklch, var(--md-sys-color-primary) 52%, var(--md-sys-color-tertiary));
   }
 }
 
@@ -319,7 +387,7 @@
   height: 10px;
 }
 .m3-linear-progress-lg.m3-linear-progress-wavy {
-  height: 14px; /* Canonical M3 prominent wavy height (Image 5) */
+  height: 14px; /* M3 spec measurement: 8dp stroke + 2 * 3dp amplitude prevents crest clipping */
 }
 
 .m3-linear-wavy-svg {
@@ -334,43 +402,119 @@
   stroke: var(--m3-progress-active, var(--md-sys-color-primary));
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+  transition: stroke var(--_m3-progress-color-motion);
 }
 
 .m3-linear-wavy-track-line {
-  stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
+  stroke: var(--m3-progress-track, var(--md-sys-color-secondary-container));
   stroke-linecap: round;
-  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+  transition: stroke var(--_m3-progress-color-motion);
 }
 
 .m3-linear-wavy-buffer-line {
-  stroke: var(--m3-progress-container, var(--md-sys-color-primary-container));
+  stroke: color-mix(in oklch, var(--m3-progress-active, var(--md-sys-color-primary)) 36%, var(--m3-progress-track, var(--md-sys-color-secondary-container)));
   stroke-linecap: round;
-  opacity: 0.6;
-  transition: stroke var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+  transition: stroke var(--_m3-progress-color-motion);
 }
 
 circle.m3-linear-progress-stop {
+  transform: none;
   fill: var(--m3-progress-active, var(--md-sys-color-primary));
   stroke: none;
 }
 
-/* Flat Linear Track: uncompleted portion with 4dp gap after active bar, extending to right edge */
+/* Flat Linear Track: uncompleted portion with 4dp gap after active bar/buffer, synchronized with 400ms medium4 emphasized-decelerate */
 .m3-linear-progress-track {
   position: absolute;
   top: 0;
   bottom: 0;
   right: 0;
-  background-color: var(--m3-progress-container, var(--md-sys-color-primary-container));
+  z-index: 1;
+  background-color: var(--m3-progress-track, var(--md-sys-color-secondary-container));
   border-radius: var(--md-sys-shape-corner-full, 9999px);
+  transition: left var(--_m3-progress-motion);
   pointer-events: none;
 }
 
+/* When progress is already interpolated per-frame via RAF, disable CSS transition lag so the 4dp gap stays exact */
+.m3-progress-raf-driven .m3-linear-progress-bar,
+.m3-progress-raf-driven .m3-linear-progress-buffer,
+.m3-progress-raf-driven .m3-linear-progress-track,
+.m3-progress-raf-driven .m3-circular-indicator,
+.m3-progress-raf-driven .m3-circular-track {
+  transition: none !important;
+}
+
+.m3-linear-progress-track-full {
+  left: 0;
+  margin-left: 0;
+}
+
 /* Wavy Circular Progress */
+.m3-circular-wavy svg {
+  overflow: visible;
+}
+
 .m3-circular-wavy .m3-circular-indicator,
 .m3-circular-wavy .m3-circular-track {
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* M3 Progress Blueprint Engineering Overlays (Cotas y Envolventes) */
+.m3-blueprint-axis {
+  stroke: oklch(0.62 0.21 25 / 0.6);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.m3-blueprint-envelope {
+  stroke: oklch(0.64 0.16 230 / 0.72);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.m3-blueprint-gap-tick {
+  stroke: oklch(0.66 0.19 48 / 0.92);
+  stroke-width: 1.25;
+}
+
+.m3-blueprint-gap-label {
+  fill: oklch(0.62 0.19 48);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.m3-blueprint-stop-ring {
+  fill: none;
+  stroke: oklch(0.66 0.19 48 / 0.9);
+  stroke-width: 1.1;
+  stroke-dasharray: 2 2;
+}
+
+/* Lab Native Range Slider (uses CSS accent-color with @supports not fallback per Modern Web Guidance) */
+.m3-lab-slider {
+  accent-color: var(--md-sys-color-primary);
+}
+
+@supports not (accent-color: var(--md-sys-color-primary)) {
+  .m3-lab-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--md-sys-color-secondary-container);
+  }
+  .m3-lab-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--md-sys-color-primary);
+    cursor: pointer;
+  }
 }
 
 
@@ -408,43 +552,31 @@ circle.m3-linear-progress-stop {
 
 .m3-loading-shape-path {
   fill: var(--m3-progress-active, var(--md-sys-color-primary));
-  transition: fill var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+  transition: fill var(--_m3-progress-color-motion);
 }
 
-.m3-progress-four-color .m3-loading-shape-path {
-  animation: m3ShapeFourColor 5.6s ease-in-out infinite;
-}
-
-@keyframes m3ShapeFourColor {
-  0%, 100% {
-    fill: var(--md-sys-color-primary);
-  }
-  25% {
-    fill: var(--md-sys-color-secondary);
-  }
-  50% {
-    fill: var(--md-sys-color-tertiary);
-  }
-  75% {
-    fill: var(--md-sys-color-inverse-primary);
-  }
+.m3-progress-four-color .m3-loading-shape-path,
+.m3-loading-container.m3-progress-four-color .m3-loading-shape-path,
+.m3-progress-four-color .m3-loading-container .m3-loading-shape-path {
+  fill: currentColor;
+  animation: m3ProgressFourColor 5.6s ease-in-out infinite;
 }
 
 @keyframes m3LoadingMorphRotate {
   0% {
-    transform: rotate(0deg) scale(0.95);
+    transform: rotate(0deg) scale(0.97);
   }
   25% {
-    transform: rotate(90deg) scale(1.05);
+    transform: rotate(90deg) scale(1.02);
   }
   50% {
-    transform: rotate(180deg) scale(0.95);
+    transform: rotate(180deg) scale(0.97);
   }
   75% {
-    transform: rotate(270deg) scale(1.05);
+    transform: rotate(270deg) scale(1.02);
   }
   100% {
-    transform: rotate(360deg) scale(0.95);
+    transform: rotate(360deg) scale(0.97);
   }
 }
 
@@ -452,7 +584,7 @@ circle.m3-linear-progress-stop {
    CONTAINERS & ACCESSIBILITY SPECIFICATIONS
    ========================================================= */
 
-/* Canonical M3 Contained Loading Indicator (corner-full container with on-container shape) */
+/* Canonical M3 Contained Loading Indicator (48dp corner-full container wrapping 38dp active shape) */
 .m3-loading-container {
   display: inline-flex;
   align-items: center;
@@ -463,19 +595,31 @@ circle.m3-linear-progress-stop {
   animation: m3ContainerPop var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, var(--md-sys-motion-easing-spring)) both;
 }
 
-.m3-loading-container .m3-loading-shape-path {
-  fill: var(--m3-progress-on-container, var(--md-sys-color-on-primary-container));
+.m3-loading-container-sm {
+  width: 32px;
+  height: 32px;
 }
 
-.m3-loading-container.m3-progress-four-color .m3-loading-shape-path,
-.m3-progress-four-color .m3-loading-container .m3-loading-shape-path {
-  animation: m3ShapeFourColor 5.6s ease-in-out infinite;
+.m3-loading-container-md {
+  width: 48px;
+  height: 48px;
+}
+
+.m3-loading-container-lg {
+  width: 64px;
+  height: 64px;
+}
+
+.m3-loading-container .m3-loading-shape-path {
+  fill: var(--m3-progress-on-container, var(--md-sys-color-on-primary-container));
 }
 
 /* Elevated container for pull-to-refresh & floating loading pills */
 .m3-loading-container-elevated,
 .m3-loading-container.m3-loading-elevated {
-  padding: 12px;
+  width: auto;
+  height: auto;
+  padding: 10px;
   border-radius: var(--md-sys-shape-corner-extra-large, 28px);
   background-color: var(--md-sys-color-surface-container-high);
   box-shadow: var(--md-sys-elevation-level-2);
@@ -500,10 +644,14 @@ circle.m3-linear-progress-stop {
 
 /* --- Accessibility: M3 Expressive Reduced Motion --- */
 @media (prefers-reduced-motion: reduce) {
+  .m3-linear-progress-bar,
+  .m3-linear-progress-buffer,
+  .m3-linear-progress-track,
   .m3-linear-progress-bar-primary,
   .m3-linear-progress-bar-secondary,
   .m3-linear-wavy-svg,
   .m3-circular-svg,
+  .m3-circular-track,
   .m3-circular-indicator,
   .m3-loading-shape-svg,
   .m3-loading-shape-path,
@@ -515,5 +663,22 @@ circle.m3-linear-progress-stop {
 
   .m3-linear-wavy-svg {
     transform: none !important;
+  }
+
+  /* Keep indeterminate flat indicators clearly visible when motion is disabled */
+  .m3-linear-progress-indeterminate:not(.m3-linear-progress-wavy) .m3-linear-progress-bar-primary {
+    left: 20%;
+    right: 45%;
+  }
+
+  .m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-indicator {
+    stroke-dasharray: 45px, 200px;
+    stroke-dashoffset: -12px;
+  }
+
+  .m3-circular-progress-indeterminate:not(.m3-circular-wavy) .m3-circular-track {
+    animation: none !important;
+    stroke-dasharray: 51px, 200px;
+    stroke-dashoffset: -65.5px;
   }
 }

@@ -1,23 +1,32 @@
-import { 
-  Component, 
-  computed, 
-  input, 
-  signal, 
-  ElementRef, 
-  inject, 
-  NgZone, 
-  PLATFORM_ID, 
-  OnDestroy, 
-  AfterViewInit 
-} from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  DEFAULT_CIRCULAR_AMPLITUDE_DP,
+  DEFAULT_CIRCULAR_INDETERMINATE_CYCLE_SEC,
+  DEFAULT_CIRCULAR_WAVELENGTH_DP,
+  DEFAULT_LINEAR_WAVELENGTH_DP,
+  buildCircularArcPath,
+  buildCircularWavePath,
+  computeCircularIndeterminateBounds,
+  computeCircularWaveQuantization,
+  evaluateWaveAmplitudeEnvelope
+} from './progress-motion.util';
+import { createWavyProgressController } from './progress-motion.controller';
 
-export type M3CircularProgressColor = 'primary' | 'secondary' | 'tertiary' | 'error' | 'four-color';
+export type M3CircularProgressColor = 'primary' | 'secondary' | 'tertiary' | 'error' | 'four-color' | 'inherit';
 export type M3CircularProgressSize = 'sm' | 'md' | 'lg';
+
+const CIRCULAR_STROKE_WIDTH_DP: Record<M3CircularProgressSize, number> = { sm: 5.2, md: 4, lg: 4.5 };
+const CIRCULAR_AMPLITUDE_DP: Record<M3CircularProgressSize, number> = {
+  sm: 0.9,
+  md: DEFAULT_CIRCULAR_AMPLITUDE_DP,
+  lg: 1.9
+};
+const CIRCULAR_LOBES_BY_SIZE: Record<M3CircularProgressSize, number> = { sm: 6, md: 9, lg: 10 };
 
 @Component({
   selector: 'm3-circular-progress',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'inline-flex items-center justify-center'
   },
@@ -25,22 +34,21 @@ export type M3CircularProgressSize = 'sm' | 'md' | 'lg';
     <div
       role="progressbar"
       [class]="computedClasses()"
+      [style.width.px]="clampedDiameter()"
+      [style.height.px]="clampedDiameter()"
       [attr.aria-label]="ariaLabel()"
       [attr.aria-valuenow]="isIndeterminate() ? null : clampedValue()"
       [attr.aria-valuemin]="isIndeterminate() ? null : 0"
       [attr.aria-valuemax]="isIndeterminate() ? null : 100">
 
-      <svg 
-        class="m3-circular-svg" 
+      <svg
+        class="m3-circular-svg"
         viewBox="0 0 48 48"
         fill="none"
         xmlns="http://www.w3.org/2000/svg">
-        
+
         @if (wavy()) {
-          <!-- M3 Expressive Wavy Circular Progress (Parametric Sine + Disjoint Smooth Arc) -->
-          
-          <!-- Inactive Smooth Circular Track Arc (Strict 4dp separation, never under wave) -->
-          @if (showTrack() && wavyTrackPath()) {
+          @if (showTrack() && shouldRenderTrack() && wavyTrackPath()) {
             <path
               class="m3-circular-track"
               [attr.d]="wavyTrackPath()!"
@@ -49,7 +57,6 @@ export type M3CircularProgressSize = 'sm' | 'md' | 'lg';
               fill="none" />
           }
 
-          <!-- Dynamic Scalloped Wavy Active Arc (fluid body with oscillating head & tail) -->
           @if (wavyActivePath()) {
             <path
               class="m3-circular-indicator"
@@ -59,8 +66,50 @@ export type M3CircularProgressSize = 'sm' | 'md' | 'lg';
               stroke-linejoin="round"
               fill="none" />
           }
+
+          @if (blueprint() && blueprintMetrics(); as bp) {
+            <g class="m3-progress-blueprint" aria-hidden="true">
+              <line class="m3-blueprint-axis" x1="21.5" y1="24" x2="26.5" y2="24" />
+              <line class="m3-blueprint-axis" x1="24" y1="21.5" x2="24" y2="26.5" />
+              <circle
+                class="m3-blueprint-axis"
+                cx="24"
+                cy="24"
+                [attr.r]="bp.r"
+                fill="none" />
+              @if (bp.amp > 0.05) {
+                <circle
+                  class="m3-blueprint-envelope"
+                  cx="24"
+                  cy="24"
+                  [attr.r]="bp.r + bp.amp"
+                  fill="none" />
+                @if (bp.r - bp.amp > 2) {
+                  <circle
+                    class="m3-blueprint-envelope"
+                    cx="24"
+                    cy="24"
+                    [attr.r]="bp.r - bp.amp"
+                    fill="none" />
+                }
+              }
+              @if (bp.gapTickA && bp.gapTickB) {
+                <line
+                  class="m3-blueprint-gap-tick"
+                  [attr.x1]="bp.gapTickA.x1"
+                  [attr.y1]="bp.gapTickA.y1"
+                  [attr.x2]="bp.gapTickA.x2"
+                  [attr.y2]="bp.gapTickA.y2" />
+                <line
+                  class="m3-blueprint-gap-tick"
+                  [attr.x1]="bp.gapTickB.x1"
+                  [attr.y1]="bp.gapTickB.y1"
+                  [attr.x2]="bp.gapTickB.x2"
+                  [attr.y2]="bp.gapTickB.y2" />
+              }
+            </g>
+          }
         } @else {
-          <!-- Standard M3 Canonical Flat Circular Progress -->
           @if (showTrack() && shouldRenderTrack()) {
             <circle
               class="m3-circular-track"
@@ -74,211 +123,267 @@ export type M3CircularProgressSize = 'sm' | 'md' | 'lg';
             </circle>
           }
 
-          <!-- Standard Active Progress Arc -->
-          <circle
-            class="m3-circular-indicator"
-            cx="24"
-            cy="24"
-            [attr.r]="radius"
-            [attr.stroke-width]="strokeWidth()"
-            stroke-linecap="round"
-            [style.stroke-dasharray]="isIndeterminate() ? null : circumference"
-            [style.stroke-dashoffset]="isIndeterminate() ? null : dashOffset()">
-          </circle>
+          @if (isIndeterminate() || clampedValue() > 0) {
+            <circle
+              class="m3-circular-indicator"
+              cx="24"
+              cy="24"
+              [attr.r]="radius"
+              [attr.stroke-width]="strokeWidth()"
+              stroke-linecap="round"
+              [style.stroke-dasharray]="isIndeterminate() ? null : circumference"
+              [style.stroke-dashoffset]="isIndeterminate() ? null : dashOffset()">
+            </circle>
+          }
         }
       </svg>
     </div>
   `
 })
-export class M3CircularProgressComponent implements AfterViewInit, OnDestroy {
-  /** Value between 0 and 100 for determinate mode. If null, enters indeterminate mode */
+export class M3CircularProgressComponent {
   readonly value = input<number | null>(null);
-
-  /** Circular diameter size (sm: 24px, md: 40px canonical, lg: 56px expressive) */
   readonly size = input<M3CircularProgressSize>('md');
-
-  /** Semantic color or Expressive four-color loop */
+  readonly diameter = input<number | null>(null);
   readonly color = input<M3CircularProgressColor>('primary');
-
-  /** Enables M3 Expressive scalloped/wavy circular perimeter */
   readonly wavy = input<boolean>(false);
-
-  /** Shows the subtle background track circle */
+  readonly amplitude = input<number | null>(null);
+  readonly wavelengthInput = input<number | null>(null, { alias: 'wavelength' });
+  readonly speed = input<number | null>(null);
+  readonly paused = input<boolean>(false);
+  readonly blueprint = input<boolean>(false);
   readonly showTrack = input<boolean>(true);
-
-  /** Accessible label */
   readonly ariaLabel = input<string>('Cargando...');
-
-  /** Extra custom classes */
   readonly customClass = input<string>('');
 
-  /** Radius for 48x48 coordinate viewBox */
   readonly radius = 18;
-
-  /** Circumference: 2 * Math.PI * 18 (~113.1px) */
   readonly circumference = 2 * Math.PI * this.radius;
-
-  /** Canonical 4dp gap expressed in SVG circumference coordinates (~4px) */
   readonly gapLength = 4;
+  readonly effectiveGap = computed(() => this.gapLength + this.strokeWidth());
 
-  // Platform & zone for smooth wave animation loop
-  private readonly ngZone = inject(NgZone);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly motion = createWavyProgressController({
+    wavy: () => this.wavy(),
+    isIndeterminate: () => this.isIndeterminate(),
+    paused: () => this.paused(),
+    hasActiveProgress: () => this.hasActiveProgress(),
+    targetValue: () => this.clampedValue(),
+    maxAmplitude: () => this.waveAmplitude(),
+    restingAmplitude: () => this.currentAmplitude(),
+    speed: () => this.speed(),
+    phaseWavelength: () => this.wavelengthInput() ?? DEFAULT_LINEAR_WAVELENGTH_DP,
+    indeterminateCycleSec: DEFAULT_CIRCULAR_INDETERMINATE_CYCLE_SEC,
+    wrapIndeterminateCycle: false,
+    reducedMotionIndeterminateValue: 0.18,
+    isRafDriven: () => this.customClass().includes('m3-progress-raf-driven')
+  });
 
-  readonly phase = signal<number>(0);
-  readonly indeterminateAngle = signal<number>(0);
+  readonly phase = this.motion.phase;
+  readonly indeterminateCycles = this.motion.indeterminatePosition;
+  readonly prefersReducedMotion = this.motion.prefersReducedMotion;
+  readonly effectiveVisualValue = this.motion.effectiveVisualValue;
+  readonly effectiveVisualAmplitude = this.motion.effectiveVisualAmplitude;
 
-  private animFrameId?: number;
-  private startTime = 0;
-
-  /** True if progress is undetermined */
   readonly isIndeterminate = computed(() => this.value() === null || this.value() === undefined);
 
-  /** Clamped determinate percentage */
   readonly clampedValue = computed(() => {
     const val = this.value();
     if (val === null || val === undefined) return 0;
     return Math.min(100, Math.max(0, val));
   });
 
-  /** Stroke width tailored by size */
+  readonly hasActiveProgress = computed(() =>
+    this.isIndeterminate() || (this.clampedValue() > 0 && this.clampedValue() < 100)
+  );
+
+  readonly clampedDiameter = computed(() => {
+    const custom = this.diameter();
+    if (custom === null || custom === undefined) return null;
+    return Math.min(240, Math.max(18, custom));
+  });
+
+  readonly effectiveDiameterDp = computed(() => {
+    const custom = this.clampedDiameter();
+    if (custom !== null) return custom;
+    switch (this.size()) {
+      case 'sm': return 24;
+      case 'lg': return 56;
+      case 'md':
+      default: return this.wavy() ? 48 : 40;
+    }
+  });
+
   readonly strokeWidth = computed(() => {
-    switch (this.size()) {
-      case 'sm': return 3.2;
-      case 'lg': return 4.5;
-      case 'md':
-      default:
-        return 4;
-    }
+    const customD = this.clampedDiameter();
+    if (customD !== null) return customD <= 24 ? 5.2 : 4;
+    return CIRCULAR_STROKE_WIDTH_DP[this.size()];
   });
 
-  /** Canonical M3 circular wave amplitude tailored to keep ripples organic and soft */
   readonly waveAmplitude = computed(() => {
-    switch (this.size()) {
-      case 'sm': return 0.9;
-      case 'lg': return 1.7;
-      case 'md':
-      default: return 1.3;
+    const custom = this.amplitude();
+    if (custom !== null && custom !== undefined) {
+      const clampedDp = Math.min(12, Math.max(0, custom));
+      return Math.min(8, clampedDp * (48 / this.effectiveDiameterDp()));
     }
+    const customD = this.clampedDiameter();
+    if (customD !== null) return customD <= 28 ? 0.9 : 1.65;
+    return CIRCULAR_AMPLITUDE_DP[this.size()];
   });
 
-  /** Number of wave lobes around full circle (Compose default ~18.8dp wavelength) */
+  readonly effectiveRadius = computed(() => {
+    const customAmp = this.amplitude();
+    if (customAmp === null || customAmp === undefined) return this.radius;
+    return Math.max(10, Math.min(this.radius, 24 - this.strokeWidth() / 2 - this.waveAmplitude()));
+  });
+
+  readonly radiusDp = computed(() => this.effectiveRadius() * (this.effectiveDiameterDp() / 48));
+
+  readonly circularWavelengthDp = computed(() => {
+    const custom = this.wavelengthInput();
+    if (custom !== null && custom !== undefined) {
+      return Math.max(8, custom * 0.375);
+    }
+    return DEFAULT_CIRCULAR_WAVELENGTH_DP;
+  });
+
+  readonly circularQuantization = computed(() =>
+    computeCircularWaveQuantization(this.radiusDp(), this.circularWavelengthDp())
+  );
+
   readonly waveLobes = computed(() => {
-    switch (this.size()) {
-      case 'sm': return 5;
-      case 'lg': return 7;
-      case 'md':
-      default: return 6;
+    if (this.wavelengthInput() !== null && this.wavelengthInput() !== undefined) {
+      return this.circularQuantization().lobes;
     }
+    const customD = this.clampedDiameter();
+    if (customD !== null) {
+      if (customD <= 28) return 6;
+      return customD >= 96 ? 10 : 9;
+    }
+    return CIRCULAR_LOBES_BY_SIZE[this.size()];
   });
 
-  /** Dashoffset for standard determinate mode */
-  readonly dashOffset = computed(() => {
-    const progress = this.clampedValue() / 100;
-    return this.circumference * (1 - progress);
+  readonly currentAmplitude = computed(() => {
+    const maxAmp = this.waveAmplitude();
+    if (this.isIndeterminate()) return maxAmp;
+    return maxAmp * evaluateWaveAmplitudeEnvelope(this.clampedValue() / 100).factor;
   });
 
-  /** True if inactive track should be rendered (omitted when full or near full) */
+  readonly indeterminateBounds = computed(() =>
+    computeCircularIndeterminateBounds(this.indeterminateCycles())
+  );
+
+  readonly indeterminateAngle = computed(() => this.indeterminateBounds().startAngle);
+
+  readonly dashOffset = computed(() =>
+    this.circumference * (1 - this.clampedValue() / 100)
+  );
+
   readonly shouldRenderTrack = computed(() => {
-    if (this.isIndeterminate()) return true;
-    return this.clampedValue() < 96;
+    const r = this.effectiveRadius();
+    if (this.isIndeterminate()) {
+      if (!this.wavy()) return true;
+      const { startAngle, endAngle } = this.indeterminateBounds();
+      const gapAngle = this.effectiveGap() / r;
+      return 2 * Math.PI - (endAngle - startAngle) - 2 * gapAngle > 0.05;
+    }
+    const p = (this.wavy() ? this.effectiveVisualValue() : this.clampedValue()) / 100;
+    if (p <= 0) return true;
+    if (this.wavy()) {
+      const gapAngle = this.effectiveGap() / r;
+      return 2 * Math.PI - p * 2 * Math.PI - 2 * gapAngle > 0.05;
+    }
+    const availableTrack = this.circumference * (1 - p) - 2 * this.effectiveGap();
+    return availableTrack > 0.5;
   });
 
-  /**
-   * Length of the inactive track arc for flat mode.
-   * Covers uncompleted fraction minus 4dp gap on both ends.
-   */
   readonly trackDashArray = computed(() => {
     const p = this.clampedValue() / 100;
-    if (p <= 0) {
-      return `${this.circumference} ${this.circumference}`;
-    }
+    if (p <= 0) return `${this.circumference} ${this.circumference}`;
     const remainingLength = this.circumference * (1 - p);
-    const availableTrack = Math.max(0, remainingLength - this.gapLength * 2);
+    const availableTrack = Math.max(0, remainingLength - this.effectiveGap() * 2);
     return `${availableTrack} ${this.circumference}`;
   });
 
-  /**
-   * Inactive track offset starting 4dp AFTER the active indicator ends
-   */
   readonly trackDashOffset = computed(() => {
     const p = this.clampedValue() / 100;
     if (p <= 0) return 0;
-    return -(this.circumference * p + this.gapLength);
+    return -(this.circumference * p + this.effectiveGap());
   });
 
-  /**
-   * Mathematically generates fluid circular wave path.
-   * Clockwise orientation starting at 12 o'clock (0 rad).
-   * Both head and tail oscillate in real-time with rounded stroke-linecap.
-   */
   readonly wavyActivePath = computed(() => {
-    const rBase = this.radius;
+    const rBase = this.effectiveRadius();
     const maxAmp = this.waveAmplitude();
     const ph = this.phase();
     const numLobes = this.waveLobes();
 
     if (this.isIndeterminate()) {
-      // Indeterminate mode: traveling wave slug of 100 degrees (~28%) rotating around circle
-      const arcAngle = (100 * Math.PI) / 180;
-      const startAngle = this.indeterminateAngle();
-      const endAngle = startAngle + arcAngle;
-
-      return this.buildCircularWavePathString(startAngle, endAngle, rBase, maxAmp, numLobes, ph);
-    } else {
-      // Determinate mode: arc from 0 to p * 2*PI
-      const p = this.clampedValue() / 100;
-      if (p <= 0) return '';
-
-      const totalAngle = p * 2 * Math.PI;
-
-      // Attenuate amplitude smoothly at 0% and 100% boundaries per M3 indicatorAmplitude spec
-      let amp = maxAmp;
-      if (p <= 0.05 || p >= 0.98) {
-        amp = 0;
-      } else if (p < 0.12) {
-        amp = maxAmp * ((p - 0.05) / 0.07);
-      } else if (p > 0.92) {
-        amp = maxAmp * ((0.98 - p) / 0.06);
-      }
-
-      return this.buildCircularWavePathString(0, totalAngle, rBase, amp, numLobes, ph);
+      const { startAngle, endAngle } = this.indeterminateBounds();
+      return buildCircularWavePath(startAngle, endAngle, rBase, maxAmp, numLobes, ph);
     }
+
+    const p = this.effectiveVisualValue() / 100;
+    if (p <= 0) return '';
+
+    const totalAngle = p * 2 * Math.PI;
+    const amp = this.effectiveVisualAmplitude();
+    return buildCircularWavePath(0, totalAngle, rBase, amp, numLobes, ph);
   });
 
-  /** Alias for backward compatibility with specs/tests */
   readonly circularWavePath = computed(() => this.wavyActivePath());
 
-  /**
-   * Generates the inactive smooth circular track arc for wavy mode.
-   * Starts with a canonical 4dp gap after the active wave, and stops 4dp before 12 o'clock.
-   */
   readonly wavyTrackPath = computed(() => {
     if (!this.shouldRenderTrack()) return null;
 
-    const r = this.radius;
-    const gapAngle = this.gapLength / r; // ~0.222 rad (12.7 degrees)
+    const r = this.effectiveRadius();
+    const gapAngle = this.effectiveGap() / r;
 
     if (this.isIndeterminate()) {
-      const arcAngle = (100 * Math.PI) / 180;
-      const startAngle = this.indeterminateAngle();
-      const endAngle = startAngle + arcAngle;
-
+      const { startAngle, endAngle } = this.indeterminateBounds();
       const trackStart = endAngle + gapAngle;
       const trackEnd = startAngle + 2 * Math.PI - gapAngle;
-
-      return this.buildArcPath(trackStart, trackEnd, r);
-    } else {
-      const p = this.clampedValue() / 100;
-      const activeAngle = p * 2 * Math.PI;
-
-      const trackStart = activeAngle + gapAngle;
-      const trackEnd = 2 * Math.PI - (p > 0 ? gapAngle : 0);
-
       if (trackEnd <= trackStart + 0.05) return null;
-
-      return this.buildArcPath(trackStart, trackEnd, r);
+      return buildCircularArcPath(trackStart, trackEnd, r);
     }
+
+    const p = this.effectiveVisualValue() / 100;
+    if (p <= 0) return buildCircularArcPath(0, Math.PI * 1.999, r);
+
+    const trackStart = p * 2 * Math.PI + gapAngle;
+    const trackEnd = 2 * Math.PI - gapAngle;
+    if (trackEnd <= trackStart + 0.05) return null;
+    return buildCircularArcPath(trackStart, trackEnd, r);
+  });
+
+  readonly blueprintMetrics = computed(() => {
+    const r = this.effectiveRadius();
+    const amp = this.isIndeterminate() ? this.currentAmplitude() : this.effectiveVisualAmplitude();
+    const gapAngle = this.effectiveGap() / r;
+    const capAngleOffset = (this.strokeWidth() / 2) / r;
+
+    let endAngle: number | null = null;
+    if (this.isIndeterminate()) {
+      endAngle = this.indeterminateBounds().endAngle;
+    } else {
+      const p = this.effectiveVisualValue() / 100;
+      if (p > 0) endAngle = p * 2 * Math.PI;
+    }
+
+    const tick = (angle: number) => {
+      const inner = Math.max(2, r - this.strokeWidth() / 2 - 2.5);
+      const outer = r + this.strokeWidth() / 2 + 2.5;
+      return {
+        x1: 24 + inner * Math.sin(angle),
+        y1: 24 - inner * Math.cos(angle),
+        x2: 24 + outer * Math.sin(angle),
+        y2: 24 - outer * Math.cos(angle)
+      };
+    };
+
+    const showGapTicks = endAngle !== null && this.shouldRenderTrack();
+    return {
+      r,
+      amp,
+      gapTickA: showGapTicks ? tick(endAngle! + capAngleOffset) : null,
+      gapTickB: showGapTicks ? tick(endAngle! + gapAngle - capAngleOffset) : null
+    };
   });
 
   readonly computedClasses = computed(() => {
@@ -287,112 +392,9 @@ export class M3CircularProgressComponent implements AfterViewInit, OnDestroy {
       `m3-circular-progress-${this.size()}`,
       `m3-progress-${this.color()}`
     ];
-
-    if (this.wavy()) {
-      classes.push('m3-circular-wavy');
-    }
-
-    if (this.isIndeterminate()) {
-      classes.push('m3-circular-progress-indeterminate');
-    }
-
-    if (this.customClass()) {
-      classes.push(this.customClass());
-    }
-
+    if (this.wavy()) classes.push('m3-circular-wavy');
+    if (this.isIndeterminate()) classes.push('m3-circular-progress-indeterminate');
+    if (this.customClass()) classes.push(this.customClass());
     return classes.join(' ');
   });
-
-  ngAfterViewInit(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.ngZone.runOutsideAngular(() => {
-      const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-      if (prefersReducedMotion) return;
-
-      const loop = (timestamp: number) => {
-        if (!this.startTime) this.startTime = timestamp;
-        const elapsed = (timestamp - this.startTime) / 1000;
-
-        // Wave phase propagates clockwise: 1 wave cycle per second (waveSpeed = wavelength)
-        const currentPhase = (elapsed * 2 * Math.PI) % (2 * Math.PI);
-        // Indeterminate rotation: 1 full circle every 2.4s
-        const indetAngle = ((elapsed / 2.4) * 2 * Math.PI) % (2 * Math.PI);
-
-        this.phase.set(currentPhase);
-        if (this.isIndeterminate()) {
-          this.indeterminateAngle.set(indetAngle);
-        }
-
-        this.animFrameId = requestAnimationFrame(loop);
-      };
-
-      this.animFrameId = requestAnimationFrame(loop);
-    });
-  }
-
-  ngOnDestroy(): void {
-    if (this.animFrameId) {
-      cancelAnimationFrame(this.animFrameId);
-    }
-  }
-
-  /**
-   * Builds an SVG path string for an undulating sinusoidal circular arc.
-   * Clockwise orientation starting at 12 o'clock (angle 0).
-   */
-  private buildCircularWavePathString(
-    startAngle: number,
-    endAngle: number,
-    rBase: number,
-    amplitude: number,
-    numLobes: number,
-    phase: number
-  ): string {
-    if (endAngle <= startAngle) return '';
-
-    const totalArc = endAngle - startAngle;
-    // Silky smooth 1-degree resolution
-    const numSteps = Math.max(36, Math.ceil((totalArc / (2 * Math.PI)) * 180));
-    const step = totalArc / numSteps;
-    const points: string[] = [];
-
-    // Point generator: 12 o'clock is angle 0, clockwise
-    const getPoint = (theta: number) => {
-      const r = rBase + amplitude * Math.sin(numLobes * theta - phase);
-      const x = 24 + r * Math.sin(theta);
-      const y = 24 - r * Math.cos(theta);
-      return { x, y };
-    };
-
-    // Start point
-    const pStart = getPoint(startAngle);
-    points.push(`M ${pStart.x.toFixed(2)},${pStart.y.toFixed(2)}`);
-
-    for (let i = 1; i <= numSteps; i++) {
-      const theta = startAngle + i * step;
-      const p = getPoint(theta);
-      points.push(`L ${p.x.toFixed(2)},${p.y.toFixed(2)}`);
-    }
-
-    return points.join(' ');
-  }
-
-  /**
-   * Builds a smooth circular arc from startAngle to endAngle clockwise.
-   * 12 o'clock is angle 0.
-   */
-  private buildArcPath(startAngle: number, endAngle: number, r: number): string {
-    if (endAngle <= startAngle) return '';
-
-    const x1 = 24 + r * Math.sin(startAngle);
-    const y1 = 24 - r * Math.cos(startAngle);
-    const x2 = 24 + r * Math.sin(endAngle);
-    const y2 = 24 - r * Math.cos(endAngle);
-
-    const angleDiff = endAngle - startAngle;
-    const largeArcFlag = angleDiff > Math.PI ? 1 : 0;
-
-    return `M ${x1.toFixed(2)},${y1.toFixed(2)} A ${r},${r} 0 ${largeArcFlag} 1 ${x2.toFixed(2)},${y2.toFixed(2)}`;
-  }
 }
