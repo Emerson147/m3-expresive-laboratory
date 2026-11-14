@@ -1,26 +1,79 @@
-import { Component, computed, ElementRef, inject, signal, viewChildren } from '@angular/core';
+import { Component, computed, ElementRef, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdaptiveLayoutService, WindowSizeClass } from '../../../core/layout/adaptive-layout.service';
 import {
   A11Y_FOUNDATION_SPECS,
+  ADAPTIVE_STRATEGIES_SPECS,
   CANONICAL_LAYOUT_SPECS,
   CONTENT_DESIGN_PAIRS,
   HEIGHT_BREAKPOINT_3_SPECS,
   INPUT_MODALITY_SPECS,
-  MATERIAL_AZ_GLOSSARY,
+  LayoutPartId,
+  PARTS_OF_LAYOUT_SPECS,
   RTL_ICON_RULES,
   WIDTH_BREAKPOINT_5_SPECS
 } from './foundations-specs.data';
 
 /**
- * Laboratory page for Step 2 (Foundations): Layout (5 Breakpoints, Canonical Layouts, LTR/RTL),
- * Interaction Ergonomics (48dp touch targets & 8dp spacing), Accessibility (Keyboard & ARIA),
- * Content Design, and Material A-Z Glossary — cleanly separated from Styles.
+ * Laboratory page for Step 2 (Foundations — Web Focused):
+ * Layout (Parts of Layout, Adaptive Design with @container, 5 Breakpoints, Canonical Layouts, LTR/RTL),
+ * Interaction Ergonomics (48dp touch targets & 8dp spacing), Web Accessibility (WCAG Contrast 4.5:1/3:1,
+ * Color Independence, :user-invalid + aria-describedby Forms, Roving Tabindex & aria-live),
+ * and Web Content Design (+35% i18n Expansion & native Intl).
  */
 @Component({
   selector: 'app-foundations-lab',
   standalone: true,
   imports: [RouterLink],
+  styles: [`
+    .adaptive-sim-window {
+      container-type: inline-size;
+      container-name: adaptive-window;
+      transition: inline-size 180ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .adaptive-feed-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+
+    .adaptive-pane-meta-extra {
+      display: none;
+    }
+
+    .adaptive-levitate-badge::after {
+      content: 'Sheet / Modal';
+    }
+
+    .a11y-demo-input:user-invalid {
+      border-color: var(--md-sys-color-error);
+    }
+
+    @container adaptive-window (min-width: 600px) {
+      .adaptive-feed-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @container adaptive-window (min-width: 840px) {
+      .adaptive-feed-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .adaptive-pane-meta-extra {
+        display: block;
+      }
+      .adaptive-levitate-badge::after {
+        content: 'Floating Pill (Levitate)';
+      }
+    }
+
+    @container adaptive-window (min-width: 1200px) {
+      .adaptive-feed-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+  `],
   template: `
     <div class="space-y-8">
       <!-- =====================================================================
@@ -59,10 +112,10 @@ import {
               Caso 1 • Layout & Adaptive Design
             </div>
             <h3 class="text-title-lg-emphasized text-main">
-              5 Width Breakpoints, 3 Height Breakpoints, Canonical Layouts y Bidireccionalidad (LTR/RTL)
+              Parts of Layout, Adaptive Design, 5 Breakpoints y Bidireccionalidad (LTR/RTL)
             </h3>
             <p class="text-xs text-muted max-w-3xl leading-relaxed">
-              <code class="font-mono text-primary">AdaptiveLayoutService</code> clasifica el viewport real en las 5 clases oficiales de Material 3 (<code class="font-mono">compact → extra-large</code>) y ajusta márgenes (<code class="font-mono">16dp/24dp</code>), spacers y cantidad de paneles simultáneos.
+              Basado en <code class="font-mono text-primary">parts-of-layout</code> y <code class="font-mono text-primary">adaptive-design</code> de Material 3: separamos <strong>Navigation Components</strong> (Bar/Rail/Drawer) de la <strong>Body Region</strong> (Panes Fixed/Flexible, Margin, Spacer, Drag Handle y Fold) usando <code class="font-mono">@container (inline-size)</code>.
             </p>
           </div>
 
@@ -86,12 +139,12 @@ import {
           </div>
         </div>
 
-        <!-- 1.1 Tabla visual de los 5 Breakpoints + 3 Height Breakpoints -->
+        <!-- 1.1 Tabla visual de los 5 Breakpoints -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           @for (bp of widthBreakpoints; track bp.id) {
             <button
               type="button"
-              (click)="simulatedBreakpoint.set(bp.id)"
+              (click)="selectBreakpointPreset(bp.id, bp.sampleWidthPx)"
               [class]="activeSimBreakpoint() === bp.id
                 ? 'bg-primary-box/60 border-2 border-primary shadow-xs'
                 : 'bg-surface-low border border-outline-sub hover:border-primary/40'"
@@ -114,15 +167,170 @@ import {
           }
         </div>
 
-        <!-- 1.2 Simulador Interactivo de Canonical Layouts (sin achicar navegador) -->
+        <!-- 1.1B Inspector Interactivo "Parts of Layout" (m3.material.io/foundations/layout/layout-overview/parts-of-layout) -->
         <div class="p-4 rounded-m3-lg bg-surface-low border border-outline-sub space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div class="space-y-0.5">
-              <div class="text-xs font-bold text-main">
-                Simulador de Canonical Layouts ({{" "}}<code class="font-mono text-primary">{{ activeBreakpointSpec().label }} • {{ activeBreakpointSpec().sampleWidthPx }}px</code> )
+              <div class="text-xs font-bold text-main flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-primary">view_quilt</span>
+                Anatomía Oficial: Parts of Layout
               </div>
               <div class="text-[11px] text-muted">
-                Elegí un patrón M3 y tocá cualquier Breakpoint arriba para ver cómo mutan paneles, chrome de navegación, márgenes y spacers.
+                Tocá cada parte para iluminarla en el plano arquitectónico y leer su regla M3 de tamaño, rol y separación.
+              </div>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-outline-sub text-primary font-bold self-start">
+              Navigation vs Body Region
+            </span>
+          </div>
+
+          <!-- Chips de las 8 partes oficiales -->
+          <div class="flex flex-wrap gap-1.5">
+            @for (part of layoutParts; track part.id) {
+              <button
+                type="button"
+                (click)="selectedLayoutPart.set(part.id)"
+                [class]="selectedLayoutPart() === part.id
+                  ? 'bg-primary text-on-primary font-bold border-primary'
+                  : 'bg-surface text-muted hover:text-main border-outline-sub'"
+                class="btn-m3 focus-ring-m3 px-3 py-1.5 rounded-full text-[11px] border cursor-pointer transition-colors">
+                {{ part.name }}
+              </button>
+            }
+          </div>
+
+          <!-- Plano interactivo + ficha técnica de la parte seleccionada -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+            <!-- Plano arquitectónico interactivo -->
+            <div class="lg:col-span-7 rounded-m3-md bg-surface border border-outline-sub p-3 space-y-2">
+              <div class="flex items-center justify-between text-[10px] font-mono text-muted">
+                <span>ESQUEMA ANATÓMICO M3</span>
+                <span class="text-primary font-bold">{{ activeLayoutPart().region }}</span>
+              </div>
+
+              <div
+                [class]="selectedLayoutPart() === 'margin'
+                  ? 'ring-2 ring-primary bg-primary-box/25'
+                  : 'bg-surface-dim'"
+                class="relative rounded-m3-md p-3 border border-outline-sub/80 transition-all">
+                <div class="text-[9px] font-mono mb-1.5 flex items-center justify-between"
+                     [class]="selectedLayoutPart() === 'margin' ? 'text-primary font-bold' : 'text-muted'">
+                  <span>MARGIN (16dp Compact • 24dp Medium+)</span>
+                  <span>@if (selectedLayoutPart() === 'column-fold') { FOLD HINGE • 12 COLS }</span>
+                </div>
+
+                <div class="flex gap-2 min-h-[126px]">
+                  <!-- Navigation Rail / Drawer -->
+                  <button
+                    type="button"
+                    (click)="selectedLayoutPart.set('nav-rail-drawer')"
+                    [class]="selectedLayoutPart() === 'nav-rail-drawer'
+                      ? 'border-2 border-primary bg-primary-box/55 text-on-primary-box'
+                      : 'border border-outline-sub bg-surface-low text-muted'"
+                    class="w-16 shrink-0 rounded-m3-md p-2 flex flex-col justify-between text-start cursor-pointer transition-all">
+                    <span class="text-[9px] font-mono font-bold">Nav Rail</span>
+                    <span class="text-[9px] font-mono opacity-80">80dp</span>
+                  </button>
+
+                  <!-- Body Region (Panes + Spacer + Drag Handle + Fold) -->
+                  <div
+                    [class]="selectedLayoutPart() === 'body-region'
+                      ? 'ring-2 ring-primary bg-primary-box/20'
+                      : 'bg-surface'"
+                    class="flex-1 rounded-m3-md border border-outline-sub p-2 flex flex-col justify-between gap-2 transition-all">
+                    <div class="flex items-center justify-between text-[9px] font-mono text-muted">
+                      <span>BODY REGION</span>
+                      <span>@if (selectedLayoutPart() === 'column-fold') { Columns: 4 / 8 / 12 }</span>
+                    </div>
+
+                    <div class="flex-1 flex items-stretch gap-1.5">
+                      <!-- Fixed Pane -->
+                      <button
+                        type="button"
+                        (click)="selectedLayoutPart.set('pane')"
+                        [class]="selectedLayoutPart() === 'pane'
+                          ? 'border-2 border-primary bg-primary-box/45'
+                          : 'border border-outline-sub bg-surface-low'"
+                        class="w-2/5 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-all">
+                        <span class="text-[10px] font-bold text-main">Fixed Pane</span>
+                        <span class="text-[9px] font-mono text-muted">320–412dp</span>
+                      </button>
+
+                      <!-- Spacer + Drag Handle + Fold -->
+                      <button
+                        type="button"
+                        (click)="selectedLayoutPart.set(selectedLayoutPart() === 'spacer' ? 'drag-handle' : 'spacer')"
+                        [class]="selectedLayoutPart() === 'spacer' || selectedLayoutPart() === 'drag-handle' || selectedLayoutPart() === 'column-fold'
+                          ? 'border-2 border-primary bg-primary-box/65'
+                          : 'border border-dashed border-outline-sub bg-surface-dim'"
+                        class="w-7 shrink-0 rounded-m3-sm flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+                        title="Spacer 24dp con Drag Handle">
+                        <span class="h-6 w-1 rounded-full bg-primary"></span>
+                        <span class="text-[8px] font-mono text-primary font-bold">24dp</span>
+                      </button>
+
+                      <!-- Flexible Pane -->
+                      <button
+                        type="button"
+                        (click)="selectedLayoutPart.set('pane')"
+                        [class]="selectedLayoutPart() === 'pane'
+                          ? 'border-2 border-primary bg-primary-box/45'
+                          : 'border border-outline-sub bg-surface-low'"
+                        class="flex-1 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-all">
+                        <span class="text-[10px] font-bold text-main">Flexible Pane</span>
+                        <span class="text-[9px] font-mono text-muted">1fr / expandible</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Navigation Bar (Compact Bottom) -->
+                <button
+                  type="button"
+                  (click)="selectedLayoutPart.set('nav-bar')"
+                  [class]="selectedLayoutPart() === 'nav-bar'
+                    ? 'border-2 border-primary bg-primary-box/55 text-main font-bold'
+                    : 'border border-outline-sub bg-surface text-muted'"
+                  class="mt-2 w-full h-7 rounded-full px-3 flex items-center justify-between text-[9px] font-mono cursor-pointer transition-all">
+                  <span>Navigation Bar (Compact &lt;600dp)</span>
+                  <span>80dp altura</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ficha técnica de la parte activa -->
+            <div class="lg:col-span-5 rounded-m3-md bg-surface border border-outline-sub p-4 flex flex-col justify-between space-y-3">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-extrabold text-main">{{ activeLayoutPart().name }}</span>
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sec-box text-on-sec-box font-bold">
+                    {{ activeLayoutPart().region }}
+                  </span>
+                </div>
+                <div class="text-[11px] font-mono text-primary font-semibold bg-primary-box/30 px-2.5 py-1.5 rounded-m3-sm">
+                  {{ activeLayoutPart().sizingRule }}
+                </div>
+                <p class="text-xs text-muted leading-relaxed">{{ activeLayoutPart().role }}</p>
+                <div class="p-2.5 rounded-m3-sm bg-surface-low border border-outline-sub/80 text-[11px] text-main leading-snug">
+                  <strong class="text-primary">Regla M3:</strong> {{ activeLayoutPart().designRule }}
+                </div>
+              </div>
+              <div class="text-[10px] font-mono text-muted pt-2 border-t border-outline-sub/60">
+                En nuestra app: <span class="text-main font-semibold">{{ activeLayoutPart().exampleInApp }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1.2 Simulador Interactivo "Adaptive Design" (Ventana Redimensionable + @container + Drag Handle + Fold) -->
+        <div class="p-4 rounded-m3-lg bg-surface-low border border-outline-sub space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <div class="text-xs font-bold text-main">
+                Simulador Adaptive Design & Canonical Layouts ({{" "}}<code class="font-mono text-primary">{{ activeBreakpointSpec().label }} • {{ effectiveSimWidthPx() }}px</code> )
+              </div>
+              <div class="text-[11px] text-muted">
+                Mové el ancho de ventana, arrastrá el <strong>Drag Handle</strong> entre paneles o activá el <strong>Fold</strong> para observar <strong>Show & Hide</strong>, <strong>Levitate</strong> y <strong>Reflow</strong> con CSS <code class="font-mono text-primary">&#64;container (inline-size)</code>.
               </div>
             </div>
 
@@ -141,96 +349,301 @@ import {
             </div>
           </div>
 
-          <!-- Lienzo simulado del Canonical Layout -->
-          <div class="rounded-m3-lg bg-surface border border-outline-sub p-4 space-y-3">
+          <!-- Barra de controles de ventana: Slider continuo + Fold + Split Handle + Reset -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 rounded-m3-md bg-surface border border-outline-sub items-center">
+            <div class="lg:col-span-6 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px]">
+                <label for="adaptive-width-slider" class="font-bold text-main">
+                  Ancho de Ventana Simulada
+                </label>
+                <span class="font-mono text-primary font-bold">
+                  {{ effectiveSimWidthPx() }}px ({{ activeBreakpointSpec().label }})
+                </span>
+              </div>
+              <input
+                id="adaptive-width-slider"
+                type="range"
+                min="340"
+                max="1680"
+                step="10"
+                [value]="effectiveSimWidthPx()"
+                (input)="onWidthSliderChange($event)"
+                class="w-full accent-primary cursor-pointer" />
+              <div class="flex justify-between text-[9px] font-mono text-muted">
+                <span>340px Compact</span>
+                <span>600 Medium</span>
+                <span>840 Expanded</span>
+                <span>1200 Large</span>
+                <span>1600+ XL</span>
+              </div>
+            </div>
+
+            <div class="lg:col-span-6 flex flex-wrap items-center justify-start lg:justify-end gap-2">
+              <button
+                type="button"
+                (click)="simulateFold.set(!simulateFold())"
+                [class]="simulateFold()
+                  ? 'bg-sec-box text-on-sec-box border-primary font-bold'
+                  : 'bg-surface-low text-muted border-outline-sub hover:text-main'"
+                class="btn-m3 focus-ring-m3 px-3 py-1.5 rounded-full text-[11px] border flex items-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-rounded text-sm">splitscreen_left</span>
+                <span>{{ simulateFold() ? 'Fold: ON (Bisagra)' : 'Simular Fold (Bisagra)' }}</span>
+              </button>
+
+              @if (activeSimBreakpoint() !== 'compact' && selectedCanonicalLayout() !== 'feed') {
+                <div class="flex items-center gap-1 bg-surface-low border border-outline-sub rounded-full px-2 py-1 text-[10px] font-mono">
+                  <span class="text-muted px-1">Split {{ paneSplitPercent() }}/{{ 100 - paneSplitPercent() }}</span>
+                  <button
+                    type="button"
+                    (click)="adjustPaneSplit(-5)"
+                    class="w-6 h-6 rounded-full bg-surface hover:bg-primary-box/40 text-main font-bold cursor-pointer"
+                    aria-label="Reducir Pane 1">
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    (click)="adjustPaneSplit(5)"
+                    class="w-6 h-6 rounded-full bg-surface hover:bg-primary-box/40 text-main font-bold cursor-pointer"
+                    aria-label="Ampliar Pane 1">
+                    +
+                  </button>
+                </div>
+              }
+
+              <button
+                type="button"
+                (click)="resetWindowSimulation()"
+                class="btn-m3 focus-ring-m3 px-3 py-1.5 rounded-full text-[11px] bg-surface-low border border-outline-sub text-main hover:border-primary cursor-pointer">
+                Viewport Real
+              </button>
+            </div>
+          </div>
+
+          <!-- Escenario de Ventana con scroll horizontal seguro + container-type: inline-size real -->
+          <div class="rounded-m3-lg bg-surface-dim/80 border border-outline-sub p-3 md:p-4 space-y-3 overflow-x-auto">
             <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
               <span class="font-semibold text-main">
                 Chrome: <code class="font-mono text-primary">{{ activeBreakpointSpec().navigationChrome }}</code>
               </span>
-              <span class="font-mono text-muted">
-                Outer Margin: {{ activeBreakpointSpec().marginDp }}dp • Inter-Pane Spacer: {{ activeBreakpointSpec().spacerDp }}dp
-              </span>
+              <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
+                <span class="px-2 py-0.5 rounded-full bg-surface border border-outline-sub text-main">
+                  Margin {{ activeBreakpointSpec().marginDp }}dp
+                </span>
+                <span class="px-2 py-0.5 rounded-full bg-surface border border-outline-sub text-main">
+                  Spacer {{ activeBreakpointSpec().spacerDp }}dp
+                </span>
+                <span class="px-2 py-0.5 rounded-full bg-primary-box/50 text-primary font-bold">
+                  {{ activeSimBreakpoint() === 'compact' ? 'Reflow: Vertical Stack' : 'Show & Hide: Multi-Pane' }}
+                </span>
+              </div>
             </div>
 
-            <div class="flex gap-3 min-h-[150px] rounded-m3-md bg-surface-dim p-3 border border-outline-sub/70">
-              <!-- Chrome lateral cuando no es Compact -->
-              @if (activeSimBreakpoint() !== 'compact') {
-                <div
-                  [class]="activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large' ? 'w-32' : 'w-14'"
-                  class="shrink-0 rounded-m3-md bg-surface-low border border-outline-sub p-2 flex flex-col justify-between transition-all">
-                  <div class="space-y-1.5">
-                    <div class="h-2.5 w-6 rounded-full bg-primary"></div>
-                    <div class="h-2 w-full rounded bg-surface-high"></div>
-                    <div class="h-2 w-4/5 rounded bg-surface-high"></div>
-                  </div>
-                  <span class="text-[9px] font-mono text-muted">
-                    {{ activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large' ? 'Drawer / Rail+' : 'Rail' }}
+            <!-- Ventana simulada tipo Browser (Shrine Demo) con inline-size exacto -->
+            <div
+              class="adaptive-sim-window mx-auto rounded-m3-xl bg-surface border-2 border-outline-sub shadow-sm overflow-hidden"
+              [style.inline-size.px]="effectiveSimWidthPx()">
+              <!-- Barra superior tipo navegador -->
+              <div class="px-3 py-2 bg-surface-low border-b border-outline-sub flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-outline-sub"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-outline-sub"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-outline-sub"></span>
+                  <span class="ml-2 text-[10px] font-mono text-muted truncate">
+                    m3.material.io/adaptive • {{ effectiveSimWidthPx() }}px
                   </span>
                 </div>
-              }
+                <span class="text-[10px] font-mono font-bold text-primary shrink-0">
+                  &#64;container {{ activeBreakpointSpec().label }}
+                </span>
+              </div>
 
-              <!-- Panes según layout y breakpoint -->
-              <div class="flex-1 flex flex-col justify-between gap-2">
-                @if (selectedCanonicalLayout() === 'list-detail') {
-                  <div class="flex-1 grid gap-3" [class]="activeSimBreakpoint() === 'compact' ? 'grid-cols-1' : 'grid-cols-12'">
-                    <div
-                      [class]="activeSimBreakpoint() === 'compact' ? 'col-span-1' : 'col-span-5'"
-                      class="rounded-m3-md bg-surface-box border border-outline-sub p-3 space-y-2">
-                      <div class="text-[11px] font-bold text-primary">Panel 1: Lista Maestra</div>
-                      <div class="h-2.5 w-3/4 rounded bg-surface-high"></div>
-                      <div class="h-2.5 w-2/3 rounded bg-surface-high"></div>
-                      <div class="text-[10px] text-muted">{{ activeCanonicalSpec().compactBehavior }}</div>
+              <!-- Contenido interno con Margin real (16px Compact / 24px Medium+) -->
+              <div
+                [style.padding.px]="activeBreakpointSpec().marginDp"
+                class="relative flex gap-3 min-h-[220px] bg-surface-dim/40">
+                <!-- Navigation Chrome Lateral: Rail en Medium/Expanded, Persistent Drawer en Large/XL -->
+                @if (activeSimBreakpoint() !== 'compact') {
+                  <aside
+                    [class]="activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large' ? 'w-36' : 'w-16'"
+                    class="shrink-0 rounded-m3-lg bg-surface-low border border-outline-sub p-2.5 flex flex-col justify-between transition-all">
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-rounded text-base text-primary">diamond</span>
+                        @if (activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large') {
+                          <span class="text-[11px] font-extrabold tracking-wide text-main">SHRINE</span>
+                        }
+                      </div>
+                      <div class="space-y-1">
+                        <div class="px-2 py-1 rounded-full bg-primary-box text-on-primary-box text-[10px] font-bold flex items-center gap-1.5">
+                          <span class="material-symbols-rounded text-xs">favorite</span>
+                          @if (activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large') {
+                            <span>Featured</span>
+                          }
+                        </div>
+                        <div class="px-2 py-1 rounded-full text-muted text-[10px] flex items-center gap-1.5">
+                          <span class="material-symbols-rounded text-xs">checkroom</span>
+                          @if (activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large') {
+                            <span>Apparel</span>
+                          }
+                        </div>
+                      </div>
                     </div>
-                    @if (activeSimBreakpoint() !== 'compact') {
-                      <div class="col-span-7 rounded-m3-md bg-primary-box/35 border border-primary/40 p-3 space-y-1.5">
-                        <div class="text-[11px] font-bold text-main">Panel 2: Detalle Acoplado</div>
-                        <p class="text-[10px] text-muted leading-snug">{{ activeCanonicalSpec().expandedBehavior }}</p>
-                      </div>
-                    }
-                  </div>
-                } @else if (selectedCanonicalLayout() === 'supporting-pane') {
-                  <div class="flex-1 grid gap-3" [class]="activeSimBreakpoint() === 'compact' ? 'grid-cols-1' : 'grid-cols-12'">
-                    <div
-                      [class]="activeSimBreakpoint() === 'compact' ? 'col-span-1' : 'col-span-8'"
-                      class="rounded-m3-md bg-surface-box border border-outline-sub p-3 space-y-1.5">
-                      <div class="text-[11px] font-bold text-primary">Foco Principal (~65–70%)</div>
-                      <p class="text-[10px] text-muted leading-snug">{{ activeCanonicalSpec().summary }}</p>
-                    </div>
-                    @if (activeSimBreakpoint() !== 'compact') {
-                      <div class="col-span-4 rounded-m3-md bg-sec-box/60 border border-outline-sub p-3 space-y-1.5">
-                        <div class="text-[11px] font-bold text-on-sec-box">Supporting Pane</div>
-                        <p class="text-[10px] text-muted leading-snug">Ticket POS, notas o inspector contextual.</p>
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <div
-                    class="flex-1 grid gap-2.5"
-                    [class]="activeSimBreakpoint() === 'compact'
-                      ? 'grid-cols-1'
-                      : activeSimBreakpoint() === 'medium'
-                        ? 'grid-cols-2'
-                        : activeSimBreakpoint() === 'extra-large'
-                          ? 'grid-cols-4'
-                          : 'grid-cols-3'">
-                    @for (cardIdx of [1, 2, 3, 4]; track cardIdx) {
-                      <div class="rounded-m3-md bg-surface-box border border-outline-sub p-2.5 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-primary">Feed Card #{{ cardIdx }}</span>
-                        <span class="text-[10px] text-muted">Fluye según columnas</span>
-                      </div>
-                    }
-                  </div>
+                    <span class="text-[9px] font-mono text-muted">
+                      {{ activeSimBreakpoint() === 'large' || activeSimBreakpoint() === 'extra-large' ? 'Drawer 220dp+' : 'Rail 80dp' }}
+                    </span>
+                  </aside>
                 }
 
-                @if (activeSimBreakpoint() === 'compact') {
-                  <div class="h-7 rounded-full bg-surface-box border border-outline-sub flex items-center justify-around text-[10px] font-mono text-primary font-bold">
-                    <span>Inicio</span>
-                    <span>•</span>
-                    <span>Lista</span>
-                    <span>•</span>
-                    <span>Dock Inferior</span>
-                  </div>
-                }
+                <!-- Body Region -->
+                <div class="flex-1 min-w-0 flex flex-col justify-between gap-3">
+                  @if (selectedCanonicalLayout() === 'list-detail') {
+                    <div
+                      #splitContainer
+                      class="adaptive-split-container flex-1 flex"
+                      [class]="activeSimBreakpoint() === 'compact' ? 'flex-col gap-3' : 'flex-row items-stretch'">
+                      <!-- Pane 1: Galería / Lista (Fixed/Resizable) -->
+                      <div
+                        [style.flex-basis.%]="activeSimBreakpoint() === 'compact' ? null : paneSplitPercent()"
+                        [class]="activeSimBreakpoint() === 'compact' ? 'w-full' : 'shrink-0'"
+                        class="rounded-m3-lg bg-surface-box border border-outline-sub p-3 flex flex-col justify-between gap-2">
+                        <div class="flex items-center justify-between gap-1">
+                          <span class="text-[11px] font-bold text-primary">Pane 1: Media / Lista</span>
+                          <span class="text-[9px] font-mono text-muted">
+                            {{ activeSimBreakpoint() === 'compact' ? 'Reflow 100%' : paneSplitPercent() + '% Fixed' }}
+                          </span>
+                        </div>
+                        <div class="h-20 rounded-m3-md bg-gradient-to-br from-primary-box/60 via-surface-low to-sec-box/60 border border-outline-sub/60 flex items-center justify-center text-[10px] font-mono text-main">
+                          Flow Shirt • Galería
+                        </div>
+                        <div class="text-[10px] text-muted leading-snug">
+                          {{ activeSimBreakpoint() === 'compact' ? activeCanonicalSpec().compactBehavior : activeCanonicalSpec().expandedBehavior }}
+                        </div>
+                      </div>
+
+                      <!-- Spacer (24dp) + Interactive Drag Handle + Fold Hinge -->
+                      @if (activeSimBreakpoint() !== 'compact') {
+                        <div
+                          role="separator"
+                          tabindex="0"
+                          aria-label="Divisor de paneles Spacer 24dp"
+                          aria-valuemin="30"
+                          aria-valuemax="70"
+                          [attr.aria-valuenow]="paneSplitPercent()"
+                          (pointerdown)="startSpacerDrag($event)"
+                          (pointermove)="onSpacerDrag($event)"
+                          (pointerup)="stopSpacerDrag()"
+                          (pointercancel)="stopSpacerDrag()"
+                          (keydown)="handleSpacerKeydown($event)"
+                          [class]="simulateFold() ? 'w-8 bg-sec-box/45 border-x border-dashed border-primary' : 'w-6'"
+                          class="focus-ring-m3 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none group rounded-m3-sm transition-colors">
+                          <span
+                            [class]="isDraggingSpacer() ? 'bg-primary h-12 w-1.5' : 'bg-outline-sub group-hover:bg-primary h-10 w-1'"
+                            class="rounded-full transition-all"></span>
+                          <span class="text-[8px] font-mono text-primary font-bold mt-1">
+                            {{ simulateFold() ? 'FOLD' : '24dp' }}
+                          </span>
+                        </div>
+                      }
+
+                      <!-- Pane 2: Detalle Flexible (Shrine Product Card + Show & Hide + Levitate) -->
+                      @if (activeSimBreakpoint() !== 'compact' || simulateFold()) {
+                        <div class="flex-1 min-w-0 rounded-m3-lg bg-surface border border-outline-sub p-3 flex flex-col justify-between gap-2 relative">
+                          <div class="flex items-start justify-between gap-2">
+                            <div>
+                              <div class="text-[9px] font-mono text-muted">Featured › Apparel › Tops</div>
+                              <div class="text-sm font-extrabold text-main">Flow Shirt Blouse</div>
+                            </div>
+                            <span class="text-xs font-mono font-extrabold text-primary">$240</span>
+                          </div>
+
+                          <div class="flex flex-wrap items-center gap-1 text-[9px] font-mono">
+                            <span class="px-1.5 py-0.5 rounded bg-surface-low border border-outline-sub">00</span>
+                            <span class="px-1.5 py-0.5 rounded bg-primary text-on-primary font-bold">06</span>
+                            <span class="px-1.5 py-0.5 rounded bg-surface-low border border-outline-sub">10</span>
+                            <span class="px-1.5 py-0.5 rounded bg-surface-low border border-outline-sub">14</span>
+                          </div>
+
+                          <!-- Show & Hide por CSS @container (min-width: 840px) -->
+                          <div class="adaptive-pane-meta-extra p-2 rounded-m3-sm bg-surface-low border border-outline-sub/70 text-[10px] text-muted">
+                            <strong class="text-primary">Show &amp; Hide (&#64;container ≥840px):</strong> Detalles y reseñas visibles porque el contenedor supera Expanded.
+                          </div>
+
+                          <div class="flex items-center justify-between gap-2 pt-1">
+                            <span class="px-2.5 py-1 rounded-full bg-primary text-on-primary text-[10px] font-bold">
+                              Add to basket
+                            </span>
+                            <!-- Levitate Pill -->
+                            <span class="adaptive-levitate-badge px-2.5 py-1 rounded-full bg-sec-box text-on-sec-box text-[9px] font-mono font-bold shadow-xs">
+                            </span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (selectedCanonicalLayout() === 'supporting-pane') {
+                    <div
+                      #splitContainer
+                      class="adaptive-split-container flex-1 flex"
+                      [class]="activeSimBreakpoint() === 'compact' ? 'flex-col gap-3' : 'flex-row items-stretch'">
+                      <div
+                        [style.flex-basis.%]="activeSimBreakpoint() === 'compact' ? null : paneSplitPercent()"
+                        [class]="activeSimBreakpoint() === 'compact' ? 'w-full' : 'shrink-0'"
+                        class="rounded-m3-lg bg-surface-box border border-outline-sub p-3 space-y-2">
+                        <div class="flex items-center justify-between gap-1">
+                          <span class="text-[11px] font-bold text-primary">Primary Work Pane</span>
+                          <span class="text-[9px] font-mono text-muted">
+                            {{ activeSimBreakpoint() === 'compact' ? '100%' : paneSplitPercent() + '%' }}
+                          </span>
+                        </div>
+                        <p class="text-[10px] text-muted leading-snug">{{ activeCanonicalSpec().summary }}</p>
+                      </div>
+
+                      @if (activeSimBreakpoint() !== 'compact') {
+                        <div
+                          role="separator"
+                          tabindex="0"
+                          aria-label="Divisor Supporting Pane"
+                          aria-valuemin="30"
+                          aria-valuemax="70"
+                          [attr.aria-valuenow]="paneSplitPercent()"
+                          (pointerdown)="startSpacerDrag($event)"
+                          (pointermove)="onSpacerDrag($event)"
+                          (pointerup)="stopSpacerDrag()"
+                          (pointercancel)="stopSpacerDrag()"
+                          (keydown)="handleSpacerKeydown($event)"
+                          [class]="simulateFold() ? 'w-8 bg-sec-box/45 border-x border-dashed border-primary' : 'w-6'"
+                          class="focus-ring-m3 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none">
+                          <span class="h-10 w-1 rounded-full bg-primary"></span>
+                          <span class="text-[8px] font-mono text-primary font-bold mt-1">{{ simulateFold() ? 'FOLD' : '24dp' }}</span>
+                        </div>
+
+                        <div class="flex-1 min-w-[140px] rounded-m3-lg bg-sec-box/60 border border-outline-sub p-3 space-y-1.5">
+                          <div class="text-[11px] font-bold text-on-sec-box">Supporting Pane</div>
+                          <p class="text-[10px] text-muted leading-snug">Ticket POS, resumen o notas persistentes.</p>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="adaptive-feed-grid flex-1">
+                      @for (cardIdx of [1, 2, 3, 4]; track cardIdx) {
+                        <div class="rounded-m3-md bg-surface-box border border-outline-sub p-2.5 flex flex-col justify-between gap-2">
+                          <span class="text-[10px] font-bold text-primary">Feed Card #{{ cardIdx }}</span>
+                          <span class="text-[10px] text-muted">Reflow automático vía &#64;container</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Navigation Bar inferior en Compact -->
+                  @if (activeSimBreakpoint() === 'compact') {
+                    <div class="h-8 rounded-full bg-surface-box border border-outline-sub flex items-center justify-around text-[10px] font-mono text-primary font-bold">
+                      <span>Inicio</span>
+                      <span>•</span>
+                      <span>Catálogo</span>
+                      <span>•</span>
+                      <span>Dock Inferior</span>
+                    </div>
+                  }
+                </div>
               </div>
             </div>
 
@@ -238,6 +651,26 @@ import {
               <span><strong class="text-main">En esta app:</strong> {{ activeCanonicalSpec().appRoutes }}</span>
               <span class="font-mono text-[10px]">{{ activeBreakpointSpec().devices }}</span>
             </div>
+          </div>
+
+          <!-- Estrategias Oficiales de Adaptive Design (Show & Hide, Levitate, Reflow, Fold) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2.5">
+            @for (strategy of adaptiveStrategies; track strategy.id) {
+              <div class="p-3 rounded-m3-md bg-surface border border-outline-sub flex flex-col justify-between space-y-1.5">
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="text-[11px] font-extrabold text-main">{{ strategy.name }}</span>
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary-box/50 text-primary font-bold">
+                      {{ strategy.badge }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-muted leading-snug">{{ strategy.m3Rule }}</p>
+                </div>
+                <div class="text-[9px] font-mono text-primary pt-1 border-t border-outline-sub/50">
+                  {{ strategy.webImplementation }}
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Height Breakpoints en 3 mini-tarjetas -->
@@ -425,16 +858,16 @@ import {
       </section>
 
       <!-- =====================================================================
-           CASO 3: ACCESSIBILITY — KEYBOARD ROVING FOCUS, ARIA-LIVE & FORCED COLORS
+           CASO 3: ACCESSIBILITY WEB — CONTRASTE WCAG, FORMULARIOS :user-invalid, ROVING TABINDEX
            ===================================================================== -->
       <section class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl space-y-6 shadow-xs">
         <div class="space-y-1 border-b border-outline-sub pb-4">
           <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
             <span class="material-symbols-rounded text-base">accessibility_new</span>
-            Caso 3 • Accessibility (Teclado, Lectores de Pantalla y Preferencias del SO)
+            Caso 3 • Web Accessibility (WCAG 2.2, Formularios &amp; Teclado)
           </div>
           <h3 class="text-title-lg-emphasized text-main">
-            Navegación por Teclado (<code class="font-mono text-primary">Roving Tabindex</code>), <code class="font-mono text-primary">aria-live</code> y Anillo Dual <code class="font-mono text-primary">.focus-ring-m3</code>
+            Contraste <code class="font-mono text-primary">4.5:1 / 3:1</code>, Formularios (<code class="font-mono text-primary">:user-invalid</code> + <code class="font-mono text-primary">aria-describedby</code>) y <code class="font-mono text-primary">Roving Tabindex</code>
           </h3>
         </div>
 
@@ -485,8 +918,86 @@ import {
           </div>
         </div>
 
-        <!-- 3.2 Los 4 Pilares de A11y -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 3.2 Laboratorios Web Críticos: Contraste + No Solo Color & Formularios (:user-invalid + ARIA) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Contraste WCAG & Color Independence -->
+          <div class="p-4 rounded-m3-lg bg-surface-low border border-outline-sub space-y-3 flex flex-col justify-between">
+            <div class="space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-bold text-main">Contraste WCAG &amp; Independencia del Color</span>
+                <div class="flex gap-1 text-[9px] font-mono">
+                  <span class="px-2 py-0.5 rounded bg-primary-box text-on-primary-box font-bold">Texto ≥ 4.5:1</span>
+                  <span class="px-2 py-0.5 rounded bg-sec-box text-on-sec-box font-bold">UI / Ícono ≥ 3:1</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-muted leading-snug">
+                Si un estado depende solo de pintar rojo o verde, falla para daltonismo y Windows <code class="font-mono">forced-colors</code>. Siempre acompañá con ícono y etiqueta explícita.
+              </p>
+
+              @if (useAccessibleErrorStyle()) {
+                <div class="p-3 rounded-m3-md bg-error-box/40 border-2 border-error flex items-center gap-2.5 text-xs text-main">
+                  <span class="material-symbols-rounded text-lg text-error" aria-hidden="true">error</span>
+                  <div>
+                    <strong class="text-error">Error de stock (WCAG OK):</strong> Quedan 0 unidades; reponé antes de facturar.
+                  </div>
+                </div>
+              } @else {
+                <div class="p-3 rounded-m3-md bg-surface border border-error/40 text-xs text-error">
+                  Stock: 0 unidades (solo color rojo — sin ícono ni prefijo de estado)
+                </div>
+              }
+            </div>
+
+            <button
+              type="button"
+              (click)="useAccessibleErrorStyle.update(v => !v)"
+              class="btn-m3 focus-ring-m3 self-start px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface border border-outline-sub text-main cursor-pointer">
+              {{ useAccessibleErrorStyle() ? 'Ver Anti-patrón (Solo Color)' : 'Aplicar Color + Ícono + Borde 3:1' }}
+            </button>
+          </div>
+
+          <!-- Formulario Web Accesible: label for + hint arriba + :user-invalid + aria-describedby -->
+          <div class="p-4 rounded-m3-lg bg-surface-low border border-outline-sub space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-main">Formulario Accesible (<code class="font-mono text-primary">:user-invalid</code>)</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface border border-outline-sub text-primary font-bold">
+                aria-invalid={{ isEmailInvalid() ? 'true' : 'unset' }}
+              </span>
+            </div>
+
+            <div class="space-y-1.5 bg-surface p-3 rounded-m3-md border border-outline-sub">
+              <label for="a11y-demo-email" class="block text-xs font-bold text-main">
+                Correo de facturación
+              </label>
+              <p id="a11y-demo-hint" class="text-[11px] text-muted">
+                Ayuda arriba del campo para que el autocompletado no la tape. Escribí algo inválido y salí del input (<kbd class="font-mono">Tab</kbd>).
+              </p>
+              <input
+                #a11yEmailInput
+                id="a11y-demo-email"
+                type="email"
+                required
+                autocomplete="email"
+                [value]="demoEmailValue()"
+                (input)="onDemoEmailInput($event)"
+                (blur)="onDemoEmailBlur($event)"
+                [attr.aria-invalid]="isEmailInvalid() ? 'true' : null"
+                [attr.aria-describedby]="isEmailInvalid() ? 'a11y-demo-hint a11y-demo-error' : 'a11y-demo-hint'"
+                placeholder="nombre@empresa.com"
+                class="a11y-demo-input focus-ring-m3 w-full px-3 py-2 rounded-m3-sm bg-surface-low border border-outline-sub text-xs text-main" />
+
+              @if (isEmailInvalid()) {
+                <p id="a11y-demo-error" class="text-[11px] text-error font-medium flex items-center gap-1.5 pt-1">
+                  <span class="material-symbols-rounded text-sm" aria-hidden="true">error</span>
+                  <span>Ingresá un correo válido (ej. finanzas@empresa.com).</span>
+                </p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- 3.3 Los 6 Pilares Web de A11y -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           @for (item of a11ySpecs; track item.id) {
             <div class="p-3.5 rounded-m3-lg bg-surface-low border border-outline-sub flex flex-col justify-between space-y-2">
               <div class="space-y-1.5">
@@ -506,16 +1017,16 @@ import {
       </section>
 
       <!-- =====================================================================
-           CASO 4: CONTENT DESIGN & GLOSARIO MATERIAL A–Z
+           CASO 4: CONTENT DESIGN & LOCALIZACIÓN WEB (EXPANSIÓN +35% E INTL)
            ===================================================================== -->
       <section class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl space-y-6 shadow-xs">
         <div class="space-y-1 border-b border-outline-sub pb-4">
           <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
             <span class="material-symbols-rounded text-base">menu_book</span>
-            Caso 4 • Content Design & Material A–Z
+            Caso 4 • Content Design &amp; Localización Web
           </div>
           <h3 class="text-title-lg-emphasized text-main">
-            Reglas de Microcopy (UX Writing) y Glosario Oficial del Sistema
+            Microcopy (UX Writing), Tolerancia de Expansión (<code class="font-mono text-primary">+35%</code>) e <code class="font-mono text-primary">Intl</code> Nativo
           </h3>
         </div>
 
@@ -529,7 +1040,7 @@ import {
                 {{ pair.badCopy }}
               </div>
               <div class="p-2 rounded bg-primary-box/40 text-[11px] text-main">
-                <span class="font-bold text-primary block text-[10px]">M3 CONTENT DESIGN</span>
+                <span class="font-bold text-primary block text-[10px]">M3 WEB</span>
                 {{ pair.goodCopy }}
               </div>
               <p class="text-[10px] text-muted leading-snug">{{ pair.rationale }}</p>
@@ -537,57 +1048,51 @@ import {
           }
         </div>
 
-        <!-- 4.2 Buscador del Glosario Material A-Z -->
+        <!-- 4.2 Simulador Web de Expansión i18n (+35%) e Intl Nativo -->
         <div class="p-4 rounded-m3-lg bg-surface-low border border-outline-sub space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="text-xs font-bold text-main">
-              Glosario Material A–Z ({{ filteredGlossary().length }} términos)
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2">
-              <input
-                type="search"
-                [value]="glossaryQuery()"
-                (input)="glossaryQuery.set($any($event.target).value)"
-                placeholder="Buscar término (ej. Pane, Inert, 48dp)..."
-                aria-label="Buscar término en el glosario Material A-Z"
-                class="focus-ring-m3 px-3 py-1.5 rounded-full bg-surface border border-outline-sub text-xs text-main min-w-[230px]" />
-
-              <div class="flex flex-wrap gap-1">
-                @for (cat of glossaryCategories; track cat) {
-                  <button
-                    type="button"
-                    (click)="selectedGlossaryCategory.set(cat)"
-                    [class]="selectedGlossaryCategory() === cat
-                      ? 'bg-sec-box text-on-sec-box font-bold'
-                      : 'bg-surface text-muted hover:text-main border border-outline-sub'"
-                    class="btn-m3 focus-ring-m3 px-2.5 py-1 rounded-full text-[11px] cursor-pointer">
-                    {{ cat }}
-                  </button>
-                }
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <div class="text-xs font-bold text-main">
+                Prueba de Resiliencia: Expansión de Texto (+35%) &amp; API <code class="font-mono text-primary">Intl</code> Web
               </div>
+              <p class="text-[11px] text-muted">
+                Nunca fijes ancho (<code class="font-mono">w-24</code>) en botones o tabs: usá <code class="font-mono">min-inline-size</code> / <code class="font-mono">fit-content</code> para tolerar variaciones de idioma y viewport.
+              </p>
             </div>
+
+            <button
+              type="button"
+              (click)="simulateTextExpansion.update(v => !v)"
+              [class]="simulateTextExpansion() ? 'bg-primary text-on-primary' : 'bg-surface border border-outline-sub text-main'"
+              class="btn-m3 focus-ring-m3 shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer">
+              {{ simulateTextExpansion() ? 'Expansión +35%: ACTIVA' : 'Simular Texto +35%' }}
+            </button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            @for (entry of filteredGlossary(); track entry.term) {
-              <div class="p-3 rounded-m3-md bg-surface border border-outline-sub flex flex-col justify-between space-y-2">
-                <div class="space-y-1">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-extrabold text-main">
-                      <span class="text-primary font-mono me-1">[{{ entry.letter }}]</span>{{ entry.term }}
-                    </span>
-                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-surface-high text-muted shrink-0">
-                      {{ entry.category }}
-                    </span>
-                  </div>
-                  <p class="text-[11px] text-muted leading-snug">{{ entry.definition }}</p>
-                </div>
-                <div class="text-[10px] font-mono text-primary pt-1 border-t border-outline-sub/50">
-                  {{ entry.whereUsed }}
-                </div>
-              </div>
-            }
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-surface p-3.5 rounded-m3-md border border-outline-sub">
+            <div class="space-y-1">
+              <span class="text-[10px] font-mono text-error font-bold block">ANTI-PATRÓN (w-24 fijo + truncate)</span>
+              <button
+                type="button"
+                class="w-24 truncate px-3 py-2 rounded-full bg-error-box/40 border border-error/50 text-xs font-bold text-main">
+                {{ expandedCtaLabel() }}
+              </button>
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] font-mono text-primary font-bold block">M3 WEB (inline-size flexible)</span>
+              <button
+                type="button"
+                class="min-w-24 px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-bold">
+                {{ expandedCtaLabel() }}
+              </button>
+            </div>
+
+            <div class="space-y-1 text-[11px]">
+              <span class="text-[10px] font-mono text-muted block">INTL NATIVO (sin librerías)</span>
+              <div class="font-mono font-bold text-main">{{ intlFormattedAmount }}</div>
+              <div class="text-muted text-[10px]">{{ intlFormattedDate }}</div>
+            </div>
           </div>
         </div>
       </section>
@@ -599,15 +1104,27 @@ export class FoundationsLabComponent {
 
   readonly widthBreakpoints = WIDTH_BREAKPOINT_5_SPECS;
   readonly heightBreakpoints = HEIGHT_BREAKPOINT_3_SPECS;
+  readonly layoutParts = PARTS_OF_LAYOUT_SPECS;
+  readonly adaptiveStrategies = ADAPTIVE_STRATEGIES_SPECS;
   readonly canonicalLayouts = CANONICAL_LAYOUT_SPECS;
   readonly rtlIconRules = RTL_ICON_RULES;
   readonly inputModalities = INPUT_MODALITY_SPECS;
   readonly a11ySpecs = A11Y_FOUNDATION_SPECS;
   readonly contentPairs = CONTENT_DESIGN_PAIRS;
-  readonly glossaryTerms = MATERIAL_AZ_GLOSSARY;
 
-  // Caso 1: Simulador de Canonical Layouts & LTR/RTL
+  // Caso 1: Parts of Layout, Adaptive Window Simulator, Drag Handle & LTR/RTL
+  readonly selectedLayoutPart = signal<LayoutPartId>('drag-handle');
+  readonly activeLayoutPart = computed(
+    () => this.layoutParts.find(p => p.id === this.selectedLayoutPart()) ?? this.layoutParts[0]
+  );
+
   readonly simulatedBreakpoint = signal<WindowSizeClass | null>(null);
+  readonly simulatedWidthPx = signal<number | null>(null);
+  readonly simulateFold = signal<boolean>(false);
+  readonly paneSplitPercent = signal<number>(42);
+  readonly isDraggingSpacer = signal<boolean>(false);
+  readonly splitContainer = viewChild<ElementRef<HTMLDivElement>>('splitContainer');
+
   readonly activeSimBreakpoint = computed<WindowSizeClass>(
     () => this.simulatedBreakpoint() ?? this.layoutService.windowSizeClass()
   );
@@ -618,16 +1135,99 @@ export class FoundationsLabComponent {
     () => this.widthBreakpoints.find(b => b.id === this.activeSimBreakpoint()) ?? this.widthBreakpoints[0]
   );
 
+  readonly effectiveSimWidthPx = computed<number>(() => {
+    const explicitWidth = this.simulatedWidthPx();
+    const activeBp = this.activeSimBreakpoint();
+    if (explicitWidth !== null && this.classifyWindowWidth(explicitWidth) === activeBp) {
+      return explicitWidth;
+    }
+    if (this.simulatedBreakpoint() === null && this.layoutService.windowWidth() >= 320) {
+      return this.layoutService.windowWidth();
+    }
+    return this.activeBreakpointSpec().sampleWidthPx;
+  });
+
   readonly activeCanonicalSpec = computed(
     () => this.canonicalLayouts.find(c => c.id === this.selectedCanonicalLayout()) ?? this.canonicalLayouts[0]
   );
+
+  private classifyWindowWidth(widthPx: number): WindowSizeClass {
+    if (widthPx < 600) return 'compact';
+    if (widthPx < 840) return 'medium';
+    if (widthPx < 1200) return 'expanded';
+    if (widthPx < 1600) return 'large';
+    return 'extra-large';
+  }
+
+  selectBreakpointPreset(bp: WindowSizeClass, sampleWidthPx: number): void {
+    this.simulatedBreakpoint.set(bp);
+    this.simulatedWidthPx.set(sampleWidthPx);
+  }
+
+  setSimulatedWidthPx(widthPx: number): void {
+    const clamped = Math.max(340, Math.min(1680, Math.round(widthPx)));
+    this.simulatedWidthPx.set(clamped);
+    this.simulatedBreakpoint.set(this.classifyWindowWidth(clamped));
+  }
+
+  onWidthSliderChange(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    if (!Number.isNaN(value)) {
+      this.setSimulatedWidthPx(value);
+    }
+  }
+
+  resetWindowSimulation(): void {
+    this.simulatedBreakpoint.set(null);
+    this.simulatedWidthPx.set(null);
+    this.simulateFold.set(false);
+    this.paneSplitPercent.set(42);
+  }
+
+  adjustPaneSplit(delta: number): void {
+    this.paneSplitPercent.update(val => Math.max(30, Math.min(70, val + delta)));
+  }
+
+  startSpacerDrag(event: PointerEvent): void {
+    const target = event.currentTarget as HTMLElement | null;
+    target?.setPointerCapture?.(event.pointerId);
+    this.isDraggingSpacer.set(true);
+  }
+
+  onSpacerDrag(event: PointerEvent): void {
+    if (!this.isDraggingSpacer()) return;
+    const rect = this.splitContainer()?.nativeElement.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+    const pct = ((event.clientX - rect.left) / rect.width) * 100;
+    this.paneSplitPercent.set(Math.max(30, Math.min(70, Math.round(pct))));
+  }
+
+  stopSpacerDrag(): void {
+    this.isDraggingSpacer.set(false);
+  }
+
+  handleSpacerKeydown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.adjustPaneSplit(-5);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      this.adjustPaneSplit(5);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      this.paneSplitPercent.set(30);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      this.paneSplitPercent.set(70);
+    }
+  }
 
   // Caso 2: Touch Targets 48dp + 8dp Spacing
   readonly showHitbox = signal<boolean>(false);
   readonly useSafeTouchGap = signal<boolean>(true);
   readonly hitboxClicks = signal<number>(0);
 
-  // Caso 3: Accessibility Roving Tabindex & aria-live
+  // Caso 3: Accessibility Roving Tabindex, Contraste Web & Formulario :user-invalid
   readonly rovingButtons = viewChildren<ElementRef<HTMLButtonElement>>('rovingItem');
   readonly rovingOptions = [
     { id: 'pickup', label: 'Retiro en Local', icon: 'storefront' },
@@ -639,24 +1239,50 @@ export class FoundationsLabComponent {
   readonly lastKeyboardAnnouncement = signal<string>('Modo activo: Retiro en Local');
   readonly liveRegionMessage = signal<string>('Seleccionado: Retiro en Local');
 
-  // Caso 4: Material A-Z Glossary Filter
-  readonly glossaryQuery = signal<string>('');
-  readonly glossaryCategories = ['Todos', 'Layout', 'Interaction', 'Accessibility', 'Styles & Motion (Ref)'] as const;
-  readonly selectedGlossaryCategory = signal<(typeof this.glossaryCategories)[number]>('Todos');
+  readonly useAccessibleErrorStyle = signal<boolean>(true);
+  readonly demoEmailValue = signal<string>('');
+  readonly demoEmailBlurred = signal<boolean>(false);
+  readonly isEmailInvalid = signal<boolean>(false);
+  readonly a11yEmailInput = viewChild<ElementRef<HTMLInputElement>>('a11yEmailInput');
 
-  readonly filteredGlossary = computed(() => {
-    const query = this.glossaryQuery().trim().toLowerCase();
-    const cat = this.selectedGlossaryCategory();
-    return this.glossaryTerms.filter(item => {
-      const matchesCat = cat === 'Todos' || item.category === cat;
-      const matchesQuery =
-        !query ||
-        item.term.toLowerCase().includes(query) ||
-        item.definition.toLowerCase().includes(query) ||
-        item.whereUsed.toLowerCase().includes(query);
-      return matchesCat && matchesQuery;
-    });
-  });
+  // Caso 4: Content Design (+35% i18n Expansion & Native Intl)
+  readonly simulateTextExpansion = signal<boolean>(false);
+  readonly expandedCtaLabel = computed(() =>
+    this.simulateTextExpansion() ? 'Guardar cambios en agenda' : 'Guardar'
+  );
+  readonly intlFormattedAmount = new Intl.NumberFormat('es-PE', {
+    style: 'currency',
+    currency: 'PEN'
+  }).format(240);
+  readonly intlFormattedDate = new Intl.DateTimeFormat('es-PE', {
+    dateStyle: 'medium'
+  }).format(new Date(2026, 10, 12));
+
+  private syncEmailValidity(input: HTMLInputElement | null | undefined): void {
+    if (!input) return;
+    const matchesNative = typeof input.matches === 'function' && this.supportsUserInvalidSelector()
+      ? input.matches(':user-invalid')
+      : false;
+    const postInteractionInvalid = this.demoEmailBlurred() && !input.checkValidity();
+    this.isEmailInvalid.set(matchesNative || postInteractionInvalid);
+  }
+
+  private supportsUserInvalidSelector(): boolean {
+    return typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('selector(:user-invalid)');
+  }
+
+  onDemoEmailInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.demoEmailValue.set(input.value);
+    if (this.demoEmailBlurred() || this.isEmailInvalid()) {
+      this.syncEmailValidity(input);
+    }
+  }
+
+  onDemoEmailBlur(event: Event): void {
+    this.demoEmailBlurred.set(true);
+    this.syncEmailValidity(event.target as HTMLInputElement);
+  }
 
   activateRovingOption(index: number, source: string): void {
     this.focusedRovingIndex.set(index);

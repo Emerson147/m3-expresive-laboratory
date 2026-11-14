@@ -64,17 +64,162 @@ export interface ContentDesignPair {
   readonly rationale: string;
 }
 
-export interface MaterialGlossaryTerm {
-  readonly letter: string;
-  readonly term: string;
-  readonly category: 'Layout' | 'Interaction' | 'Accessibility' | 'Content' | 'Styles & Motion (Ref)';
-  readonly definition: string;
-  readonly whereUsed: string;
+export type LayoutPartId =
+  | 'nav-bar'
+  | 'nav-rail-drawer'
+  | 'body-region'
+  | 'pane'
+  | 'margin'
+  | 'spacer'
+  | 'drag-handle'
+  | 'column-fold';
+
+export interface LayoutPartSpec {
+  readonly id: LayoutPartId;
+  readonly name: string;
+  readonly region: 'Navigation Components' | 'Body Region' | 'Hardware / Hinge';
+  readonly sizingRule: string;
+  readonly role: string;
+  readonly designRule: string;
+  readonly exampleInApp: string;
+}
+
+export interface AdaptiveStrategySpec {
+  readonly id: 'show-hide' | 'levitate' | 'reflow' | 'responsive-vs-adaptive' | 'fold-continuity';
+  readonly name: string;
+  readonly badge: string;
+  readonly problem: string;
+  readonly m3Rule: string;
+  readonly triggerBreakpoint: string;
+  readonly webImplementation: string;
 }
 
 /* =====================================================================
-   CASO 1: LAYOUT — 5 BREAKPOINTS, MARGINS, CANONICAL LAYOUTS & LTR/RTL
+   CASO 1: LAYOUT — PARTS OF LAYOUT, ADAPTIVE DESIGN, 5 BREAKPOINTS & LTR/RTL
    ===================================================================== */
+
+export const PARTS_OF_LAYOUT_SPECS: readonly LayoutPartSpec[] = [
+  {
+    id: 'nav-bar',
+    name: 'Navigation Bar / Bottom Bar',
+    region: 'Navigation Components',
+    sizingRule: 'Alto 80dp (bar) • Ancho 100% (Compact <600dp)',
+    role: 'Contenedor de destinos principales al alcance del pulgar en pantallas estrechas.',
+    designRule: 'Usar entre 3 y 5 destinos de nivel superior. Nunca mezclar con Navigation Rail visible simultáneamente.',
+    exampleInApp: 'Mobile Dock inferior en vista Compact (<600px).',
+  },
+  {
+    id: 'nav-rail-drawer',
+    name: 'Navigation Rail / Drawer',
+    region: 'Navigation Components',
+    sizingRule: 'Rail 80dp ancho • Modal/Standard Drawer 220dp–360dp',
+    role: 'Ancla lateral de navegación persistente o colapsable en Medium, Expanded, Large y Extra-Large.',
+    designRule: 'Desde Medium (≥600dp) la barra inferior muta a Rail lateral. En Large/Extra-Large puede expandirse a Standard Drawer.',
+    exampleInApp: 'AppShell Sidebar colapsable (rail ↔ drawer) y Shrine sidebar en ventana desktop.',
+  },
+  {
+    id: 'body-region',
+    name: 'Body Region',
+    region: 'Body Region',
+    sizingRule: 'Ocupa todo el área restante fuera del chrome de navegación',
+    role: 'Alberga los paneles de contenido (panes), grillas, cards y acciones contextuales.',
+    designRule: 'Nunca queda pegado al borde físico: siempre respeta Margins externos (16dp Compact, 24dp Medium+).',
+    exampleInApp: 'Área principal de Clínicas, POS, Campus y Simulador Shrine.',
+  },
+  {
+    id: 'pane',
+    name: 'Panes (Fixed vs Flexible)',
+    region: 'Body Region',
+    sizingRule: 'Fixed (ej. 320dp–412dp o 35–40%) + Flexible (1fr / 60–65%)',
+    role: 'Subdivisiones funcionales del Body (ej. Lista + Detalle, o Trabajo + Panel de Soporte).',
+    designRule: 'Combiná un Pane fijo para lectura escaneable (lista o resumen) con un Pane flexible que absorba el crecimiento de ventana.',
+    exampleInApp: 'POS Catalog (Flexible) + Ticket (Fixed 360dp) / Shrine Media + Product Detail.',
+  },
+  {
+    id: 'margin',
+    name: 'Margins (Outer Spacing)',
+    region: 'Body Region',
+    sizingRule: '16dp en Compact (<600dp) • 24dp en Medium+ (≥600dp)',
+    role: 'Espacio visual de respiro entre los bordes de pantalla/navegación y el contenido del Body.',
+    designRule: 'Usar propiedades lógicas (`padding-inline`, `margin-inline`) para mantener simetría en RTL.',
+    exampleInApp: 'Marco interior de 16px/24px alrededor de los paneles.',
+  },
+  {
+    id: 'spacer',
+    name: 'Spacer (24dp Gutter)',
+    region: 'Body Region',
+    sizingRule: '16dp–24dp (estándar M3 = 24dp entre panes contiguos)',
+    role: 'Separación física y semántica entre dos Panes visibles lado a lado.',
+    designRule: 'En diseños multipane evita bordes duros; un Spacer de 24dp con color `surface` separa sin ruido visual.',
+    exampleInApp: 'Canal vertical entre Pane 1 y Pane 2 (y contenedor del Drag Handle).',
+  },
+  {
+    id: 'drag-handle',
+    name: 'Drag Handle (Split Resizer)',
+    region: 'Body Region',
+    sizingRule: 'Píldora visual 4dp × 48dp dentro de un hit target de 48dp × 48dp',
+    role: 'Control táctil y de puntero alojado en el centro del Spacer para redimensionar dos Panes.',
+    designRule: 'Debe cumplir WCAG touch target (48dp mínimo), soportar teclado (flechas ←/→) y mostrar affordance al hover/focus.',
+    exampleInApp: 'Divisor arrastrable entre Lista/Galería y Detalle (30%–70%).',
+  },
+  {
+    id: 'column-fold',
+    name: 'Columns & Fold (Hinge)',
+    region: 'Hardware / Hinge',
+    sizingRule: '4 cols (Compact) • 8 cols (Medium) • 12 cols (Expanded+) • Fold ≥ 24dp',
+    role: 'Grilla estructural del contenido y alineación segura alrededor de bisagras en foldables.',
+    designRule: 'Nunca partas texto o botones críticos sobre un Fold; alineá un Spacer sobre la bisagra (`env(fold-left)` / Flex split).',
+    exampleInApp: 'Grilla Bento 12 cols y modo Dual-Screen Fold en el simulador.',
+  },
+];
+
+export const ADAPTIVE_STRATEGIES_SPECS: readonly AdaptiveStrategySpec[] = [
+  {
+    id: 'responsive-vs-adaptive',
+    name: 'Responsive vs Adaptive',
+    badge: 'Principio Core',
+    problem: 'Estirar tarjetas de móvil al 100% de un monitor de 1440px destruye la legibilidad (Responsive ingenuo).',
+    m3Rule: 'Responsive solo escala proporciones; Adaptive reestructura panes, densidad y navegación según el espacio disponible.',
+    triggerBreakpoint: 'Todos los cambios entre 5 Width Breakpoints',
+    webImplementation: '@container (inline-size) + CSS Grid / Flex multipane.',
+  },
+  {
+    id: 'show-hide',
+    name: '1. Show & Hide',
+    badge: 'Estrategia Multipane',
+    problem: 'Un panel secundario (Soporte, Filtros o Ticket) satura una pantalla Compact.',
+    m3Rule: 'Mantené oculto o bajo demanda el panel secundario en Compact/Medium y mostralo persistente desde Expanded (≥840dp).',
+    triggerBreakpoint: 'Oculto en Compact (<600dp) → Visible en Expanded+ (≥840dp)',
+    webImplementation: '@container (min-width: 840px) + Angular @if / signal.',
+  },
+  {
+    id: 'levitate',
+    name: '2. Levitate',
+    badge: 'Overlay & Floating Chrome',
+    problem: 'El carrito, filtros rápidos o acciones clave deben estar accesibles sin robar espacio al flujo principal.',
+    m3Rule: 'Elevá un elemento sobre la superficie (Modal Sheet, Dropdown, Floating Pill o FAB extendido) en anchos reducidos o acciones rápidas.',
+    triggerBreakpoint: 'Compact / Medium (Sheet) ↔ Floating Pill contextual en Desktop',
+    webImplementation: 'Popover / Dialog top-layer + elevation-3 / floating action pill.',
+  },
+  {
+    id: 'reflow',
+    name: '3. Reflow',
+    badge: 'Reordenamiento Espacial',
+    problem: 'Contenido horizontal (foto + detalle, o grilla 3 cols) no cabe en paralelo en una ventana estrecha.',
+    m3Rule: 'Reacomodá el flujo de horizontal (`row`) a apilado vertical (`column`) debajo de Expanded, o variá columnas 3 → 2 → 1.',
+    triggerBreakpoint: 'Stack vertical (<840dp) ↔ Lado a lado (≥840dp)',
+    webImplementation: '@container (min-width: 840px) { flex-direction: row }.',
+  },
+  {
+    id: 'fold-continuity',
+    name: '4. Fold Continuity',
+    badge: 'Foldables / Dual-Pane',
+    problem: 'Al desplegar un teléfono plegable o dividir ventana, una tarjeta cruzada por la bisagra queda cortada.',
+    m3Rule: 'Alineá el Spacer del layout exactamente con la bisagra (Fold) para convertir cada mitad física en un Pane limpio.',
+    triggerBreakpoint: 'Medium / Expanded en dispositivos plegables',
+    webImplementation: 'Spacer central + CSS Dual-Pane split libre de texto en el eje medio.',
+  },
+];
 
 export const WIDTH_BREAKPOINT_5_SPECS: readonly WidthBreakpointSpec[] = [
   {
@@ -232,17 +377,17 @@ export const INPUT_MODALITY_SPECS: readonly InputModalitySpec[] = [
   {
     id: 'touch',
     icon: 'touch_app',
-    title: 'Touch (Táctil)',
-    targetRule: 'Hitbox mínimo 48×48dp (~9mm) con separación mínima ≥ 8dp entre controles adyacentes.',
-    selectionPattern: 'Tap para activar; Long-press (mantener) para entrar a modo selección múltiple en listas.',
-    webPlatformRule: 'Usar touch-action: pan-y en carruseles horizontales (nunca touch-action: none si hay scroll vertical).'
+    title: 'Touch Web (Coarse Pointer)',
+    targetRule: 'Hitbox mínimo 48×48dp (~9mm) con separación ≥ 8dp (.touch-target-48 / .touch-gap-8).',
+    selectionPattern: 'Tap explícito sobre controles o checkboxes visibles; nunca ocultar acciones esenciales detrás de gestos invisibles.',
+    webPlatformRule: 'Usar touch-action: pan-y en carruseles horizontales y @media (pointer: coarse) para ampliar controles táctiles.'
   },
   {
     id: 'pointer',
     icon: 'mouse',
     title: 'Mouse / Trackpad',
     targetRule: 'Mantiene hitboxes generosos (≥48dp en acciones clave, mín. WCAG 24×24px) + soporte de hover.',
-    selectionPattern: 'Checkboxes visibles o revelados en hover y selección con clic + Shift.',
+    selectionPattern: 'State Layer al hover (8%) y selección directa / múltiple con clic + Shift.',
     webPlatformRule: 'El hover comunica interactividad previa, pero nunca puede ser el único medio para revelar acciones críticas.'
   },
   {
@@ -264,14 +409,30 @@ export const INPUT_MODALITY_SPECS: readonly InputModalitySpec[] = [
 ];
 
 /* =====================================================================
-   CASO 3: ACCESSIBILITY — KEYBOARD TRAVERSAL, LANDMARKS, ALT & MOTION
+   CASO 3: ACCESSIBILITY — WEB A11Y (WCAG 2.2, CONTRASTE, FORMULARIOS, TECLADO)
    ===================================================================== */
 
 export const A11Y_FOUNDATION_SPECS: readonly A11yFoundationSpec[] = [
   {
+    id: 'contrast-color',
+    icon: 'visibility',
+    title: '1. Contraste WCAG & No Solo Color',
+    m3Rule: 'Texto normal ≥ 4.5:1; texto grande, íconos y bordes interactivos ≥ 3:1. Jamás comunicar estado solo con color.',
+    implementationDetail: 'Todo error o éxito combina color semántico con ícono explícito y texto descriptivo visible.',
+    antiPattern: 'Pintar solo el borde de un input en rojo sin mensaje ni ícono (invisible para daltonismo y forced-colors).'
+  },
+  {
+    id: 'accessible-forms',
+    icon: 'fact_check',
+    title: '2. Formularios Web (:user-invalid + ARIA)',
+    m3Rule: 'Etiquetar con <label for>, ubicar ayudas sobre el campo y validar recién tras la interacción real.',
+    implementationDetail: 'Enlazar ayuda/error con aria-describedby y sincronizar aria-invalid="true" con :user-invalid al blur/input.',
+    antiPattern: 'Usar placeholder como label o disparar errores rojos antes de que el usuario termine de escribir.'
+  },
+  {
     id: 'landmarks-headings',
     icon: 'account_tree',
-    title: '1. Landmarks & Jerarquía de Headings',
+    title: '3. Landmarks & Jerarquía de Headings',
     m3Rule: 'El orden del DOM debe coincidir con el flujo visual para lectores de pantalla.',
     implementationDetail: 'Usar <header>, <nav>, <main> y encabezados secuenciales (h1 → h2 → h3) sin saltos arbitrarios.',
     antiPattern: 'No simular títulos con <div class="text-2xl font-bold"> sin etiqueta de heading ni saltar de h1 a h4.'
@@ -279,7 +440,7 @@ export const A11Y_FOUNDATION_SPECS: readonly A11yFoundationSpec[] = [
   {
     id: 'focus-order',
     icon: 'tab',
-    title: '2. Orden de Foco & Modales Inertes',
+    title: '4. Orden de Foco & Modales Inertes',
     m3Rule: 'Al abrir un modal o panel, el foco inicial va al primer control relevante y queda contenido dentro.',
     implementationDetail: 'Usar <dialog>.showModal() o atributo inert en el fondo (#app-stage) y jamás usar tabindex > 0.',
     antiPattern: 'Dejar que Tab escape detrás del backdrop hacia botones ocultos o usar tabindex="5".'
@@ -287,7 +448,7 @@ export const A11Y_FOUNDATION_SPECS: readonly A11yFoundationSpec[] = [
   {
     id: 'forced-colors',
     icon: 'contrast',
-    title: '3. Forced Colors & Focus Ring',
+    title: '5. Forced Colors & Focus Ring',
     m3Rule: 'El indicador de foco debe sobrevivir a Windows High Contrast Mode.',
     implementationDetail: 'En _interaction.css, .focus-ring-m3:focus-visible agrega outline: 3px solid Highlight bajo @media (forced-colors: active).',
     antiPattern: 'Usar outline: none + box-shadow sin fallback, porque Windows High Contrast elimina box-shadow.'
@@ -295,7 +456,7 @@ export const A11Y_FOUNDATION_SPECS: readonly A11yFoundationSpec[] = [
   {
     id: 'reduced-motion',
     icon: 'motion_photos_off',
-    title: '4. Reduced Motion & Escala 200%',
+    title: '6. Reduced Motion & Escala 200%',
     m3Rule: 'Respetar preferencias del sistema operativo en animación y zoom tipográfico.',
     implementationDetail: 'Tipografía en rem (Styles) + @media (prefers-reduced-motion: reduce) anulando scale/transiciones largas.',
     antiPattern: 'Bloquear el zoom del usuario o animar desplazamientos largos cuando reduced-motion está activo.'
@@ -303,7 +464,7 @@ export const A11Y_FOUNDATION_SPECS: readonly A11yFoundationSpec[] = [
 ];
 
 /* =====================================================================
-   CASO 4: CONTENT DESIGN & GLOSARIO MATERIAL A–Z
+   CASO 4: CONTENT DESIGN & LOCALIZACIÓN WEB (EXPANSIÓN +35% & INTL)
    ===================================================================== */
 
 export const CONTENT_DESIGN_PAIRS: readonly ContentDesignPair[] = [
@@ -326,90 +487,10 @@ export const CONTENT_DESIGN_PAIRS: readonly ContentDesignPair[] = [
     rationale: 'Sin muletillas ("Imagen de..."): describir el dato clave en gráficos y usar alt="" en adornos visuales.'
   },
   {
-    category: 'Notificaciones & Toasts',
-    badCopy: 'La operación solicitada ha sido procesada exitosamente por el servidor.',
-    goodCopy: 'Tarea guardada en la agenda.',
-    rationale: 'Directo al grano (3–6 palabras), sin voz pasiva ni jerga técnica innecesaria.'
-  }
-];
-
-export const MATERIAL_AZ_GLOSSARY: readonly MaterialGlossaryTerm[] = [
-  {
-    letter: 'B',
-    term: 'Breakpoint (Window Size Class)',
-    category: 'Layout',
-    definition: 'Umbral de ancho/alto de ventana donde la estructura del layout muta (Compact <600, Medium 600–839, Expanded 840–1199, Large 1200–1599, Extra-Large ≥1600dp).',
-    whereUsed: 'AdaptiveLayoutService'
-  },
-  {
-    letter: 'C',
-    term: 'Canonical Layout',
-    category: 'Layout',
-    definition: 'Plantilla estructural probada de M3 para pantallas adaptativas: List-Detail, Supporting Pane y Feed.',
-    whereUsed: 'POS (Supporting Pane), Clínica (List-Detail), Overview (Feed)'
-  },
-  {
-    letter: 'F',
-    term: 'Focus Ring & Roving Tabindex',
-    category: 'Accessibility',
-    definition: 'Anillo de alto contraste en :focus-visible (.focus-ring-m3) combinado con navegación por flechas dentro de un grupo único con un solo tab stop.',
-    whereUsed: 'src/styles/_interaction.css'
-  },
-  {
-    letter: 'I',
-    term: 'Inert / Top Layer',
-    category: 'Accessibility',
-    definition: 'Aislamiento del DOM de fondo cuando se abre un modal para que teclado y lectores de pantalla no puedan salir del diálogo activo.',
-    whereUsed: 'DialogService / HeroDetailModalComponent'
-  },
-  {
-    letter: 'L',
-    term: 'Logical Properties (LTR / RTL)',
-    category: 'Layout',
-    definition: 'Propiedades CSS independientes de dirección física (inline-start, block-end) que adaptan márgenes y bordes automáticamente a idiomas de derecha a izquierda.',
-    whereUsed: 'Foundations Layout Lab'
-  },
-  {
-    letter: 'M',
-    term: 'Margin & Spacer (Gutter)',
-    category: 'Layout',
-    definition: 'Margin es el respiro externo respecto al borde de pantalla (16dp Compact / 24dp Medium+); Spacer es la separación entre paneles adyacentes.',
-    whereUsed: 'AdaptiveLayoutService (marginDp / spacerDp)'
-  },
-  {
-    letter: 'O',
-    term: 'OKLCH & Seed Hue (Ref → Styles)',
-    category: 'Styles & Motion (Ref)',
-    definition: 'Espacio de color perceptualmente uniforme que garantiza luminancia estable al rotar el tono semilla (--seed-hue). Documentado en vivo en Styles • Caso 2.',
-    whereUsed: 'Styles Lab + src/styles/_token.css'
-  },
-  {
-    letter: 'P',
-    term: 'Pane (Panel Estructural)',
-    category: 'Layout',
-    definition: 'Contenedor lógico que agrupa contenido dentro de un layout; según el Breakpoint se muestran 1, 2 o hasta 3 paneles simultáneos.',
-    whereUsed: 'Canonical Layouts (POS / Clínica)'
-  },
-  {
-    letter: 'S',
-    term: 'Shape Morphing (Ref → Styles)',
-    category: 'Styles & Motion (Ref)',
-    definition: 'Deformación elástica de esquinas (radio acotado h/2) o polígonos SVG (SEGMENT_COUNT=40) para dar feedback táctil visual. Documentado en Styles • Caso 4.',
-    whereUsed: '_button.css, _chip.css, <m3-loading-indicator>'
-  },
-  {
-    letter: 'S',
-    term: 'State Layer (Ref → Styles)',
-    category: 'Styles & Motion (Ref)',
-    definition: 'Velo translúcido currentColor en ::before (8% hover, 10% focus, 12% press, 16% drag). Documentado con 6 arquetipos en Styles • Caso 6.',
-    whereUsed: 'Styles Lab + src/styles/_interaction.css'
-  },
-  {
-    letter: 'T',
-    term: 'Touch Target 48×48dp',
-    category: 'Interaction',
-    definition: 'Área mínima clickeable/táctil (~9mm) expandida vía ::after (.touch-target-48) incluso cuando el icono visual mide 24–28px, separada por ≥8dp de otros objetivos.',
-    whereUsed: 'src/styles/_interaction.css + M3Button + M3Chip'
+    category: 'Tolerancia i18n (+35%) & Intl',
+    badCopy: 'width: 96px fijo + formateo manual dd/mm/yyyy con strings.',
+    goodCopy: 'min-inline-size + fit-content + Intl.NumberFormat / DateTimeFormat.',
+    rationale: 'Los textos en botones pueden crecer 30–40% según dispositivo o idioma; usar tamaño intrínseco y API Intl nativa evita cortes.'
   }
 ];
 

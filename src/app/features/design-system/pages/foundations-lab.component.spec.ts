@@ -63,20 +63,64 @@ describe('FoundationsLabComponent', () => {
     expect(component.liveRegionMessage()).toContain('Envío Express');
   });
 
-  it('filters the Material A-Z Glossary by query and category', () => {
+  it('validates WCAG color independence, post-interaction form aria-invalid, and +35% text expansion', () => {
     const fixture = TestBed.createComponent(FoundationsLabComponent);
     const component = fixture.componentInstance;
     fixture.detectChanges();
 
-    const total = component.glossaryTerms.length;
-    expect(component.filteredGlossary().length).toBe(total);
+    expect(component.a11ySpecs.length).toBe(6);
 
-    component.glossaryQuery.set('48');
-    expect(component.filteredGlossary().some(t => t.term.includes('48'))).toBe(true);
+    const input = fixture.nativeElement.querySelector('#a11y-demo-email') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+    expect(input.getAttribute('aria-describedby')).toBe('a11y-demo-hint');
 
-    component.glossaryQuery.set('');
-    component.selectedGlossaryCategory.set('Accessibility');
-    expect(component.filteredGlossary().every(t => t.category === 'Accessibility')).toBe(true);
+    input.value = 'correo-invalido';
+    component.onDemoEmailInput({ target: input } as unknown as Event);
+    expect(component.isEmailInvalid()).toBe(false);
+
+    component.onDemoEmailBlur({ target: input } as unknown as Event);
+    fixture.detectChanges();
+    expect(component.isEmailInvalid()).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe('a11y-demo-hint a11y-demo-error');
+
+    component.useAccessibleErrorStyle.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('solo color rojo');
+
+    component.simulateTextExpansion.set(true);
+    fixture.detectChanges();
+    expect(component.expandedCtaLabel()).toBe('Guardar cambios en agenda');
+  });
+
+  it('inspects Parts of Layout, simulates Adaptive Window width, Drag Handle split, and Fold hinge', () => {
+    const fixture = TestBed.createComponent(FoundationsLabComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.layoutParts.length).toBe(8);
+    expect(component.adaptiveStrategies.length).toBe(5);
+
+    component.selectedLayoutPart.set('margin');
+    fixture.detectChanges();
+    expect(component.activeLayoutPart().region).toBe('Body Region');
+    expect(fixture.nativeElement.textContent).toContain('Margins (Outer Spacing)');
+
+    component.setSimulatedWidthPx(1024);
+    fixture.detectChanges();
+    expect(component.activeSimBreakpoint()).toBe('expanded');
+    expect(component.effectiveSimWidthPx()).toBe(1024);
+    expect(fixture.nativeElement.textContent).toContain('Show & Hide: Multi-Pane');
+
+    component.adjustPaneSplit(15);
+    expect(component.paneSplitPercent()).toBe(57);
+    component.adjustPaneSplit(50);
+    expect(component.paneSplitPercent()).toBe(70);
+
+    component.simulateFold.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('FOLD');
   });
 });
 
