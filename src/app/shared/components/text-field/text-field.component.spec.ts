@@ -92,12 +92,90 @@ describe('M3TextFieldComponent', () => {
 
     const clearBtn = fixture.nativeElement.querySelector('.m3-text-field-trailing button');
     expect(clearBtn).toBeTruthy();
+    expect(clearBtn.classList.contains('focus-ring-m3')).toBe(true);
 
     clearBtn.click();
     fixture.detectChanges();
 
     expect(component.value()).toBe('');
     expect(clearEmitted).toBe(true);
+  });
+
+  it('should forward autocomplete attribute when specified', () => {
+    fixture.componentRef.setInput('autocomplete', 'email');
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(input.getAttribute('autocomplete')).toBe('email');
+  });
+
+  it('should render inline prefix and suffix and link them via aria-describedby', () => {
+    fixture.componentRef.setInput('prefix', 'S/');
+    fixture.componentRef.setInput('suffix', 'PEN');
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    const describedBy = input.getAttribute('aria-describedby') || '';
+    const affixes = Array.from(fixture.nativeElement.querySelectorAll('.m3-text-field-affix')) as HTMLElement[];
+
+    expect(affixes.map((el) => el.textContent?.trim())).toEqual(['S/', 'PEN']);
+    expect(describedBy).toContain('-prefix');
+    expect(describedBy).toContain('-suffix');
+  });
+
+  it('should toggle password visibility with accessible aria-label and aria-pressed', () => {
+    fixture.componentRef.setInput('type', 'password');
+    fixture.componentRef.setInput('passwordToggle', true);
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    const toggleBtn = fixture.nativeElement.querySelector('.m3-text-field-password-btn') as HTMLButtonElement;
+
+    expect(input.type).toBe('password');
+    expect(toggleBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Mostrar contraseña');
+
+    toggleBtn.click();
+    fixture.detectChanges();
+
+    expect(input.type).toBe('text');
+    expect(toggleBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(toggleBtn.getAttribute('aria-label')).toBe('Ocultar contraseña');
+  });
+
+  it('should defer native required error until after blur and apply is-auto-grow on multiline', () => {
+    fixture.componentRef.setInput('required', true);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement.querySelector('.m3-text-field') as HTMLElement;
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(root.classList.contains('is-error')).toBe(false);
+
+    input.dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+    expect(root.classList.contains('is-error')).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+
+    fixture.componentRef.setInput('required', false);
+    fixture.componentRef.setInput('multiline', true);
+    fixture.componentRef.setInput('autoGrow', true);
+    fixture.detectChanges();
+    expect(root.classList.contains('is-auto-grow')).toBe(true);
+  });
+
+  it('should forward native name and readonly attributes and suppress clear button when readonly', () => {
+    fixture.componentRef.setInput('name', 'auditFolio');
+    fixture.componentRef.setInput('value', 'AUD-2026-0091');
+    fixture.componentRef.setInput('clearable', true);
+    fixture.componentRef.setInput('readonly', true);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement.querySelector('.m3-text-field') as HTMLElement;
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(input.getAttribute('name')).toBe('auditFolio');
+    expect(input.readOnly).toBe(true);
+    expect(root.classList.contains('is-readonly')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.m3-text-field-trailing button')).toBeNull();
   });
 
   it('should render textarea and character counter when multiline is enabled', () => {

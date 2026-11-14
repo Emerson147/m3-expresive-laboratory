@@ -42,7 +42,63 @@
   padding-left: 8px;
 }
 .m3-chip.has-trailing {
-  padding-right: 8px;
+  padding-right: 6px;
+}
+
+/* COMPOSITE INPUT CHIP SHELL (No nested interactive controls: sibling buttons inside container) */
+.m3-chip-composite {
+  padding: 0;
+  gap: 0;
+  overflow: visible;
+}
+
+.m3-chip-composite.has-leading .m3-chip-primary {
+  padding-left: 8px;
+}
+
+.m3-chip-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 6px 0 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  border-radius: var(--md-comp-chip-shape-pill, 16px) 0 0 var(--md-comp-chip-shape-pill, 16px);
+}
+
+.m3-chip-remove {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 30px;
+  padding: 0;
+  margin-right: 2px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.78;
+  cursor: pointer;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  transition: opacity var(--md-sys-motion-duration-short2, 100ms) linear;
+}
+
+.m3-chip-remove:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.m3-chip-primary:disabled,
+.m3-chip-remove:disabled {
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 /* --- 1. FILTER CHIP --- */
@@ -75,13 +131,28 @@
   color: var(--md-sys-color-on-surface);
 }
 
-/* --- DISABLED STATE --- */
+/* --- DISABLED STATE (Independent 12% container/border & 38% ink opacity — never parent opacity compounding) --- */
 .m3-chip:disabled,
-.m3-chip[aria-disabled="true"] {
-  opacity: var(--md-sys-state-disabled-content-opacity, 0.38);
+.m3-chip[aria-disabled="true"],
+.m3-chip.is-disabled {
   pointer-events: none;
   cursor: not-allowed;
   box-shadow: none !important;
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity, 0.38) * 100%), transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
+}
+
+.m3-chip-assist:disabled,
+.m3-chip-assist[aria-disabled="true"],
+.m3-chip-assist.is-disabled {
+  background-color: transparent;
+}
+
+.m3-chip:disabled::before,
+.m3-chip[aria-disabled="true"]::before,
+.m3-chip.is-disabled::before {
+  opacity: 0;
 }
 
 /* COUNTER BADGE */

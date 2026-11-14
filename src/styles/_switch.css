@@ -1,0 +1,114 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: SWITCH (Expressive Morphing Thumb)
+   m3.material.io/components/switch/specs
+   ========================================================= */
+
+.m3-switch-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.m3-switch-wrapper.is-disabled {
+  cursor: not-allowed;
+}
+
+.m3-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  padding: 0 4px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  border: 2px solid var(--md-sys-color-outline);
+  background-color: var(--md-sys-color-surface-container-highest);
+  cursor: pointer;
+  transition:
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-switch.is-checked {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-switch-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: var(--md-sys-color-outline);
+  color: var(--md-sys-color-surface-container-highest);
+  transform: translateX(2px);
+  transition:
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    width var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    height var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    background-color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-switch.has-icon .m3-switch-thumb,
+.m3-switch.is-checked .m3-switch-thumb {
+  width: 24px;
+  height: 24px;
+}
+
+.m3-switch.has-icon:not(.is-checked) .m3-switch-thumb {
+  transform: translateX(-2px);
+}
+
+.m3-switch.is-checked .m3-switch-thumb {
+  transform: translateX(18px);
+  background-color: var(--md-sys-color-on-primary);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+/* Expressive Pressed Morph (thumb expands slightly during press) */
+.m3-switch:active:not(:disabled) .m3-switch-thumb {
+  width: 28px;
+  height: 28px;
+}
+.m3-switch.is-checked:active:not(:disabled) .m3-switch-thumb {
+  transform: translateX(14px);
+}
+
+/* Disabled State (Independent 12% container / 38% ink opacity) */
+.m3-switch:disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  background-color: color-mix(in oklch, var(--md-sys-color-surface-container-highest) 12%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+.m3-switch.is-checked:disabled {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
+  border-color: transparent;
+}
+
+.m3-switch:disabled .m3-switch-thumb {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+  color: var(--md-sys-color-surface);
+}
+
+@media (forced-colors: active) {
+  .m3-switch {
+    border-color: ButtonText;
+  }
+  .m3-switch.is-checked {
+    background-color: Highlight;
+    border-color: Highlight;
+  }
+  .m3-switch-thumb {
+    background-color: ButtonText;
+  }
+}
+

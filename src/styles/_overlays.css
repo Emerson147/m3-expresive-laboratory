@@ -1,0 +1,161 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: WEB OVERLAYS (Top-Layer Popover Menu & Snackbar)
+   Aligned with Baseline Top-Layer Popover API & @starting-style
+   ========================================================= */
+
+/* --- 1. MENU POPOVER (popover="auto" for Split Button / Context Menus) --- */
+.m3-popover-menu {
+  margin: 0;
+  padding: 6px;
+  min-width: 204px;
+  max-width: min(320px, calc(100vw - 24px));
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: var(--md-sys-elevation-level-2);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 180ms;
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1.0));
+  transition-behavior: allow-discrete;
+}
+
+.m3-popover-menu.is-fallback {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  display: none;
+}
+
+:is(
+  [popover].m3-popover-menu:is(:popover-open, .\:popover-open),
+  .m3-popover-menu.is-fallback-open
+):where(:not([data-closing])) {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+.m3-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small, 8px);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size, 0.875rem);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* --- 2. SNACKBAR / TOAST NOTIFICATION (popover="manual" — non-light-dismiss) --- */
+.m3-snackbar {
+  inset: auto;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  translate: -50% 0;
+  margin: 0;
+  padding: 6px 8px 6px 16px;
+  min-width: min(344px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  min-height: 48px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small, 8px);
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  box-shadow: var(--md-sys-elevation-level-3);
+  font-size: var(--md-sys-typescale-body-medium-size, 0.875rem);
+  line-height: 1.25rem;
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 220ms;
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1.0));
+  transition-behavior: allow-discrete;
+}
+
+.m3-snackbar:not([popover]) {
+  display: none;
+  z-index: 70;
+}
+
+:is(
+  [popover].m3-snackbar:is(:popover-open, .\:popover-open),
+  .m3-snackbar.is-fallback-open
+):where(:not([data-closing])) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+/* Stack separation when multiple manual popovers appear sequentially */
+.m3-snackbar + .m3-snackbar {
+  margin-bottom: 56px;
+}
+
+.m3-snackbar-action {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background: transparent;
+  color: var(--md-sys-color-inverse-primary);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.m3-snackbar-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background: transparent;
+  color: var(--md-sys-color-inverse-on-surface);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-popover-menu,
+  .m3-snackbar {
+    transform: none;
+    transition-duration: 0.1s;
+  }
+
+  @starting-style {
+    :is(
+      [popover].m3-popover-menu:is(:popover-open, .\:popover-open),
+      [popover].m3-snackbar:is(:popover-open, .\:popover-open)
+    ) {
+      transform: none;
+    }
+  }
+}
+

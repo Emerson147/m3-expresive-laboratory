@@ -9,49 +9,56 @@ export type M3ChipType = 'filter' | 'assist' | 'input' | 'suggestion';
     class: 'contents'
   },
   template: `
-    <button
-      type="button"
-      [disabled]="disabled()"
-      [attr.aria-disabled]="disabled() ? 'true' : null"
-      [attr.aria-pressed]="type() === 'filter' ? selected() : null"
-      [class]="computedClasses()"
-      (click)="onClick($event)">
-      
-      <!-- Leading Icon: Checkmark if selected Filter, or custom icon -->
-      @if (type() === 'filter' && selected()) {
-        <span class="material-symbols-rounded text-base shrink-0 animate-in fade-in zoom-in-75 duration-150">
-          check
-        </span>
-      } @else if (icon()) {
-        <span class="material-symbols-rounded text-base shrink-0">
-          {{ icon() }}
-        </span>
-      }
+    <div
+      [class]="removable() ? compositeClasses() : 'contents'"
+      [attr.aria-disabled]="removable() && disabled() ? 'true' : null">
+      <button
+        type="button"
+        [disabled]="disabled()"
+        [attr.aria-disabled]="disabled() ? 'true' : null"
+        [attr.aria-pressed]="type() === 'filter' ? selected() : null"
+        [class]="removable() ? primaryClasses() : computedClasses()"
+        (click)="onClick($event)">
+        
+        <!-- Leading Icon: Checkmark if selected Filter, or custom icon -->
+        @if (type() === 'filter' && selected()) {
+          <span class="material-symbols-rounded text-base shrink-0 animate-in fade-in zoom-in-75 duration-150" aria-hidden="true">
+            check
+          </span>
+        } @else if (icon()) {
+          <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">
+            {{ icon() }}
+          </span>
+        }
 
-      <!-- Label -->
-      <span class="truncate leading-none">
-        <ng-content></ng-content>
-      </span>
-
-      <!-- Count Badge (e.g. '(3)') -->
-      @if (count() !== null) {
-        <span class="m3-chip-badge leading-none shrink-0">
-          {{ count() }}
+        <!-- Label -->
+        <span class="truncate leading-none">
+          <ng-content></ng-content>
         </span>
-      }
 
-      <!-- Trailing Remove Icon (Input Chips) -->
+        <!-- Count Badge (e.g. '(3)') -->
+        @if (count() !== null) {
+          <span class="m3-chip-badge leading-none shrink-0">
+            {{ count() }}
+          </span>
+        }
+      </button>
+
+      <!-- Sibling Trailing Remove Button (Input Chips — zero nested interactive elements) -->
       @if (removable()) {
-        <span 
-          role="button"
-          tabindex="0"
+        <button
+          type="button"
+          [disabled]="disabled()"
+          [attr.aria-disabled]="disabled() ? 'true' : null"
+          [attr.aria-label]="removeLabel()"
           (click)="onRemove($event)"
-          (keydown.enter)="onRemove($event)"
-          class="material-symbols-rounded text-base shrink-0 opacity-70 hover:opacity-100 cursor-pointer ml-0.5 -mr-1 p-0.5 rounded-full hover:bg-current/10">
-          cancel
-        </span>
+          class="m3-chip-remove state-layer focus-ring-m3 touch-target-48">
+          <span class="material-symbols-rounded text-base" aria-hidden="true">
+            cancel
+          </span>
+        </button>
       }
-    </button>
+    </div>
   `
 })
 export class M3ChipComponent {
@@ -64,8 +71,11 @@ export class M3ChipComponent {
   /** Google Material Symbol name */
   readonly icon = input<string | null>(null);
 
-  /** Trailing delete icon for input chips */
+  /** Trailing delete button for input chips */
   readonly removable = input<boolean>(false);
+
+  /** Accessible label for trailing remove button */
+  readonly removeLabel = input<string>('Quitar');
 
   /** Numeric or text counter badge */
   readonly count = input<number | string | null>(null);
@@ -109,6 +119,34 @@ export class M3ChipComponent {
 
     return classes.join(' ');
   });
+
+  readonly compositeClasses = computed(() => {
+    const classes = [
+      'm3-chip',
+      'm3-chip-composite',
+      `m3-chip-${this.type()}`,
+      'has-trailing'
+    ];
+
+    if (this.selected()) {
+      classes.push('is-selected');
+    }
+    if ((this.type() === 'filter' && this.selected()) || this.icon()) {
+      classes.push('has-leading');
+    }
+    if (this.disabled()) {
+      classes.push('is-disabled');
+    }
+    if (this.customClass()) {
+      classes.push(this.customClass());
+    }
+
+    return classes.join(' ');
+  });
+
+  readonly primaryClasses = computed(() =>
+    'm3-chip-primary state-layer focus-ring-m3 touch-target-48'
+  );
 
   onClick(event: MouseEvent): void {
     if (this.disabled()) {

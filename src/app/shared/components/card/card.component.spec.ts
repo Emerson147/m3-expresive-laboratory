@@ -72,6 +72,43 @@ describe('M3CardComponent', () => {
     expect(clicked).toBe(false);
   });
 
+  it('should emit action on keyup.space (and not double-fire on keydown.space) when interactive', () => {
+    fixture.componentRef.setInput('interactive', true);
+    fixture.detectChanges();
+
+    let count = 0;
+    component.action.subscribe(() => {
+      count++;
+    });
+
+    const el = fixture.nativeElement as HTMLElement;
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(count).toBe(0);
+
+    el.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+    expect(count).toBe(1);
+  });
+
+  it('should apply semantic tone class and block clicks when disabled', () => {
+    fixture.componentRef.setInput('tone', 'primary');
+    fixture.componentRef.setInput('interactive', true);
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+
+    let clicked = false;
+    component.action.subscribe(() => {
+      clicked = true;
+    });
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.classList.contains('m3-card-tone-primary')).toBe(true);
+    expect(el.classList.contains('is-disabled')).toBe(true);
+    expect(el.getAttribute('aria-disabled')).toBe('true');
+
+    el.click();
+    expect(clicked).toBe(false);
+  });
+
   it('should apply invisible class and view-transition-name style when inputs are provided', () => {
     fixture.componentRef.setInput('invisible', true);
     fixture.componentRef.setInput('viewTransitionName', 'dialog-transform');

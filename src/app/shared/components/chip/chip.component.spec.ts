@@ -71,7 +71,7 @@ describe('M3ChipComponent', () => {
     expect(badge.textContent.trim()).toBe('5');
   });
 
-  it('should emit remove event when remove icon is clicked', () => {
+  it('should emit remove event via sibling remove button without nested interactive controls', () => {
     fixture.componentRef.setInput('removable', true);
     fixture.detectChanges();
 
@@ -80,8 +80,12 @@ describe('M3ChipComponent', () => {
       removed = true;
     });
 
-    const cancelIcon = fixture.nativeElement.querySelector('[role="button"]') as HTMLElement;
-    cancelIcon.click();
+    const nestedInteractive = fixture.nativeElement.querySelector('button button, button [role="button"]');
+    expect(nestedInteractive).toBeNull();
+
+    const removeBtn = fixture.nativeElement.querySelector('button.m3-chip-remove') as HTMLButtonElement;
+    expect(removeBtn).toBeTruthy();
+    removeBtn.click();
     expect(removed).toBe(true);
   });
 });

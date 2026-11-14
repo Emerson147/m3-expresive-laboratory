@@ -28,7 +28,6 @@
 .m3-card-elevated {
   background-color: var(--md-comp-elevated-card-container-color);
   box-shadow: var(--md-comp-elevated-card-container-elevation);
-  border: 1px solid transparent;
 }
 .m3-card-elevated.m3-card-interactive:hover {
   box-shadow: var(--md-sys-elevation-level2);
@@ -41,7 +40,6 @@
 .m3-card-filled {
   background-color: var(--md-comp-filled-card-container-color);
   box-shadow: none;
-  border: 1px solid transparent;
 }
 .m3-card-filled.m3-card-interactive:hover {
   box-shadow: var(--md-sys-elevation-level1);
@@ -65,6 +63,48 @@
 }
 .m3-card-interactive:active {
   transform: scale(0.992);
+}
+
+/* --- SEMANTIC TONE OVERRIDES (M3 Component Token Customization via Theme Roles) ---
+   Default keeps neutral --seed-hue surface hierarchy; tones swap --md-comp-* tokens cleanly */
+.m3-card-tone-primary {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-primary-container);
+  --md-comp-filled-card-container-color: var(--md-sys-color-primary-container);
+  --md-comp-outlined-card-container-color: color-mix(in oklch, var(--md-sys-color-primary-container) 45%, var(--md-sys-color-surface));
+  --md-comp-outlined-card-outline-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.m3-card-tone-secondary {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-secondary-container);
+  --md-comp-filled-card-container-color: var(--md-sys-color-secondary-container);
+  --md-comp-outlined-card-container-color: color-mix(in oklch, var(--md-sys-color-secondary-container) 45%, var(--md-sys-color-surface));
+  --md-comp-outlined-card-outline-color: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.m3-card-tone-tertiary {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-tertiary-container);
+  --md-comp-filled-card-container-color: var(--md-sys-color-tertiary-container);
+  --md-comp-outlined-card-container-color: color-mix(in oklch, var(--md-sys-color-tertiary-container) 45%, var(--md-sys-color-surface));
+  --md-comp-outlined-card-outline-color: var(--md-sys-color-tertiary);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+
+.m3-card-tone-error {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-error-container);
+  --md-comp-filled-card-container-color: var(--md-sys-color-error-container);
+  --md-comp-outlined-card-container-color: color-mix(in oklch, var(--md-sys-color-error-container) 45%, var(--md-sys-color-surface));
+  --md-comp-outlined-card-outline-color: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.m3-card.is-disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
 }
 
 /* --- PADDING PRESETS --- */

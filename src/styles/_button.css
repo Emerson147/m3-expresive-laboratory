@@ -34,7 +34,20 @@
   border-radius: var(--md-sys-shape-corner-medium, 12px);
 }
 
-/* SIZES */
+/* SIZES (5-Tier M3 Expressive Scale: xs, sm, md, lg, xl) */
+.m3-btn-xs {
+  height: 28px;
+  padding: 0 12px;
+  font-size: var(--md-sys-typescale-label-small-size, 0.6875rem);
+  gap: 4px;
+}
+.m3-btn-xs.has-icon-leading {
+  padding-left: 8px;
+}
+.m3-btn-xs.has-icon-trailing {
+  padding-right: 8px;
+}
+
 .m3-btn-sm {
   height: 32px;
   padding: 0 16px;
@@ -72,7 +85,25 @@
   padding-right: 20px;
 }
 
+.m3-btn-xl {
+  height: 56px;
+  padding: 0 32px;
+  font-size: var(--md-sys-typescale-title-medium-size, 1rem);
+  gap: 12px;
+}
+.m3-btn-xl.has-icon-leading {
+  padding-left: 24px;
+}
+.m3-btn-xl.has-icon-trailing {
+  padding-right: 24px;
+}
+
 /* ICON-ONLY BUTTON VARIATION */
+.m3-btn-icon-xs {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
 .m3-btn-icon-sm {
   width: 32px;
   height: 32px;
@@ -86,6 +117,11 @@
 .m3-btn-icon-lg {
   width: 48px;
   height: 48px;
+  padding: 0;
+}
+.m3-btn-icon-xl {
+  width: 56px;
+  height: 56px;
   padding: 0;
 }
 
@@ -155,32 +191,221 @@
   padding: 0 16px;
 }
 
-/* DISABLED STATE */
+/* DISABLED STATE (Independent 12% container & 38% ink opacity — never parent opacity compounding) */
 .m3-btn:disabled,
-.m3-btn[aria-disabled="true"] {
-  opacity: var(--md-sys-state-disabled-content-opacity, 0.38);
+.m3-btn[aria-disabled="true"],
+.m3-fab:disabled,
+.m3-fab[aria-disabled="true"] {
   pointer-events: none;
   box-shadow: none !important;
   cursor: not-allowed;
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity, 0.38) * 100%), transparent);
+}
+
+.m3-btn:disabled::before,
+.m3-btn[aria-disabled="true"]::before,
+.m3-fab:disabled::before,
+.m3-fab[aria-disabled="true"]::before {
+  opacity: 0;
+}
+
+.m3-btn:disabled:active,
+.m3-btn[aria-disabled="true"]:active {
+  transform: none;
+  border-radius: var(--md-comp-button-shape-pill, 24px);
 }
 
 .m3-btn-filled:disabled,
 .m3-btn-tonal:disabled,
-.m3-btn-elevated:disabled {
+.m3-btn-elevated:disabled,
+.m3-fab:disabled {
   background-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
-  color: var(--md-sys-color-on-surface);
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity, 0.38) * 100%), transparent);
 }
 
 .m3-btn-outlined:disabled {
   border-color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-container-opacity, 0.12) * 100%), transparent);
-  color: var(--md-sys-color-on-surface);
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity, 0.38) * 100%), transparent);
 }
 
 .m3-btn-text:disabled {
-  color: var(--md-sys-color-on-surface);
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) calc(var(--md-sys-state-disabled-content-opacity, 0.38) * 100%), transparent);
 }
 
 /* SHAPE MORPHING CAPABILITY (Expressive M3) */
-.m3-btn-morph:hover {
+.m3-btn-morph:hover:not(:disabled) {
   border-radius: var(--md-sys-shape-corner-medium, 12px);
+}
+
+/* --- TOGGLE BUTTON (M3 Expressive Pill <-> Square Shape Morph + Color Shift) --- */
+.m3-btn-toggle.m3-btn-filled:not(.is-selected) {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}
+.m3-btn-toggle.m3-btn-elevated:not(.is-selected) {
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.m3-btn-toggle.is-selected {
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  font-weight: 600;
+}
+.m3-btn-toggle.m3-btn-filled.is-selected,
+.m3-btn-toggle.m3-btn-elevated.is-selected {
+  background-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-btn-toggle.m3-btn-tonal.is-selected {
+  background-color: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary);
+}
+.m3-btn-toggle.m3-btn-outlined.is-selected {
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  border-color: transparent;
+}
+
+/* --- BUTTON GROUPS (Standard & Connected replacing deprecated Segmented Buttons) --- */
+.m3-btn-group {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.m3-btn-group-standard {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.m3-btn-group-connected {
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
+.m3-btn-group-connected .m3-group-item {
+  border-radius: var(--md-sys-shape-corner-small, 8px);
+  padding-inline: 16px;
+}
+
+.m3-btn-group-connected .m3-group-item:first-child {
+  border-start-start-radius: var(--md-comp-button-shape-pill, 24px);
+  border-end-start-radius: var(--md-comp-button-shape-pill, 24px);
+}
+
+.m3-btn-group-connected .m3-group-item:last-child {
+  border-start-end-radius: var(--md-comp-button-shape-pill, 24px);
+  border-end-end-radius: var(--md-comp-button-shape-pill, 24px);
+}
+
+/* Connected selected item morphs to a full pill to spotlight active choice by shape & color */
+.m3-btn-group-connected .m3-group-item.is-selected {
+  border-radius: var(--md-comp-button-shape-pill, 24px);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border-color: transparent;
+}
+
+.m3-btn-group-connected .m3-group-item:not(.is-selected) {
+  background-color: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+/* --- SPLIT BUTTON (Primary Action + Connected Menu Popover Trigger) --- */
+.m3-split-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+}
+
+.m3-split-btn-leading {
+  border-radius: var(--md-comp-button-shape-pill, 24px) 6px 6px var(--md-comp-button-shape-pill, 24px);
+}
+
+.m3-split-btn-trailing {
+  border-radius: 6px var(--md-comp-button-shape-pill, 24px) var(--md-comp-button-shape-pill, 24px) 6px;
+  padding: 0 10px;
+  min-width: 36px;
+}
+
+.m3-split-btn-trailing[aria-expanded="true"] {
+  border-radius: var(--md-comp-button-shape-pill, 24px);
+}
+
+.m3-split-btn-chevron {
+  transition: transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90));
+}
+
+.m3-split-btn-trailing[aria-expanded="true"] .m3-split-btn-chevron {
+  transform: rotate(180deg);
+}
+
+/* --- FLOATING ACTION BUTTON (FAB & Extended FAB) --- */
+.m3-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  border: none;
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-label-large-size, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  box-shadow: var(--md-sys-elevation-level-3);
+  transition:
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    box-shadow var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-spring);
+}
+
+.m3-fab:hover:not(:disabled) {
+  box-shadow: var(--md-sys-elevation-level-4);
+}
+.m3-fab:active:not(:disabled) {
+  box-shadow: var(--md-sys-elevation-level-3);
+}
+
+.m3-fab-sm {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+}
+.m3-fab-md {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--md-sys-shape-corner-large, 16px);
+}
+.m3-fab-lg {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--md-sys-shape-corner-extra-large, 28px);
+}
+.m3-fab-extended {
+  height: 56px;
+  width: auto;
+  padding: 0 20px;
+  border-radius: var(--md-sys-shape-corner-large, 16px);
+}
+
+.m3-fab-primary {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+.m3-fab-secondary {
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-fab-tertiary {
+  background-color: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-fab-surface {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-primary);
 }

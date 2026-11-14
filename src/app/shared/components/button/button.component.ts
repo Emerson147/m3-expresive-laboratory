@@ -1,11 +1,13 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, model, output } from '@angular/core';
+import { M3CircularProgressComponent } from '../progress/circular-progress.component';
 
 export type M3ButtonVariant = 'filled' | 'tonal' | 'elevated' | 'outlined' | 'text';
-export type M3ButtonSize = 'sm' | 'md' | 'lg';
+export type M3ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 @Component({
   selector: 'm3-button',
   standalone: true,
+  imports: [M3CircularProgressComponent],
   host: {
     class: 'contents'
   },
@@ -14,27 +16,31 @@ export type M3ButtonSize = 'sm' | 'md' | 'lg';
       [type]="type()"
       [disabled]="disabled() || loading()"
       [attr.aria-disabled]="disabled() || loading() ? 'true' : null"
+      [attr.aria-pressed]="toggle() ? selected() : null"
       [attr.aria-label]="ariaLabel() || null"
       [class]="computedClasses()"
       [class.invisible]="invisible()"
       [style.view-transition-name]="viewTransitionName()"
       (click)="onClick($event)">
       
-      <!-- Leading Spinner or Icon -->
+      <!-- M3 Guideline: compact flat circular progress inside button, no track, inheriting button contrast color -->
       @if (loading()) {
-        <span 
-          class="material-symbols-rounded animate-spin shrink-0"
-          [class.text-base]="size() === 'sm'"
-          [class.text-lg]="size() === 'md'"
-          [class.text-xl]="size() === 'lg'">
-          progress_activity
-        </span>
+        <m3-circular-progress
+          class="shrink-0"
+          [value]="null"
+          [wavy]="false"
+          [showTrack]="false"
+          color="inherit"
+          [diameter]="loadingDiameter()"
+          ariaLabel="Procesando..." />
       } @else if (icon() && !iconTrailing()) {
         <span 
           class="material-symbols-rounded shrink-0"
+          [class.text-sm]="size() === 'xs'"
           [class.text-base]="size() === 'sm'"
           [class.text-lg]="size() === 'md'"
-          [class.text-xl]="size() === 'lg'">
+          [class.text-xl]="size() === 'lg'"
+          [class.text-2xl]="size() === 'xl'">
           {{ icon() }}
         </span>
       }
@@ -50,9 +56,11 @@ export type M3ButtonSize = 'sm' | 'md' | 'lg';
       @if (!loading() && icon() && iconTrailing()) {
         <span 
           class="material-symbols-rounded shrink-0"
+          [class.text-sm]="size() === 'xs'"
           [class.text-base]="size() === 'sm'"
           [class.text-lg]="size() === 'md'"
-          [class.text-xl]="size() === 'lg'">
+          [class.text-xl]="size() === 'lg'"
+          [class.text-2xl]="size() === 'xl'">
           {{ icon() }}
         </span>
       }
@@ -63,8 +71,14 @@ export class M3ButtonComponent {
   /** The 5 canonical Material 3 button variants */
   readonly variant = input<M3ButtonVariant>('filled');
 
-  /** Button size token (sm: 32px, md: 40px, lg: 48px) */
+  /** Button size token (xs: 28px, sm: 32px, md: 40px, lg: 48px, xl: 56px) */
   readonly size = input<M3ButtonSize>('md');
+
+  /** Enables M3 Expressive toggle mode (exposes aria-pressed and morphs pill <-> square) */
+  readonly toggle = input<boolean>(false);
+
+  /** Two-way or reactive selected state for toggle buttons */
+  readonly selected = model<boolean>(false);
 
   /** Google Material Symbol name (e.g. 'add', 'check', 'delete') */
   readonly icon = input<string | null>(null);
@@ -96,8 +110,23 @@ export class M3ButtonComponent {
   /** CSS view-transition-name for Container Transform */
   readonly viewTransitionName = input<string | null>(null);
 
-  /** Extra custom CSS classes */
+  /** Custom class string */
   readonly customClass = input<string>('');
+
+  readonly loadingDiameter = computed(() => {
+    switch (this.size()) {
+      case 'xs':
+      case 'sm':
+        return 18;
+      case 'lg':
+        return 22;
+      case 'xl':
+        return 24;
+      case 'md':
+      default:
+        return 20;
+    }
+  });
 
   /** Emitted when the button is clicked and not disabled */
   readonly action = output<MouseEvent>();
@@ -131,6 +160,14 @@ export class M3ButtonComponent {
       classes.push('m3-btn-morph');
     }
 
+    // M3 Expressive Toggle Mode
+    if (this.toggle()) {
+      classes.push('m3-btn-toggle');
+      if (this.selected()) {
+        classes.push('is-selected');
+      }
+    }
+
     // Custom utility overrides
     if (this.customClass()) {
       classes.push(this.customClass());
@@ -144,6 +181,9 @@ export class M3ButtonComponent {
       event.preventDefault();
       event.stopPropagation();
       return;
+    }
+    if (this.toggle()) {
+      this.selected.update((v) => !v);
     }
     this.action.emit(event);
   }

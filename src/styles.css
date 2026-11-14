@@ -10,6 +10,8 @@
 @import "./styles/_chip.css";
 @import "./styles/_text-field.css";
 @import "./styles/_progress.css";
+@import "./styles/_switch.css";
+@import "./styles/_overlays.css";
 
 @theme {
   /* Surfaces & Containers */

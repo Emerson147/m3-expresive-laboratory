@@ -81,8 +81,36 @@
   justify-content: center;
 }
 
+.m3-text-field-control-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22px 18px 8px 18px; /* Comfortable breathing room clearing 11px floating label */
+}
+
+.m3-text-field.has-leading .m3-text-field-control-row {
+  padding-left: 8px;
+}
+
+.m3-text-field.has-trailing .m3-text-field-control-row {
+  padding-right: 8px;
+}
+
+.m3-text-field-affix {
+  font-size: var(--md-sys-typescale-body-medium-size, 0.875rem);
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .m3-text-field-input {
   width: 100%;
+  flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   outline: none;
@@ -94,22 +122,13 @@
   color: var(--md-sys-color-on-surface);
   box-sizing: border-box;
   caret-color: var(--md-sys-color-primary);
-  padding: 22px 18px 8px 18px; /* Comfortable breathing room */
+  padding: 0;
 }
 
 .m3-text-field-input::placeholder {
   color: var(--md-sys-color-on-surface-variant);
   opacity: 0.45;
   /* Subtle and unobtrusive */
-}
-
-/* Leading & Trailing icon padding adjustments */
-.m3-text-field.has-leading .m3-text-field-input {
-  padding-left: 8px; /* Unasphyxiated, generous space from leading icon */
-}
-
-.m3-text-field.has-trailing .m3-text-field-input {
-  padding-right: 8px;
 }
 
 /* --- INTEGRATED FLOATING LABEL (100% Internal, No Cutout) --- */
@@ -148,8 +167,9 @@
   left: 8px; /* Perfectly aligned with input text */
 }
 
-/* Floated position (tucked neatly at the top inside container) */
-.m3-text-field.is-floated .m3-text-field-label {
+/* Floated position (tucked neatly at the top inside container, including browser :autofill) */
+.m3-text-field.is-floated .m3-text-field-label,
+.m3-text-field:has(.m3-text-field-input:autofill) .m3-text-field-label {
   top: 8px;
   transform: translateY(0);
   font-size: 0.6875rem;
@@ -159,6 +179,13 @@
   opacity: 0.85;
 }
 
+/* Blend browser autofill background smoothly into Sleek Recess surface */
+.m3-text-field-input:autofill,
+.m3-text-field-input:-webkit-autofill {
+  -webkit-text-fill-color: var(--md-sys-color-on-surface);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Focused label color */
 .m3-text-field.is-focused .m3-text-field-label {
   color: var(--md-sys-color-primary);
@@ -166,8 +193,20 @@
 }
 
 /* --- LEADING & TRAILING ICONS --- */
-.m3-text-field-leading,
 .m3-text-field-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 40px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  transition: color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+  margin-right: 6px;
+}
+
+.m3-text-field-leading {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -176,19 +215,27 @@
   flex-shrink: 0;
   color: var(--md-sys-color-on-surface-variant);
   transition: color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
-}
-
-.m3-text-field-leading {
   margin-left: 6px;
   margin-right: 4px; /* Separation from input area */
 }
 
-.m3-text-field-trailing {
-  margin-right: 6px;
-}
-
 .m3-text-field.is-focused .m3-text-field-leading {
   color: var(--md-sys-color-primary);
+}
+
+.m3-text-field-trailing > * {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard),
+    scale var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial, var(--md-sys-motion-easing-emphasized));
+}
+
+@starting-style {
+  .m3-text-field-trailing > * {
+    opacity: 0;
+    scale: 0.85;
+  }
 }
 
 .m3-text-field-trailing button {
@@ -223,10 +270,22 @@
   padding-top: 4px;
 }
 
+.m3-text-field-multiline .m3-text-field-control-row {
+  padding-top: 24px;
+}
+
 .m3-text-field-multiline .m3-text-field-input {
   min-height: 76px;
   resize: vertical;
-  padding-top: 24px;
+}
+
+.m3-text-field-multiline.is-auto-grow .m3-text-field-input {
+  field-sizing: content;
+  width: 100%;
+  height: auto;
+  min-block-size: 3lh;
+  max-block-size: 10lh;
+  resize: none;
 }
 
 .m3-text-field-multiline .m3-text-field-leading,
@@ -240,7 +299,7 @@
   transform: translateY(0);
 }
 
-/* --- SUPPORTING TEXT & CHARACTER COUNTER --- */
+/* --- SUPPORTING TEXT & CHARACTER COUNTER (@starting-style entrance) --- */
 .m3-text-field-supporting {
   display: flex;
   justify-content: space-between;
@@ -251,6 +310,19 @@
   line-height: var(--md-sys-typescale-body-small-line-height, 1rem);
   color: var(--md-sys-color-on-surface-variant);
   min-height: 18px;
+  opacity: 1;
+  translate: 0;
+  transition:
+    opacity var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    translate var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-decelerate),
+    color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+@starting-style {
+  .m3-text-field-supporting {
+    opacity: 0;
+    translate: 0 -4px;
+  }
 }
 
 .m3-text-field-helper {
@@ -264,28 +336,93 @@
   opacity: 0.85;
 }
 
-/* --- ERROR STATE --- */
+/* --- ERROR STATE (Programmatic OR Modern :user-invalid after interaction) --- */
 .m3-text-field.is-error .m3-text-field-label,
 .m3-text-field.is-error .m3-text-field-supporting,
 .m3-text-field.is-error .m3-text-field-helper,
 .m3-text-field.is-error .m3-text-field-trailing,
-.m3-text-field.is-error .m3-text-field-leading {
+.m3-text-field.is-error .m3-text-field-leading,
+.m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-label,
+.m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-supporting,
+.m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-helper,
+.m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-leading {
   color: var(--md-sys-color-error);
 }
 
-.m3-text-field.is-error .m3-text-field-container {
+.m3-text-field.is-error .m3-text-field-container,
+.m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-container {
   border-color: var(--md-sys-color-error) !important;
+  animation: m3FieldErrorNudge 240ms var(--md-sys-motion-easing-emphasized, cubic-bezier(0.2, 0, 0, 1)) 1;
 }
 
-.m3-text-field.is-error.is-focused .m3-text-field-container {
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-error) 22%, transparent) !important;
+@keyframes m3FieldErrorNudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  65% { transform: translateX(3px); }
 }
 
-/* --- DISABLED STATE --- */
+.m3-text-field.is-readonly:not(.is-disabled) .m3-text-field-container {
+  background-color: color-mix(in oklch, var(--md-sys-color-surface-container-low) 75%, transparent);
+  border-style: dashed;
+  border-color: var(--md-sys-color-outline-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-text-field-container,
+  .m3-text-field-label,
+  .m3-text-field-leading,
+  .m3-text-field-trailing > *,
+  .m3-text-field-supporting {
+    transition-duration: 0.01ms !important;
+    translate: none !important;
+  }
+
+  .m3-text-field.is-error .m3-text-field-container,
+  .m3-text-field:has(.m3-text-field-input:user-invalid) .m3-text-field-container {
+    animation: none;
+  }
+
+  @starting-style {
+    .m3-text-field-supporting,
+    .m3-text-field-trailing > * {
+      translate: none;
+      scale: 1;
+    }
+  }
+}
+
+.m3-text-field.is-error.is-focused .m3-text-field-container,
+.m3-text-field.is-focused:has(.m3-text-field-input:user-invalid) .m3-text-field-container {
+  box-shadow: 0 0 0 3.5px color-mix(in oklch, var(--md-sys-color-error) 22%, transparent) !important;
+}
+
+.m3-text-field.is-valid:not(.is-error) .m3-text-field-container,
+.m3-text-field.show-valid:not(.is-error):has(.m3-text-field-input:user-valid) .m3-text-field-container {
+  border-color: var(--md-sys-color-success);
+}
+
+.m3-text-field.is-valid:not(.is-error) .m3-text-field-trailing,
+.m3-text-field.show-valid:not(.is-error):has(.m3-text-field-input:user-valid) .m3-text-field-label {
+  color: var(--md-sys-color-success);
+}
+
+/* --- DISABLED STATE (Independent 12% container/border & 38% ink opacity) --- */
 .m3-text-field.is-disabled {
-  opacity: var(--md-sys-state-disabled-content-opacity, 0.38);
   pointer-events: none;
   cursor: not-allowed;
+}
+
+.m3-text-field.is-disabled .m3-text-field-container {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+.m3-text-field.is-disabled .m3-text-field-label,
+.m3-text-field.is-disabled .m3-text-field-input,
+.m3-text-field.is-disabled .m3-text-field-affix,
+.m3-text-field.is-disabled .m3-text-field-leading,
+.m3-text-field.is-disabled .m3-text-field-supporting {
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
 }
 
 /* =========================================================
@@ -324,4 +461,12 @@
   border-color: var(--md-sys-color-primary);
   background-color: var(--md-sys-color-surface-container-lowest);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
+}
+
+@media (forced-colors: active) {
+  .m3-select-field:focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
 }
