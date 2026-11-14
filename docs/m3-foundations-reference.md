@@ -120,15 +120,41 @@ Mobile human fingers have an average contact width of 7–10mm (`48×48dp`). Ico
 }
 ```
 
-### Input Modalities, Selection & Reduced Motion
-- **Touch**: `48×48dp` target + `≥ 8dp` gap; long-press triggers batch selection. Use `touch-action: pan-y` on horizontal swipes—never `touch-action: none` if vertical page scroll must remain usable.
+### Input Modalities, Contrast & Web Form Validation (`:user-invalid`)
+- **Web Touch & Pointers**: `48×48dp` target + `≥ 8dp` gap; use `touch-action: pan-y` on horizontal carousels and `@media (pointer: coarse)` for coarse inputs. Never hide critical actions behind invisible gestures.
+- **WCAG Contrast & Color Independence**: Maintain `≥ 4.5:1` for normal text and `≥ 3:1` for large text, icons, and interactive UI boundaries/states (e.g., input borders). **Never** denote error/success with color alone — always pair color with an icon and text label.
+- **Accessible Web Forms**: Associate `<label for="id">`, place helper hints **above** inputs via `aria-describedby` (preventing browser autocomplete popovers from covering hints), and synchronize `aria-invalid="true"` with `:user-invalid` on `blur`/`input` after interaction (`Baseline since 2023-11-02`) so errors never fire prematurely before typing finishes.
 - **Keyboard**: `Tab` / `Shift+Tab` moves between groups; **Arrow keys (`←/→`) with Roving Tabindex** (`tabindex="0"` on active item, `-1` on siblings) navigate inside component groups (`radiogroup`, `tablist`, chip groups). `Enter` triggers on `keydown`, `Space` on `keyup` with `preventDefault()`.
 - **Modals & Live Regions**: Isolate background DOM with `<dialog>.showModal()` or `inert`; announce selection changes politely via `aria-live="polite"`; never use `tabindex > 0`.
 - **Reduced Motion**: `@media (prefers-reduced-motion: reduce)` collapses `.state-layer` / `.focus-ring-m3` transition durations to `0.01ms` and removes `:active` scaling.
 
 ---
 
-## 4. Adaptive Layout: 5 Width Breakpoints, Height Classes, Canonical Layouts & LTR/RTL
+## 4. Adaptive Layout: Parts of Layout, Adaptive Design, 5 Breakpoints & LTR/RTL
+
+### Parts of Layout (`m3.material.io/foundations/layout/layout-overview/parts-of-layout`)
+
+Every Material 3 screen separates **Navigation Components** from the **Body Region**:
+
+- **Navigation Components**:
+  - **Navigation Bar / Bottom Bar** (`80dp` height on Compact `<600dp`, 3–5 top-level destinations).
+  - **Navigation Rail** (`80dp` width on Medium/Expanded `600dp–1199dp`) or **Modal / Standard Drawer** (`220dp–360dp` on Large/Extra-Large `≥1200dp`). Never display Bottom Bar and Rail simultaneously.
+- **Body Region**:
+  - **Panes (Fixed vs Flexible)**: Structural subdivisions of the Body (`Fixed`: `320dp–412dp` or `35–40%` for lists/support; `Flexible`: `1fr` / `60–65%` absorbing window growth).
+  - **Margins**: Outer spacing separating content from window edges (`16dp` on Compact, `24dp` on Medium+).
+  - **Spacer**: `24dp` (`16dp` in Compact) visual gutter separating side-by-side panes cleanly without hard divider borders.
+  - **Drag Handle**: `4dp × 48dp` visual pill inside a `48dp × 48dp` accessible hit target (`role="separator"`, keyboard `ArrowLeft`/`ArrowRight`, pointer capture) centered inside a Spacer so users can resize two panes (`30%–70%`).
+  - **Columns & Fold (Hinge)**: `4` (Compact), `8` (Medium), or `12` (Expanded+) structural grid columns. On foldable dual-screen hardware, align the inter-pane `Spacer` directly over the `Fold` so critical text/actions are never split across the hinge.
+
+### Adaptive Design Strategies (`m3.material.io/foundations/layout/layout-overview/adaptive-design`)
+
+- **Responsive vs. Adaptive**: Responsive scales proportions only (stretching mobile cards across 1440px hurts scannability); **Adaptive** restructures panes, navigation chrome, density, and component slots dynamically across breakpoints and window sizes.
+- **Show & Hide**: Keep secondary panes (Inspector, Ticket, Reviews) collapsed on Compact/Medium and reveal them persistently from `Expanded (≥840dp)`.
+- **Levitate**: Elevate contextual controls or overlays (Modal Sheet, Dropdown, Floating Cart/Action Pill) above the primary flow when horizontal space is constrained or quick action access is needed.
+- **Reflow**: Switch two-pane layouts from horizontal (`row`) to vertical (`column`) stack below `Expanded`, and adapt Feed columns `1 → 2 → 3 → 4`.
+- **Container Queries (`size-aware-styling`)**: Use `container-type: inline-size` + `@container (min-width: ...)` on resizable panes/windows (`Baseline 2023`) alongside logical properties (`inline-size`, `padding-inline`) so embedded windows adapt strictly to their container width.
+
+### 5 Width Breakpoints, Height Classes & Canonical Layouts
 
 Material 3 Expressive categorizes viewports into **5 Width Breakpoints** and **3 Height Breakpoints** (`m3.material.io/foundations/layout/applying-layout/window-size-classes`):
 
@@ -167,11 +193,12 @@ layout.recommendedNavigation(); // Chrome string for active breakpoint
 
 ---
 
-## 5. Content Design, Alt Text & Boundary vs. Styles
+## 5. Web Content Design, Text Expansion (+35%) & Boundary vs. Styles
 
-- **Action-Oriented UX Copy**: Buttons use specific verb + noun labels (`"Guardar cambios"` instead of `"Aceptar"`). Errors explain what happened and how to fix it. Notifications stay concise (3–6 words).
+- **Action-Oriented UX Copy**: Buttons use specific verb + noun labels (`"Guardar cambios"` instead of `"Aceptar"`). Errors explain what happened and how to fix it.
+- **Text Expansion Resilience & Native `Intl`**: Size buttons and tabs intrinsically (`min-inline-size` / `fit-content` rather than fixed widths) to tolerate `+30–40%` string expansion without clipping, and format currency/dates using native `Intl.NumberFormat` / `Intl.DateTimeFormat`.
 - **Alt Text & Landmarks**: Wrap regions in `<header>`, `<nav>`, `<main>`; keep headings sequential (`h1 → h2 → h3`); give decorative media `alt=""` and describe key data points on charts without `"Imagen de..."` filler.
-- **Separation from Styles Lab**: Detailed **Design Tokens**, **Customizing Material (OKLCH Seed & Contrast Levels)**, and **Interaction State Layer Opacities (`8% / 10% / 12% / 16%`)** live in [m3-styles-tokens-reference.md](file:///home/migattedev/Documentos/Sistemas/frontend/m3-expressive/m3-expressive-ui/docs/m3-styles-tokens-reference.md) and `/design-system/styles` to avoid duplication; `FoundationsLabComponent` (`foundations-specs.data.ts`) focuses on Layout, Touch/Input Ergonomics, Keyboard/A11y, Content Design, and the filterable **Material A–Z Glossary**.
+- **Separation from Styles Lab**: Detailed **Design Tokens**, **Customizing Material (OKLCH Seed & Contrast Levels)**, and **Interaction State Layer Opacities (`8% / 10% / 12% / 16%`)** live in [m3-styles-tokens-reference.md](file:///home/migattedev/Documentos/Sistemas/frontend/m3-expressive/m3-expressive-ui/docs/m3-styles-tokens-reference.md) and `/design-system/styles` to avoid duplication; `FoundationsLabComponent` (`foundations-specs.data.ts`) focuses exclusively on Web-relevant Foundations (Layout, Touch/Pointer/Keyboard Ergonomics, WCAG Contrast & Accessible Forms, and Content Design + i18n Resilience).
 
 ---
 

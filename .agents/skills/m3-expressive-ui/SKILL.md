@@ -332,10 +332,15 @@ Never use raw `:hover { opacity }` or `:hover { background }`. In M3, state laye
 * **Dragged / Disabled**: 16% dragged (`--md-sys-state-dragged-state-layer-opacity`); disabled `0.38` content / `0.12` container (`--md-sys-state-disabled-*`)
 * **Touch Target & Spacing**: 48×48dp minimum accessible hitbox via `.touch-target-48` (`min-inline-size` / `min-block-size: 48px`) + minimum **8dp gap** (`.touch-gap-8`) between adjacent hitboxes. Use `touch-action: pan-y` on horizontal swipes (never `none` if vertical scroll matters).
 * **Focus Ring & Forced Colors**: `.focus-ring-m3:focus-visible` uses a dual `box-shadow` plus an `@media (forced-colors: active)` **`outline: 3px solid Highlight`** fallback (never `outline: none` + `box-shadow` alone, or focus disappears in High Contrast Mode).
+* **WCAG Contrast, Color Independence & Accessible Forms**: Enforce `≥ 4.5:1` contrast for normal text and `≥ 3:1` for large text, icons, and component borders; never denote errors/states by color alone (always pair with icon + text). Use `<label for>`, place hints above inputs via `aria-describedby`, and sync `aria-invalid="true"` with `:user-invalid` after interaction (never prematurely on load).
 * **Keyboard & Reduced Motion**: Use Roving Tabindex (`tabindex="0"` active, `-1` siblings, Arrow keys within groups), native `<dialog>.showModal()` / `inert` overlays, `aria-live="polite"`, sequential headings (`h1 → h2 → h3`), and `@media (prefers-reduced-motion: reduce)`.
-* **Bidirectionality (LTR / RTL)**: Use CSS logical properties (`inline-start`, `ps-*`, `pe-*`, `border-s-*`). Mirror directional icons (`arrow_back`) in RTL; never mirror clocks (`schedule`) or checkmarks (`check_circle`).
+* **Content & Bidirectionality (LTR / RTL)**: Size buttons with `min-inline-size` / `fit-content` to tolerate `+35%` text expansion and use native `Intl` formatters. Author spacing with CSS logical properties (`inline-start`, `ps-*`, `pe-*`, `border-s-*`), mirroring directional icons (`arrow_back`) in RTL but never clocks or checkmarks.
 
-### Window Size Classes (5 Width Breakpoints & Canonical Layouts)
+### Parts of Layout, Adaptive Design & Window Size Classes
+
+Every Material 3 layout separates **Navigation Components** (Bar `<600dp`, Rail `80dp` `600–1199dp`, Persistent/Standard Drawer `220–360dp` `≥1200dp`) from the **Body Region**:
+* **Body Anatomy (`parts-of-layout`)**: Pair a **Fixed Pane** (`320–412dp`) with a **Flexible Pane** (`1fr`) separated by a **`24dp` Spacer** (containing an optional `48×48dp` **Drag Handle** hit target for user split resizing) and bounded by **`16dp` (Compact) / `24dp` (Medium+) Margins**. On foldables, align the Spacer with the **Fold (Hinge)** so content is never clipped.
+* **Adaptive Design (`adaptive-design`)**: Go beyond scaling proportions (Responsive) by restructuring layouts via **Show & Hide** (reveal secondary panes at `Expanded+`), **Levitate** (sheets/floating pills over canvas), and **Reflow** (`row` ↔ `column` stack + grid column counts). Prefer CSS `@container (inline-size)` (`container-type: inline-size`) for component/window-level adaptation.
 
 Material 3 Expressive (`AdaptiveLayoutService`) categorizes viewports into **5 Width Breakpoints** (`16dp` outer margin in Compact, `24dp` in Medium+):
 * **Compact (< 600dp)**: 1 pane, `16dp` margin/spacer $\to$ Bottom Navigation Bar / Floating Dock.
@@ -355,6 +360,9 @@ When porting or creating new M3 Expressive components:
 * [ ] **State Layers**: Interactive elements must include `.state-layer` and `.focus-ring-m3`.
 * [ ] **Bounded Pill Shape Morphing**: Animate corner morphs using bounded half-height (`h/2`) component tokens (`24px/20px ↔ 12px/10px` via `--md-comp-button-shape-pill`, `16px ↔ 8px` via `--md-comp-chip-shape-pill`) + `--md-sys-motion-spring-expressive-fast-spatial`. **Anti-pattern**: never animate `border-radius` from `9999px` (`rounded-full`)—CSS interpolates numerically from `9999` down to `h/2` before corners start moving (~1s dead-zone).
 * [ ] **Dynamic View Transitions**: Always control `view-transition-name` with an `activeTransition` signal state.
+* [ ] **Disabled Opacity Separation**: Never apply parent `opacity: 0.38` on filled/chip containers (which compounds `12%` background into `4.5%`). Set container/border via `12%` `on-surface` and content ink independently via `38%` `on-surface`.
+* [ ] **Zero Nested Interactives**: Composite chips (`<m3-chip [removable]="true">`) use `.m3-chip-composite` with two sibling `<button>` elements rather than nesting `role="button"` inside `<button>`.
+* [ ] **Web Popover Distinction**: Use `popover="auto"` for light-dismiss menus (`<m3-split-button>`) and `popover="manual"` + `role="status"` + `aria-live="polite"` for `<m3-snackbar>`, animated via `transition-behavior: allow-discrete`, `overlay`, and `@starting-style` with `'popover' in HTMLElement.prototype` feature detection.
 
 ---
 
@@ -364,13 +372,18 @@ When porting or creating new M3 Expressive components:
 
 4 core components solve 80% of application interfaces: Buttons, Cards, Chips, and Text Fields.
 
-### Button Variants & Hierarchy
+### Button Variants, Extended Controls & Hierarchy
 
 - `filled`: High emphasis. Only one per flow/dialog for final commit ("Save", "Create").
 * `tonal`: Medium-high emphasis. Secondary priority companion without competing ("Edit").
 * `elevated`: Medium emphasis with elevation level 1 $\to$ 2. Used over complex or patterned backgrounds.
 * `outlined`: Medium emphasis. Neutral structured secondary action ("Filter", "Options").
 * `text`: Low emphasis. Minimal visual footprint ("Cancel", "Dismiss").
+* **5-Tier Scale**: `xs` (28px), `sm` (32px), `md` (40px), `lg` (48px), `xl` (56px) in `<m3-button>`.
+* **Toggle (`[toggle]="true"`)**: Exposes `aria-pressed` and morphs corners from pill (`24px`) to square (`12px`) when selected.
+* **Button Groups (`<m3-button-group>`)**: Supports `standard` (8px gap) and `connected` (2px gap, active item morphs to `24px` pill — replaces deprecated Segmented Buttons).
+* **Split Button (`<m3-split-button>`)**: Connected primary action + chevron trigger opening a Top-Layer `[popover="auto"]` menu.
+* **FAB / Extended FAB (`<m3-fab>`)**: Level 3 $\to$ 4 elevation in `sm`/`md`/`lg` or Extended (`label` input).
 
 ### Standard Angular Consumption
 
@@ -386,17 +399,20 @@ When porting or creating new M3 Expressive components:
 
 ### Card Variants & Hierarchy
 
-- `elevated`: `surface-container-low` with level 1 $\to$ 2 elevation. Main focal surfaces.
-* `filled`: `surface-container-highest` with flat tonal contrast. List rows and cards.
-* `outlined`: `surface` with 1px `outline-variant` boundary. Structured neutral grouping.
+- `elevated`: `surface-container-low` with level 1 $\to$ 2 elevation. Focal widgets, summaries, or cards over subtle backgrounds.
+* `filled`: `surface-container-highest` with flat tonal contrast. Repeatable list cards and dense dashboards.
+* `outlined`: `surface` with 1px `outline-variant` boundary. Structural grouping, settings panels, or cards inside other containers.
+* **Dynamic Theme vs. Semantic Color**: Rely on `--seed-hue` surface roles by default instead of arbitrary hex overrides. Use `[tone]="'primary' | 'secondary' | 'tertiary' | 'error'"` when semantic emphasis is required (`--md-comp-*-card-*` tokens in `_card.css`), and `[disabled]="true"` for non-interactive disabled cards.
+* **Never nest interactive controls inside `[interactive]="true"` cards**: Whole-card action uses `role="button"`; place `<m3-button>` or links only inside `[interactive]="false"` container cards.
 
 ```html
-<m3-card 
-  variant="filled" 
-  [interactive]="true" 
-  (action)="openTask(task)"
-  customClass="flex items-center justify-between border border-outline-sub">
+<m3-card variant="elevated" tone="primary" [interactive]="true" (action)="openSummary()">
   ...
+</m3-card>
+
+<m3-card variant="filled" [interactive]="false" customClass="flex items-center justify-between">
+  <span>{{ task.title }}</span>
+  <m3-button variant="outlined" size="sm" icon="edit" (action)="editTask(task)">Editar</m3-button>
 </m3-card>
 ```
 
@@ -414,28 +430,30 @@ When porting or creating new M3 Expressive components:
 
 ### Text Field Variants & Hierarchy (The 4th Pillar)
 
-- `filled`: High emphasis. `surface-container-low` with subtle outline-variant border and soft OKLCH focus glow.
-* `outlined`: Medium emphasis. Transparent background with 1.5px outline-variant border and soft OKLCH focus glow.
-* **Modern Typography Scale**: Compact `0.875rem` (14px) input text with `0.45` placeholder opacity and `0.6875rem` (11px) micro-floating label (600 weight, 0.35px tracking).
-* **Support & Validation**: Supporting helper text, dynamic character counter (`maxlength`), and error tokens (`var(--md-sys-color-error)`).
+- `filled`: High visual prominence (`surface-container-low` + bottom indicator). Best for **dialogs (`<dialog>`), brief modals, and compact single-focus actions**.
+* `outlined`: Lower visual weight (transparent background + `1.5px outline-variant`). Best for **long multi-field forms** and inputs placed over filled surfaces.
+* **Modern Affixes & Password Reveal**: `[prefix]` / `[suffix]` are wired into `aria-describedby` (`${id}-prefix`/`-suffix`) while keeping labels floated; opt-in `[passwordToggle]="true"` adds an accessible `aria-pressed` visibility button.
+* **Deferred Validation, Autofill & Auto-Grow**: Native `[required]`, `[pattern]`, `[minlength]`, `[enterkeyhint]`, `[name]`, `[readonly]`, and `[showValidState]` pair `:user-invalid` / `:user-valid` / `:autofill` with blur/invalid tracking. `[autoGrow]="true"` enables CSS `field-sizing: content` (`width: 100%`, `min-block-size: 3lh`, `max-block-size: 10lh`). Leading icons stay geometrically static (color transition only per M3); `@starting-style` animates helper/trailing controls and `m3FieldErrorNudge` signals invalid errors behind `prefers-reduced-motion`.
 
 ```html
-<!-- Filled input with clearable action -->
-<m3-text-field 
-  variant="filled" 
-  label="Título de la tarea" 
-  icon="edit_note" 
-  [clearable]="true" 
-  [(value)]="taskTitle" 
-  supportingText="Define el objetivo" />
+<!-- Filled modal/dialog input with inline affixes -->
+<m3-text-field
+  variant="filled"
+  label="Monto"
+  type="number"
+  inputMode="decimal"
+  prefix="S/"
+  suffix="PEN"
+  [clearable]="true"
+  [(value)]="amount" />
 
-<!-- Outlined multiline textarea with character counter -->
+<!-- Outlined multiline textarea with CSS field-sizing auto-grow -->
 <m3-text-field 
   variant="outlined" 
   label="Notas técnicas" 
   icon="description" 
   [multiline]="true" 
-  [rows]="3" 
+  [autoGrow]="true"
   [maxlength]="250" 
   [(value)]="taskNotes" 
   supportingText="Criterios y arquitectura" />
@@ -448,24 +466,22 @@ When porting or creating new M3 Expressive components:
 ### M3 Expressive Anatomy & Wave Physics (Image 4 & 5 Specifications)
 
 - **Linear Progress (`m3-linear-progress`)**:
-  * **Disjoint Track Anatomy**: The track **never** passes underneath the active wave. The active wave indicator ends with a rounded cap, followed by a canonical **4dp gap**, followed by the inactive straight track. The inactive track extends all the way to the end of the container (`x2 = w - r`), and the **stop dot** sits **embedded directly inside the terminal cap** of the track line (`cx = w - r`, radius matching stroke radius), providing a solid colored terminus without a detached gap.
+  * **Disjoint Track Anatomy & `40dp` Floor**: Uses `--m3-progress-track` (`secondary-container` default per M3 Progress spec) for the inactive track, never passing underneath the active wave. Enforces `min-width: 40px` (`Math.max(40, ...)` floor) and mirrors horizontally under `dir="rtl"`. Flat determinate mode renders at least a circular dot (`min-width: strokeWidth`) at `1%` progress, omits leading gaps at `0%`, and uses `clip-path` to maintain a transparent `4dp` gap before buffer bars. Stop indicator dot stays fixed at canonical `4dp` (`stopDotRadius: 2` for `md`/`lg`, `1` for `sm`; concentric at `containerWidth - strokeRadius`, with `circle.m3-linear-progress-stop` resetting CSS `transform: none` so wavy SVG alignment never shifts), remaining visible up to `98%` (hide via `[showStop]="false"` only when surrounding container contrast is `>= 3:1`).
   * **Wavy Variant (`[wavy]="true"`)**:
-    * **Wavelength**: Exactly **40dp** between adjacent wave peaks.
-    * **Amplitude**: Exactly **3dp** from resting baseline to crest.
-    * **Container Height**: **10dp** for standard (4dp stroke) and **14dp** for prominent (8dp stroke), preventing wave clipping.
-    * **Living Wave Motion**: Driven by continuous traveling wave physics $y(x, t) = y_{center} + A(p) \cdot \sin(2\pi x / 40 - \phi)$. As the phase $\phi$ glides, both the **head** ($x = x_{active}$) and the **tail** ($x = 0$) bob up and down with smooth `stroke-linecap: round` caps.
-    * **Boundary Attenuation**: Amplitude flattens smoothly to 0 at extreme edges ($p \le 0.05$ or $p \ge 0.98$) per the M3 `indicatorAmplitude` specification.
-    * **Indeterminate**: A traveling wave slug (~35% width) glides across the bar, with inactive track dynamically drawn on uncompleted areas with 4dp gaps.
+    * **Official M3 Wave Metrics**: Standard (`md`, `4dp` stroke) uses `wavelength = 40dp`, `amplitude = 3dp`, `containerHeight = 10px`. Thick (`lg`, `8dp` stroke) uses `wavelength = 40dp`, `amplitude = 3dp`, `containerHeight = 14px` (or expands dynamically if custom `[amplitude]` is passed).
+    * **Living Wave Motion & Battery Efficiency**: Driven by continuous traveling wave physics $y(x, t) = y_{center} + A(p) \cdot \sin(2\pi x / \lambda - \phi)$. Reactive `effect()` runs `requestAnimationFrame` ONLY when `[wavy]="true"`, `!paused()`, motion is enabled, and progress is active (`isIndeterminate()` or `0 < value < 100`). Supports optional `[amplitude]`, `[wavelength]`, `[speed]`, `[paused]`, and `[blueprint]` engineering overlays.
+    * **Cap-Edge Gap & Boundary Attenuation**: Coordinates account for rounded cap overhang (`2 * strokeRadius + gap`), and `evaluateWaveAmplitudeEnvelope` (`progress-motion.util.ts`) ramps amplitude cleanly on `[0, 0.10]` and `[0.95, 1.0]`.
+    * **Indeterminate & Reduced Motion**: Uses M3 dual-pulse cubic-bezier grow/shrink kinematics (`1.8s` cycle) via `evalCubicBezier` in `progress-motion.util.ts` with disjoint prefix/middle/suffix `4dp` tracks; freezes cleanly at `0.55` under `prefers-reduced-motion: reduce`, while flat indeterminate preserves a visible static bar (`left: 20%; right: 45%`).
 * **Circular Progress (`m3-circular-progress`)**:
-  * Sizes: `sm` (24px), `md` (40px canonical standard), `lg` (56px expressive).
-  * Dynamic stroke arc with non-linear spring deceleration and rounded caps (`stroke-linecap: round`).
-  * **Wavy Variant (`[wavy]="true"`)**: Scalloped/fluted undulating circular wave perimeter. Inactive track is rendered as a **smooth circular arc** for the uncompleted portion, separated by a 4dp gap.
-  * Flagship `four-color` cycle option.
+  * **Flexible `24dp–240dp` Scaling**: Presets `sm` (`24px`, viewBox `strokeWidth = 5.2` -> `~2.6px` rendered, keep `[wavy]="false"`), `md` (`40px` flat canonical -> `48px` wavy, `amplitude: 1.6dp`, `lobes: 9`), `lg` (`56px`, `amplitude: 1.9`, `lobes: 10`), or custom `[diameter]` clamped `18..240dp`. When custom `[wavelength]` is passed, `computeCircularWaveQuantization` computes $N = \max(1, \text{round}(2\pi R_0 / \lambda_{\text{circ}}))$ ($\lambda_{\text{circ}} = \max(8, 0.375 \cdot \lambda) = 15\text{dp}$ at $\lambda = 40\text{dp}$) for seamless $C^1$ wraparound. Supports `[amplitude]`, `[speed]`, `[paused]`, `[blueprint]`. Indeterminate wavy expands/contracts (`28deg <-> 298deg` over `1.4s`) with `C^0` continuous spin, and flat indeterminate synchronizes `m3CircularDash` (`-113.1px`) + `m3CircularTrackDash` (`4dp` disjoint gap) seamlessly in CSS.
+  * **Button Loading Integration**: Accepts `color="inherit"` (`currentColor`) + `[showTrack]="false"` inside `<m3-button [loading]="true">` for `>= 3:1` accessible button-inline spinners without Material icon font rotation.
+  * **Cap-Compensated `4dp` Gap**: Round stroke caps protrude `strokeWidth / 2` on each tip, so both flat `trackDashArray`/`trackDashOffset` and wavy `gapAngle` reserve `effectiveGap = gapLength + strokeWidth` (plus `shouldRenderTrack()` hides degenerate `0px` tracks when remaining arc drops below `2 * effectiveGap`). At `0%` determinate, active indicator hides to prevent orphan caps.
+  * **Wavy Variant (`[wavy]="true"`) & `four-color`**: Reserved for indeterminate mode (`[value]="null"`), cycling vivid `primary -> secondary -> tertiary -> color-mix(in oklch, primary 52%, tertiary)` tokens instead of dark ink.
 * **Shape-Morphing Loading Indicator (`m3-loading-indicator`)**:
-  * Distinct component from progress indicators; designed for pull-to-refresh and indeterminate page loading.
-  * Continuous GPU spline morphing between 4 canonical geometric states: `M3_PENTAGON_PATH` (Rounded Pentagon) $\leftrightarrow$ `M3_SQUIRCLE_PATH` (Squircle) $\leftrightarrow$ `M3_COOKIE4_PATH` (4-Petal Clover) $\leftrightarrow$ `M3_CIRCLE_PATH` (Circle).
-  * **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path MUST be generated with `SEGMENT_COUNT = 40` ($\text{lcm}(4, 5, 8, 10)$) closed Catmull-Rom `C` segments centered at `(24, 24)` (`viewBox="0 0 48 48"`) so SMIL `<animate attributeName="d">` morphs symmetrically at 60fps without twisting.
-  * Supports canonical 48x48dp container (`[contained]="true"`) in `primary-container` with `on-primary-container` fill, and elevated card mode (`[elevated]="true"`).
+  * Dedicated to short indeterminate waits (`200ms – 5s`), pull-to-refresh, and busy surfaces. Active polygon occupies `38dp` inside a `48dp` bounding box (`md`).
+  * Continuous GPU SMIL spline morphing across 7 canonical M3 shapes: `SoftBurst -> Cookie8 -> Pentagon -> Pill -> Squircle -> Cookie4 -> Oval` (`M3_SOFT_BURST_PATH`, `M3_COOKIE8_PATH`, `M3_PENTAGON_PATH`, `M3_PILL_PATH`, `M3_SQUIRCLE_PATH`, `M3_COOKIE4_PATH`, `M3_OVAL_PATH`; plus `M3_CIRCLE_PATH`).
+  * **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path uses `SEGMENT_COUNT = 40` ($\text{lcm}(2, 4, 5, 8, 10)$) closed Catmull-Rom `C` segments centered at `(24, 24)` (`viewBox="0 0 48 48"`). Unmounts `<animate>` reactively when `prefers-reduced-motion: reduce` is active.
+  * Supports `[contained]="true"` (`primary-container` with `on-primary-container` fill, scaling with `sm`/`md`/`lg`) and `[elevated]="true"` (`surface-container-high` floating pull-to-refresh badge).
 * **Skeleton / Shimmer (`.m3-skeleton`, `.m3-skeleton-shimmer`)**:
   * Zero-layout-shift placeholders with OKLCH reflective wave gradient.
 
