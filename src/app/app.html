@@ -58,6 +58,7 @@
     [dialogView]="dialogService.dialogView()" [navStyle]="dialogService.navStyle()"
     [activeTaskId]="dialogService.activeTaskId()" [(draftTitle)]="dialogService.draftTitle"
     [(draftCategory)]="dialogService.draftCategory" [(draftDate)]="dialogService.draftDate"
+    [(draftTimeSlot)]="dialogService.draftTimeSlot" [(draftDuration)]="dialogService.draftDuration"
     [(draftPriority)]="dialogService.draftPriority" [(draftNotes)]="dialogService.draftNotes"
     (closeDialog)="dialogService.closeDialog()" (saveTask)="dialogService.saveTask()"
     (deleteTask)="dialogService.deleteActiveTask()"

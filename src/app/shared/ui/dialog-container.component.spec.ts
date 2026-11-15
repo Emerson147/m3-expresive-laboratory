@@ -41,4 +41,39 @@ describe('DialogContainerComponent', () => {
     expect(themeService.contrastLevel()).toBe('high');
     expect(highBtn.getAttribute('aria-pressed')).toBe('true');
   });
+
+  it('renders category, bucket, priority, time, and duration controls in task-form and validates empty title on submit', () => {
+    const fixture = TestBed.createComponent(DialogContainerComponent);
+    const saveSpy = vi.fn();
+    fixture.componentInstance.saveTask.subscribe(saveSpy);
+
+    fixture.componentRef.setInput('isDialogOpen', true);
+    fixture.componentRef.setInput('activeTrigger', 'fab-header');
+    fixture.componentRef.setInput('activeTransition', null);
+    fixture.componentRef.setInput('dialogView', 'task-form');
+    fixture.componentRef.setInput('navStyle', 'auto');
+    fixture.componentRef.setInput('activeTaskId', null);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="radiogroup"][aria-label="Categoría de tarea"]')).toBeTruthy();
+    expect(el.querySelector('[role="radiogroup"][aria-label="Día programado"]')).toBeTruthy();
+    expect(el.querySelector('[role="radiogroup"][aria-label="Prioridad de tarea"]')).toBeTruthy();
+    expect(el.querySelector('#dialog-task-time')).toBeTruthy();
+
+    // Submit empty title shows inline validation without disabling Guardar button
+    const form = el.querySelector('form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(el.textContent).toContain('El título es obligatorio para guardar la tarea.');
+
+    fixture.componentInstance.onTitleModelChange('Configurar Pipeline CI');
+    fixture.detectChanges();
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+  });
 });

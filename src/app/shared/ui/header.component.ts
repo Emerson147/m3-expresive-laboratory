@@ -87,7 +87,7 @@ export class HeaderComponent {
       },
       agenda: {
         title: 'Agenda de Tareas',
-        subtitle: 'Productividad y gestión visual bajo principios M3'
+        subtitle: 'Bloques horarios, subtareas y enfoque profundo M3'
       },
       pos: {
         title: 'Punto de Venta Expressivo',

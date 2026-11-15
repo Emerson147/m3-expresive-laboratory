@@ -1,7 +1,7 @@
 import { ApplicationRef, computed, inject, Injectable, signal } from '@angular/core';
 import { DialogView, NavChromeMode, NavStyle, resolveNavChrome, TransitionType, TriggerMode } from '../../shared/models/ui.models';
 import { AdaptiveLayoutService } from '../layout/adaptive-layout.service';
-import { TaskItem, TaskPriority, TaskService } from '../tasks/task.service';
+import { normalizeDueBucket, TaskDueBucket, TaskItem, TaskPriority, TaskService } from '../tasks/task.service';
 import { ThemeService } from '../theme/theme.service';
 import { StageOverlayService } from './stage-overlay.service';
 
@@ -36,7 +36,9 @@ export class DialogService {
   // Draft form state
   readonly draftTitle = signal<string>('');
   readonly draftCategory = signal<string>('Frontend Angular');
-  readonly draftDate = signal<string>('Hoy');
+  readonly draftDate = signal<TaskDueBucket>('Hoy');
+  readonly draftTimeSlot = signal<string>('10:00');
+  readonly draftDuration = signal<number>(25);
   readonly draftPriority = signal<TaskPriority>('Alta');
   readonly draftNotes = signal<string>('');
 
@@ -63,7 +65,9 @@ export class DialogService {
     this.dialogView.set('task-form');
     this.draftTitle.set(task.title);
     this.draftCategory.set(task.category);
-    this.draftDate.set(task.dateLabel);
+    this.draftDate.set(task.dueBucket);
+    this.draftTimeSlot.set(task.timeSlot);
+    this.draftDuration.set(task.durationMinutes);
     this.draftPriority.set(task.priority);
     this.draftNotes.set(task.notes);
 
@@ -127,11 +131,15 @@ export class DialogService {
     const title = this.draftTitle().trim();
     if (!title) return;
 
+    const dueBucket = normalizeDueBucket(this.draftDate());
     this.taskService.saveTask(
       {
         title,
         category: this.draftCategory(),
-        dateLabel: this.draftDate(),
+        dateLabel: dueBucket,
+        dueBucket,
+        timeSlot: this.draftTimeSlot(),
+        durationMinutes: this.draftDuration(),
         priority: this.draftPriority(),
         notes: this.draftNotes()
       },
@@ -167,6 +175,8 @@ export class DialogService {
     this.draftTitle.set('');
     this.draftCategory.set('Frontend Angular');
     this.draftDate.set('Hoy');
+    this.draftTimeSlot.set('10:00');
+    this.draftDuration.set(25);
     this.draftPriority.set('Alta');
     this.draftNotes.set('');
   }
