@@ -113,7 +113,8 @@
   .state-layer,
   .state-layer::before,
   .focus-ring-m3 {
-    transition-duration: 0.01ms !important;
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
   }
 
   .state-layer:active {

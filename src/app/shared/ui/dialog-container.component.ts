@@ -1,7 +1,8 @@
 import { Component, inject, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
 import { TaskPriority } from '../../core/tasks/task.service';
-import { ThemeService } from '../../core/theme/theme.service';
+import { ContrastLevel, ThemeService } from '../../core/theme/theme.service';
 import { DialogView, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
 import { M3ButtonComponent } from '../components/button/button.component';
 import { M3TextFieldComponent } from '../components/text-field/text-field.component';
@@ -95,41 +96,65 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
 
             <div class="space-y-2">
               <label class="text-xs font-semibold text-muted uppercase tracking-wider">Color Semilla</label>
-              <div class="flex items-center gap-2.5 pt-1">
+              <div class="flex items-center gap-2.5 pt-1" role="group" aria-label="Color semilla del tema">
                 @for (t of themeService.themes; track t.hue) {
-                  <button 
-                    (click)="themeService.setThemeHue(t.hue)" 
+                  <button
+                    type="button"
+                    (click)="themeService.setThemeHue(t.hue)"
+                    [attr.aria-label]="'Color semilla ' + t.name"
+                    [attr.aria-pressed]="themeService.currentHue() === t.hue"
                     [class.ring-2]="themeService.currentHue() === t.hue"
-                    [class.rounded-m3-md]="themeService.currentHue() === t.hue" 
+                    [class.rounded-m3-md]="themeService.currentHue() === t.hue"
                     [class.rounded-full]="themeService.currentHue() !== t.hue"
-                    class="btn-m3 w-8 h-8 ring-offset-2 ring-offset-surface-box ring-primary cursor-pointer"
+                    class="btn-m3 w-8 h-8 ring-offset-2 ring-offset-surface-box ring-primary grid place-items-center cursor-pointer"
+                    style="forced-color-adjust: none"
                     [style.background-color]="'oklch(65% 0.16 ' + t.hue + ')'">
+                    @if (themeService.currentHue() === t.hue) {
+                      <span class="material-symbols-rounded text-base text-white drop-shadow-xs" aria-hidden="true">check</span>
+                    }
                   </button>
                 }
               </div>
             </div>
 
             <div class="space-y-2 pt-1">
-              <label class="text-xs font-semibold text-muted uppercase tracking-wider">Navegación</label>
-              <div class="grid grid-cols-3 gap-2">
-                <button 
-                  (click)="navStyleChange.emit('rail')"
-                  [class]="navStyle() === 'rail' ? 'bg-primary text-on-primary font-semibold' : 'bg-surface-high text-muted hover:text-main'"
-                  class="btn-m3 py-2 px-2.5 rounded-m3-md text-xs cursor-pointer">
-                  Clásica
-                </button>
-                <button 
-                  (click)="navStyleChange.emit('dock')"
-                  [class]="navStyle() === 'dock' ? 'bg-primary text-on-primary font-semibold' : 'bg-surface-high text-muted hover:text-main'"
-                  class="btn-m3 py-2 px-2.5 rounded-m3-md text-xs cursor-pointer">
-                  Dock
-                </button>
-                <button 
-                  (click)="navStyleChange.emit('tunnel')"
-                  [class]="navStyle() === 'tunnel' ? 'bg-primary text-on-primary font-semibold' : 'bg-surface-high text-muted hover:text-main'"
-                  class="btn-m3 py-2 px-2.5 rounded-m3-md text-xs cursor-pointer">
-                  Tunnel
-                </button>
+              <label class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
+                Contraste M3
+              </label>
+              <div
+                role="group"
+                aria-label="Nivel de contraste M3"
+                class="grid grid-cols-3 gap-1.5 bg-surface-high p-1 rounded-m3-full">
+                @for (lvl of contrastLevels; track lvl.id) {
+                  <button
+                    type="button"
+                    (click)="themeService.setContrastLevel(lvl.id)"
+                    [attr.aria-pressed]="themeService.contrastLevel() === lvl.id"
+                    [class]="themeService.contrastLevel() === lvl.id
+                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
+                      : 'text-muted hover:text-main'"
+                    class="btn-m3 py-1.5 px-2.5 rounded-m3-full text-xs cursor-pointer">
+                    {{ lvl.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="space-y-2 pt-1">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-xs font-semibold text-muted uppercase tracking-wider">Navegación</label>
+                <span class="text-[11px] font-mono text-primary">{{ adaptiveLayout.windowSizeClass() }} ({{ adaptiveLayout.windowWidth() }}dp)</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                @for (opt of navStyleOptions; track opt.value) {
+                  <button
+                    (click)="navStyleChange.emit(opt.value)"
+                    [class]="navStyle() === opt.value ? 'bg-primary text-on-primary font-semibold' : 'bg-surface-high text-muted hover:text-main'"
+                    class="btn-m3 py-2 px-2.5 rounded-m3-md text-xs cursor-pointer">
+                    {{ opt.label }}
+                  </button>
+                }
               </div>
             </div>
           </div>
@@ -242,6 +267,20 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
 })
 export class DialogContainerComponent {
   readonly themeService = inject(ThemeService);
+  readonly adaptiveLayout = inject(AdaptiveLayoutService);
+
+  readonly navStyleOptions: readonly { value: NavStyle; label: string }[] = [
+    { value: 'auto', label: 'Auto (M3)' },
+    { value: 'rail', label: 'Rail' },
+    { value: 'dock', label: 'Dock' },
+    { value: 'tunnel', label: 'Focus Bar' }
+  ];
+
+  readonly contrastLevels: readonly { id: ContrastLevel; label: string }[] = [
+    { id: 'standard', label: 'Estándar' },
+    { id: 'medium', label: 'Medio' },
+    { id: 'high', label: 'Alto' }
+  ];
 
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);

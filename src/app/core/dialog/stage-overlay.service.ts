@@ -51,6 +51,10 @@ export class StageOverlayService {
     return typeof doc?.startViewTransition === 'function';
   }
 
+  private prefersReducedMotion(): boolean {
+    return !!this.document.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  }
+
   runViewTransition(
     update: () => void,
     cleanup?: () => void,
@@ -61,7 +65,7 @@ export class StageOverlayService {
       documentElement?: HTMLElement;
     };
 
-    if (typeof doc?.startViewTransition === 'function') {
+    if (typeof doc?.startViewTransition === 'function' && !this.prefersReducedMotion()) {
       const rootEl = doc.documentElement;
       const classes = ['vt-running'];
       if (options.rootClass) classes.push(options.rootClass);
@@ -80,7 +84,7 @@ export class StageOverlayService {
       };
 
       if (transition?.finished) {
-        transition.finished.finally(finalize);
+        transition.finished.finally(finalize).catch(() => {});
       } else {
         finalize();
       }

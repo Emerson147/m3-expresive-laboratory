@@ -1,0 +1,364 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: SELECTION CONTROLS & SLIDER
+   Checkbox (18dp/2dp) | Radio (20dp) | Expressive Slider (16dp+ track & gap)
+   ========================================================= */
+
+.m3-selection-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  position: relative;
+}
+
+.m3-selection-row.is-disabled {
+  cursor: not-allowed;
+}
+
+.m3-selection-target {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  inline-size: 48px;
+  block-size: 48px;
+  margin: -10px;
+}
+
+.m3-selection-native-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.m3-selection-native-input:disabled {
+  cursor: not-allowed;
+}
+
+/* Shared 40dp circular state layer halo */
+.m3-selection-halo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  pointer-events: none;
+  transition:
+    background-color var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-linear),
+    box-shadow var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-selection-target:hover .m3-selection-native-input:not(:disabled) + .m3-selection-halo {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 8%, transparent);
+}
+
+.m3-selection-native-input:checked:not(:disabled) + .m3-selection-halo,
+.m3-selection-native-input.is-checked-visual:not(:disabled) + .m3-selection-halo {
+  color: var(--md-sys-color-primary);
+}
+
+.m3-selection-target:hover .m3-selection-native-input:checked:not(:disabled) + .m3-selection-halo,
+.m3-selection-target:hover .m3-selection-native-input.is-checked-visual:not(:disabled) + .m3-selection-halo {
+  background-color: color-mix(in oklch, var(--md-sys-color-primary) 8%, transparent);
+}
+
+.m3-selection-target:active .m3-selection-native-input:not(:disabled) + .m3-selection-halo {
+  background-color: color-mix(in oklch, var(--md-sys-color-primary) 12%, transparent);
+}
+
+.m3-selection-native-input:focus-visible + .m3-selection-halo {
+  background-color: color-mix(in oklch, var(--md-sys-color-primary) 10%, transparent);
+  box-shadow:
+    0 0 0 2px var(--md-sys-color-surface),
+    0 0 0 4px var(--md-sys-color-primary);
+}
+
+.m3-selection-row.is-error .m3-selection-target:hover .m3-selection-native-input:not(:disabled) + .m3-selection-halo {
+  background-color: color-mix(in oklch, var(--md-sys-color-error) 8%, transparent);
+}
+
+/* --- 1. CHECKBOX (18x18dp, 2dp corner) --- */
+.m3-checkbox-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  background-color: transparent;
+  color: var(--md-sys-color-on-primary);
+  transition:
+    background-color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-spring-fast-spatial);
+}
+
+.m3-checkbox-box.is-checked,
+.m3-checkbox-box.is-indeterminate {
+  background-color: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-selection-target:active .m3-selection-native-input:not(:disabled) ~ .m3-selection-halo .m3-checkbox-box {
+  transform: scale(0.92);
+}
+
+.m3-selection-row.is-error .m3-checkbox-box {
+  border-color: var(--md-sys-color-error);
+}
+
+.m3-selection-row.is-error .m3-checkbox-box.is-checked,
+.m3-selection-row.is-error .m3-checkbox-box.is-indeterminate {
+  background-color: var(--md-sys-color-error);
+  border-color: var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error);
+}
+
+.m3-checkbox-svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.m3-selection-row.is-disabled .m3-checkbox-box {
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+.m3-selection-row.is-disabled .m3-checkbox-box.is-checked,
+.m3-selection-row.is-disabled .m3-checkbox-box.is-indeterminate {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+  border-color: transparent;
+  color: var(--md-sys-color-surface);
+}
+
+/* --- 2. RADIO BUTTON (20x20dp outer ring, 10dp inner dot) --- */
+.m3-radio-outer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  border: 2px solid var(--md-sys-color-on-surface-variant);
+  transition: border-color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-radio-outer.is-selected {
+  border-color: var(--md-sys-color-primary);
+}
+
+.m3-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: var(--md-sys-color-primary);
+  transform: scale(0);
+  transition: transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90));
+}
+
+.m3-radio-outer.is-selected .m3-radio-inner {
+  transform: scale(1);
+}
+
+.m3-selection-row.is-disabled .m3-radio-outer {
+  border-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+.m3-selection-row.is-disabled .m3-radio-inner {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+/* --- 3. M3 EXPRESSIVE SLIDER (Track Gap + Bar Handle + Stop Dots + Value Pill) --- */
+.m3-slider-host {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+  user-select: none;
+}
+
+.m3-slider-input {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 4;
+}
+
+.m3-slider-input:disabled {
+  cursor: not-allowed;
+}
+
+.m3-slider-visual {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.m3-slider-active-track {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  background-color: var(--md-sys-color-primary);
+  border-start-start-radius: var(--md-sys-shape-corner-full, 9999px);
+  border-end-start-radius: var(--md-sys-shape-corner-full, 9999px);
+  border-start-end-radius: 2px;
+  border-end-end-radius: 2px;
+}
+
+.m3-slider-inactive-track {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  background-color: var(--md-sys-color-secondary-container);
+  border-start-start-radius: 2px;
+  border-end-start-radius: 2px;
+  border-start-end-radius: var(--md-sys-shape-corner-full, 9999px);
+  border-end-end-radius: var(--md-sys-shape-corner-full, 9999px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline-end: 6px;
+}
+
+.m3-slider-handle {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: var(--md-sys-color-primary);
+  z-index: 3;
+  transition:
+    width var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-spring-fast-spatial),
+    box-shadow var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-slider-host:hover .m3-slider-input:not(:disabled) ~ .m3-slider-visual .m3-slider-handle,
+.m3-slider-input:active:not(:disabled) ~ .m3-slider-visual .m3-slider-handle {
+  width: 2px;
+}
+
+.m3-slider-input:focus-visible ~ .m3-slider-visual .m3-slider-handle {
+  width: 2px;
+  box-shadow:
+    0 0 0 3px var(--md-sys-color-surface),
+    0 0 0 5px var(--md-sys-color-primary);
+}
+
+.m3-slider-stop-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.m3-slider-value-indicator {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%) scale(0.85);
+  transform-origin: bottom center;
+  padding: 4px 12px;
+  min-width: 36px;
+  text-align: center;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-size: var(--md-sys-typescale-label-medium-size, 0.75rem);
+  font-weight: 700;
+  font-family: var(--md-ref-typeface-mono);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: var(--md-sys-elevation-level-2);
+  transition:
+    opacity var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-spring-fast-spatial);
+}
+
+.m3-slider-host.show-indicator .m3-slider-value-indicator,
+.m3-slider-host:hover .m3-slider-input:not(:disabled) ~ .m3-slider-visual .m3-slider-value-indicator,
+.m3-slider-input:focus-visible ~ .m3-slider-visual .m3-slider-value-indicator,
+.m3-slider-input:active:not(:disabled) ~ .m3-slider-visual .m3-slider-value-indicator {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.m3-slider-host.is-disabled .m3-slider-active-track,
+.m3-slider-host.is-disabled .m3-slider-handle {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+.m3-slider-host.is-disabled .m3-slider-inactive-track {
+  background-color: color-mix(in oklch, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-selection-halo,
+  .m3-checkbox-box,
+  .m3-radio-outer,
+  .m3-radio-inner,
+  .m3-slider-handle,
+  .m3-slider-value-indicator {
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
+  }
+
+  .m3-selection-target:active .m3-selection-native-input:not(:disabled) ~ .m3-selection-halo .m3-checkbox-box {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .m3-checkbox-box {
+    border-color: ButtonText;
+  }
+  .m3-checkbox-box.is-checked,
+  .m3-checkbox-box.is-indeterminate {
+    background-color: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+  .m3-radio-outer {
+    border-color: ButtonText;
+  }
+  .m3-radio-outer.is-selected {
+    border-color: Highlight;
+  }
+  .m3-radio-inner,
+  .m3-slider-active-track,
+  .m3-slider-handle {
+    background-color: Highlight;
+  }
+  .m3-slider-inactive-track {
+    background-color: Canvas;
+    border: 1px solid ButtonText;
+  }
+}

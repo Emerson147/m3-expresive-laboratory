@@ -1,32 +1,60 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CampusService } from '../../core/campus/campus.service';
+import { ClinicService } from '../../core/clinic/clinic.service';
 import { DialogService } from '../../core/dialog/dialog.service';
-import { TaskService } from '../../core/tasks/task.service';
-import { ContrastLevel, ThemeService } from '../../core/theme/theme.service';
+import { InventoryService } from '../../core/inventory/inventory.service';
+import { KanbanService } from '../../core/kanban/kanban.service';
+import { PosService } from '../../core/pos/pos.service';
+import { TaskPriority, TaskService } from '../../core/tasks/task.service';
+import { TelemetryService } from '../../core/telemetry/telemetry.service';
 import { M3ButtonComponent } from '../../shared/components/button/button.component';
-import { M3CardComponent } from '../../shared/components/card/card.component';
-import { M3ChipComponent } from '../../shared/components/chip/chip.component';
 import { M3LinearProgressComponent } from '../../shared/components/progress';
+
+type PulseTone = 'primary' | 'success' | 'warning' | 'error';
+
+interface ModulePulseCard {
+  readonly section: string;
+  readonly title: string;
+  readonly route: string;
+  readonly icon: string;
+  readonly iconBgClass: string;
+  readonly headline: string;
+  readonly detail: string;
+  readonly statusLabel: string;
+  readonly statusIcon: string;
+  readonly statusTone: PulseTone;
+}
+
+const PULSE_BADGE_CLASSES: Record<PulseTone, string> = {
+  primary: 'bg-primary-box text-on-primary-box',
+  success: 'bg-success-box text-on-success-box',
+  warning: 'bg-warning-box text-on-warning-box',
+  error: 'bg-error-box text-on-error-box'
+};
 
 @Component({
   selector: 'app-overview-page',
   standalone: true,
-  imports: [RouterLink, M3ButtonComponent, M3CardComponent, M3ChipComponent, M3LinearProgressComponent],
+  imports: [RouterLink, M3ButtonComponent, M3LinearProgressComponent],
   template: `
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="space-y-6">
 
-      <!-- 1. HERO CARD EXPANDIBLE (BENTO 7 COLS) CON AURORA GPU + CONTAINER TRANSFORM -->
-      <section
-        role="button"
-        tabindex="0"
-        [attr.aria-hidden]="dialogService.isHeroExpanded()"
-        aria-label="Abrir vista detallada de métricas del sistema"
-        (click)="dialogService.toggleHeroDetail(true)"
-        (keydown.enter)="dialogService.toggleHeroDetail(true)"
-        (keydown.space)="$event.preventDefault(); dialogService.toggleHeroDetail(true)"
-        [class.invisible]="dialogService.isHeroExpanded()"
-        [style.view-transition-name]="dialogService.activeTransition() === 'hero' && !dialogService.isHeroExpanded() ? 'hero-transform' : null"
-        class="card-interactive hero-mesh-m3 m3-aurora-glow focus-ring-m3 lg:col-span-7 min-w-0 border border-outline-sub rounded-m3-xl p-8 flex flex-col justify-between min-h-[340px] shadow-xs cursor-pointer group hover:border-primary/50 m3-transition-standard">
+      <!-- BANDA 1: HERO AURORA OPERATIVO (7 COLS) + AGENDA EN VIVO (5 COLS) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- HERO CARD EXPANDIBLE CON AURORA GPU VIVA + CONTAINER TRANSFORM -->
+        <section
+          role="button"
+          tabindex="0"
+          [attr.aria-hidden]="dialogService.isHeroExpanded()"
+          aria-label="Abrir vista detallada de métricas del sistema"
+          (click)="dialogService.toggleHeroDetail(true)"
+          (keydown.enter)="dialogService.toggleHeroDetail(true)"
+          (keydown.space)="$event.preventDefault(); dialogService.toggleHeroDetail(true)"
+          [class.invisible]="dialogService.isHeroExpanded()"
+          [style.view-transition-name]="dialogService.activeTransition() === 'hero' && !dialogService.isHeroExpanded() ? 'hero-transform' : null"
+          class="card-interactive hero-mesh-m3 m3-aurora-glow focus-ring-m3 lg:col-span-7 min-w-0 rounded-m3-xl p-6 md:p-8 flex flex-col justify-between min-h-[300px] shadow-xs cursor-pointer group border border-transparent forced-colors:border-[ButtonText]">
 
           <div class="m3-aurora-layer" aria-hidden="true">
             <span class="m3-aurora-orb m3-aurora-orb-1"></span>
@@ -34,28 +62,44 @@ import { M3LinearProgressComponent } from '../../shared/components/progress';
             <span class="m3-aurora-orb m3-aurora-orb-3"></span>
           </div>
 
-          <div class="space-y-4 max-w-xl">
+          <div class="space-y-4 max-w-2xl">
             <div class="flex flex-wrap items-center gap-2">
               <span class="px-3.5 py-1.5 bg-primary-box text-on-primary-box rounded-full text-xs font-semibold tracking-wide inline-flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm">verified</span>
-                Foundations
+                <span class="material-symbols-rounded text-sm" aria-hidden="true">hub</span>
+                Operación en Vivo
               </span>
-              <span class="px-3 py-1.5 bg-surface/70 backdrop-blur-md border border-outline-sub rounded-full text-xs font-medium text-muted">
-                {{ taskService.pendingCount() }} pendientes
+
+              @let alerts = totalActiveAlerts();
+              <span
+                [class]="alerts > 0 ? 'bg-warning-box text-on-warning-box' : 'bg-success-box text-on-success-box'"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
+                <span class="material-symbols-rounded text-sm" aria-hidden="true">
+                  {{ alerts > 0 ? 'notifications_active' : 'verified' }}
+                </span>
+                {{ alerts > 0 ? alerts + ' alertas activas' : 'Sistema estable' }}
               </span>
-              <span class="px-3 py-1.5 bg-surface/70 backdrop-blur-md border border-outline-sub rounded-full text-xs font-semibold text-primary">
-                {{ taskService.completionRate() }}% avance
+
+              <span class="px-3 py-1.5 bg-surface/75 backdrop-blur-md rounded-full text-xs font-semibold text-primary font-mono">
+                {{ taskService.completionRate() }}% tareas
               </span>
             </div>
 
-            <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight pt-1">
-              Diseño accesible y armónico
-            </h2>
-            <p class="text-muted text-sm md:text-base leading-relaxed">
-              Superficies tonales, legibilidad garantizada por color science OKLCH y elevaciones sutiles sin sobrecargar la vista.
-            </p>
+            <div class="space-y-2 pt-1">
+              <h2 class="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight text-main">
+                Pulso operativo del sistema
+              </h2>
+              <p class="text-muted text-sm md:text-base leading-relaxed max-w-xl">
+                Supervisión reactiva sobre {{ taskService.pendingCount() }} pendientes de agenda y 6 estaciones en tiempo real con señales Angular.
+              </p>
+            </div>
 
-            <div class="pt-1 space-y-1.5">
+            <div class="pt-1 space-y-1.5 max-w-lg">
+              <div class="flex items-center justify-between text-[11px] font-medium text-muted">
+                <span>Avance de jornada</span>
+                <span class="font-mono text-main font-semibold">
+                  {{ taskService.completedCount() }} / {{ taskService.tasks().length }} completadas
+                </span>
+              </div>
               <m3-linear-progress
                 [value]="taskService.completionRate()"
                 color="primary"
@@ -77,8 +121,8 @@ import { M3LinearProgressComponent } from '../../shared/components/progress';
               [class.invisible]="dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center'"
               [style.view-transition-name]="dialogService.activeTransition() === 'dialog' && !dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center' ? 'dialog-transform' : null"
               class="btn-m3 px-5 py-2.5 bg-primary text-on-primary font-medium rounded-full text-sm shadow-sm inline-flex items-center gap-2 cursor-pointer">
-              <span class="material-symbols-rounded text-base">add</span>
-              <span>Crear registro</span>
+              <span class="material-symbols-rounded text-base" aria-hidden="true">add</span>
+              <span>Nueva tarea</span>
             </button>
 
             <m3-button
@@ -89,274 +133,269 @@ import { M3LinearProgressComponent } from '../../shared/components/progress';
               Ver desglose
             </m3-button>
           </div>
-      </section>
+        </section>
 
-      <!-- 2. TARJETA TERCIARIA + CONTROL DE CONTRASTE M3 (BENTO 5 COLS) -->
-      <section
-        style="animation-delay: 40ms;"
-        class="card-m3 m3-anim-item-in lg:col-span-5 min-w-0 bg-tertiary-box border border-outline-sub rounded-m3-xl p-6 xl:p-8 flex flex-col justify-between gap-4 text-on-tertiary-box min-h-[340px] shadow-xs">
-        <div class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-widest opacity-80 flex items-center gap-1">
-            <span class="material-symbols-rounded text-base">palette</span>
-            M3 Expressive Color
-          </span>
-          <h3 class="text-2xl font-bold">Acento Terciario</h3>
-          <p class="text-sm opacity-90 leading-relaxed">
-            Contraste orgánico generado matemáticamente con OKLCH a +60° del tono semilla primario.
-          </p>
-        </div>
+        <!-- FOCUS STACK: AGENDA ACCIONABLE EN VIVO (REEMPLAZA TARJETA DUPLICADA DE COLOR) -->
+        <section
+          aria-label="Agenda en vivo"
+          style="animation-delay: 40ms;"
+          class="m3-anim-item-in lg:col-span-5 min-w-0 bg-surface-low rounded-m3-xl p-6 flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]">
+          <div class="flex items-start justify-between gap-3">
+            <div class="space-y-0.5 min-w-0">
+              <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
+                <span class="material-symbols-rounded text-base" aria-hidden="true">event_upcoming</span>
+                <span>Foco del Día</span>
+              </div>
+              <h3 class="text-xl font-bold text-main">Agenda en vivo</h3>
+            </div>
 
-        <div class="space-y-3">
-          <div class="bg-surface/65 backdrop-blur-md p-3 rounded-m3-lg border border-outline-sub flex flex-wrap items-center justify-between gap-2 text-main">
-            <span class="text-xs font-medium text-muted flex items-center gap-1.5">
-              <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
-              Contraste M3
-            </span>
-            <div class="flex flex-wrap items-center gap-1 bg-surface-high p-1 rounded-full border border-outline-sub" role="group" aria-label="Nivel de contraste M3">
-              @for (lvl of contrastLevels; track lvl.id) {
+            <a
+              routerLink="/agenda"
+              class="btn-m3 focus-ring-m3 h-8 px-3.5 rounded-full bg-sec-box text-on-sec-box text-xs font-semibold inline-flex items-center gap-1.5 no-underline shrink-0 cursor-pointer">
+              <span>Ver Agenda</span>
+              <span class="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
+            </a>
+          </div>
+
+          <ul role="list" class="list-none m-0 p-0 space-y-2">
+            @for (task of previewTasks(); track task.id) {
+              <li>
                 <button
                   type="button"
-                  (click)="setContrastLevel(lvl.id)"
-                  [attr.aria-pressed]="themeService.contrastLevel() === lvl.id"
-                  [class]="themeService.contrastLevel() === lvl.id
-                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'text-muted hover:text-main'"
-                  class="btn-m3 px-2.5 py-1 rounded-full text-xs cursor-pointer">
-                  {{ lvl.label }}
+                  role="checkbox"
+                  [attr.aria-checked]="task.completed"
+                  (click)="taskService.toggleCompleted(task.id)"
+                  [class]="task.completed
+                    ? 'bg-surface/55 text-muted hover:bg-surface'
+                    : 'bg-surface-box text-main hover:bg-surface-high shadow-2xs'"
+                  class="btn-m3 w-full text-left px-3.5 py-2.5 rounded-m3-lg flex items-center justify-between gap-3 cursor-pointer border border-transparent forced-colors:border-[ButtonText]">
+                  <span class="flex items-center gap-3 min-w-0">
+                    <span
+                      class="material-symbols-rounded text-xl shrink-0"
+                      [class]="task.completed ? 'text-primary' : 'text-muted'"
+                      aria-hidden="true">
+                      {{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}
+                    </span>
+                    <span class="min-w-0">
+                      <span
+                        [class.line-through]="task.completed"
+                        [class.opacity-65]="task.completed"
+                        class="block text-sm font-medium truncate">
+                        {{ task.title }}
+                      </span>
+                      <span class="block text-[11px] text-muted truncate">
+                        {{ task.category }} · {{ task.dateLabel }}
+                      </span>
+                    </span>
+                  </span>
+
+                  <span
+                    [class]="priorityBadgeClass(task.priority, task.completed)"
+                    class="px-2 py-0.5 rounded-m3-full text-[11px] font-semibold inline-flex items-center gap-1 shrink-0">
+                    <span class="material-symbols-rounded text-xs" aria-hidden="true">
+                      {{ task.completed ? 'done' : task.priority === 'Alta' ? 'priority_high' : 'flag' }}
+                    </span>
+                    <span>{{ task.completed ? 'Lista' : task.priority }}</span>
+                  </span>
                 </button>
-              }
-            </div>
+              </li>
+            }
+          </ul>
+
+          <div class="pt-1 flex items-center justify-between gap-2 text-xs text-muted">
+            <span>Toca una actividad para actualizar la barra del Hero.</span>
+            <span class="font-mono font-semibold text-main shrink-0">
+              {{ taskService.pendingCount() }} pend.
+            </span>
+          </div>
+        </section>
+      </div>
+
+      <!-- BANDA 2: PULSO MULTIDOMINIO (6 WORKBENCHES EN VIVO) -->
+      <section aria-labelledby="overview-modules-heading" class="space-y-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="space-y-0.5">
+            <h3 id="overview-modules-heading" class="text-base font-bold tracking-tight text-main">
+              Módulos en Vivo
+            </h3>
+            <p class="text-xs text-muted">
+              Estado consolidado de tus 6 estaciones operativas con acceso directo.
+            </p>
           </div>
 
-          <div class="bg-surface/60 backdrop-blur-md p-4 rounded-m3-lg border border-outline-sub flex flex-wrap items-center justify-between gap-3 text-main">
-            <div class="space-y-1">
-              <div class="text-xs text-muted">Semilla Actual</div>
-              <div class="flex items-center gap-2.5">
-                <span class="text-lg font-bold font-mono">Hue {{ themeService.currentHue() }}°</span>
-                <span class="inline-flex items-center gap-1" aria-hidden="true">
-                  <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
-                  <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
-                  <span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
-                </span>
-              </div>
-            </div>
-
-            <m3-button
-              variant="filled"
-              size="sm"
-              icon="arrow_forward"
-              [iconTrailing]="true"
-              routerLink="/agenda">
-              Ver Agenda
-            </m3-button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. BENTO METRICS BANNER (RESUMEN RÁPIDO CON TARJETAS M3) -->
-      <section class="col-span-1 lg:col-span-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-        @for (kpi of kpiCards(); track kpi.label; let idx = $index) {
           <a
-            routerLink="/agenda"
-            [style.animation-delay]="(idx * 40 + 80) + 'ms'"
-            class="block h-full rounded-m3-lg no-underline focus-ring-m3 m3-anim-item-in">
-            <m3-card
-              variant="elevated"
-              padding="md"
-              shape="lg"
-              customClass="h-full m3-card-interactive state-layer flex flex-col justify-between space-y-2">
-              <div class="flex items-center justify-between text-xs text-muted">
-                <span class="flex items-center gap-1.5 font-medium">
-                  <span class="material-symbols-rounded text-base" [class]="kpi.iconClass">{{ kpi.icon }}</span>
-                  {{ kpi.label }}
-                </span>
-                <span class="material-symbols-rounded text-sm opacity-60" aria-hidden="true">arrow_forward</span>
-              </div>
-              <div class="text-2xl font-extrabold text-main font-mono">
-                {{ kpi.value }}
-              </div>
-            </m3-card>
+            routerLink="/design-system/styles"
+            class="btn-m3 px-3.5 py-1.5 rounded-m3-full bg-surface-low hover:bg-surface-high text-xs font-medium text-muted hover:text-main inline-flex items-center gap-1.5 no-underline cursor-pointer">
+            <span class="material-symbols-rounded text-base text-primary" aria-hidden="true">widgets</span>
+            <span>Design System M3</span>
+            <span class="material-symbols-rounded text-sm" aria-hidden="true">arrow_forward</span>
           </a>
-        }
-      </section>
-
-      <!-- 4. LABORATORIO INTERACTIVO DEL OVERVIEW: CHECKLIST EN VIVO + CONTAINER EXPAND INLINE -->
-      <section class="col-span-1 lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        <!-- CHECKLIST RÁPIDA DE TAREAS VINCULADA A TASKSERVICE -->
-        <div
-          style="animation-delay: 160ms;"
-          class="lg:col-span-7 min-w-0 m3-anim-item-in">
-          <m3-card
-            variant="filled"
-            padding="lg"
-            shape="xl"
-            customClass="h-full border border-outline-sub flex flex-col justify-between space-y-5">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
-                  <span class="material-symbols-rounded text-base" aria-hidden="true">checklist</span>
-                  Checklist Reactiva • TaskService
-                </div>
-                <h3 class="text-lg font-bold text-main">Toca una tarea para probar señales en vivo</h3>
-              </div>
-
-              <span class="px-3 py-1 rounded-full bg-surface text-main border border-outline-sub text-xs font-mono font-bold">
-                {{ taskService.completedCount() }} / {{ taskService.tasks().length }} listas
-              </span>
-            </div>
-
-            <div class="flex flex-wrap gap-2.5">
-              @for (task of previewTasks(); track task.id) {
-                <m3-chip
-                  type="filter"
-                  [selected]="task.completed"
-                  [icon]="task.completed ? null : 'radio_button_unchecked'"
-                  (action)="taskService.toggleCompleted(task.id)">
-                  {{ task.title }}
-                </m3-chip>
-              }
-            </div>
-
-            <div class="pt-3 border-t border-outline-sub flex flex-wrap items-center justify-between gap-3">
-              <p class="text-xs text-muted">
-                Cada cambio actualiza al instante la barra del Hero y los KPIs superiores.
-              </p>
-              <m3-button
-                variant="text"
-                size="sm"
-                icon="arrow_forward"
-                [iconTrailing]="true"
-                routerLink="/agenda">
-                Gestionar todas
-              </m3-button>
-            </div>
-          </m3-card>
         </div>
 
-        <!-- CASO 3 INLINE: CONTAINER TRANSFORM EN DOM PERSISTENTE (500ms ABRIR / 250ms VOLVER) -->
-        <div
-          style="animation-delay: 200ms;"
-          class="lg:col-span-5 min-w-0 m3-anim-item-in">
-          <m3-card
-            variant="outlined"
-            padding="lg"
-            shape="xl"
-            customClass="h-full bg-surface-box border border-outline-sub flex flex-col justify-between space-y-4">
-            <div class="space-y-3">
-              <button
-                type="button"
-                (click)="toggleInlineSpecExpanded()"
-                [attr.aria-expanded]="isInlineSpecExpanded()"
-                aria-controls="overview-inline-spec-panel"
-                class="w-full text-left flex items-start justify-between gap-3 rounded-m3-md focus-ring-m3 cursor-pointer">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
-                    <span class="material-symbols-rounded text-base" aria-hidden="true">animation</span>
-                    Caso 3 Inline • DOM Persistente
-                  </div>
-                  <h3 class="text-lg font-bold text-main">Expandir sin View Transition</h3>
-                  <p class="text-xs text-muted font-mono">
-                    {{ isInlineSpecExpanded() ? 'Abierto (long2 • 500ms emphasized)' : 'Cerrado (medium1 • 250ms emphasized)' }}
-                  </p>
-                </div>
-
-                <span
-                  class="w-9 h-9 shrink-0 rounded-full bg-surface-high border border-outline-sub grid place-items-center text-main transition-transform"
-                  [class.rotate-180]="isInlineSpecExpanded()"
-                  [style.transition-duration]="isInlineSpecExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
-                  style="transition-timing-function: var(--md-sys-motion-easing-emphasized);"
-                  aria-hidden="true">
-                  <span class="material-symbols-rounded text-lg">expand_more</span>
-                </span>
-              </button>
-
-              <div
-                id="overview-inline-spec-panel"
-                [attr.inert]="!isInlineSpecExpanded() ? '' : null"
-                [class]="isInlineSpecExpanded() ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'"
-                [style.transition-duration]="isInlineSpecExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
-                style="transition-timing-function: var(--md-sys-motion-easing-emphasized);"
-                class="grid transition-[grid-template-rows,opacity,margin]">
-                <div class="overflow-hidden">
-                  <div class="p-3.5 rounded-m3-lg bg-surface border border-outline-sub space-y-2.5 text-xs">
-                    <p class="text-muted leading-relaxed">
-                      Como esta card sigue viva en el mismo árbol DOM, usa transición CSS con <code class="font-mono text-primary">grid-rows</code> + <code class="font-mono text-primary">emphasized</code> (500ms abrir / 250ms volver), sin capturar snapshots de pantalla completa.
-                    </p>
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                      <m3-button
-                        variant="tonal"
-                        size="sm"
-                        icon="science"
-                        routerLink="/design-system/motion">
-                        Probar en Motion Lab
-                      </m3-button>
-                      <m3-button
-                        variant="text"
-                        size="sm"
-                        icon="palette"
-                        routerLink="/design-system/styles">
-                        Ver Tokens
-                      </m3-button>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          @for (card of modulePulseCards(); track card.section; let idx = $index) {
+            <a
+              [routerLink]="card.route"
+              [style.animation-delay]="(idx * 35 + 80) + 'ms'"
+              class="card-interactive m3-anim-item-in focus-ring-m3 bg-surface-low hover:bg-surface-container rounded-m3-xl p-5 no-underline flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[LinkText]">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span
+                    [class]="card.iconBgClass"
+                    class="w-10 h-10 rounded-m3-md grid place-items-center shrink-0">
+                    <span class="material-symbols-rounded text-xl" aria-hidden="true">{{ card.icon }}</span>
+                  </span>
+                  <div class="min-w-0">
+                    <div class="text-xs font-semibold text-muted uppercase tracking-wider truncate">
+                      {{ card.title }}
+                    </div>
+                    <div class="text-xl font-extrabold text-main font-mono truncate">
+                      {{ card.headline }}
                     </div>
                   </div>
                 </div>
+
+                <span
+                  [class]="badgeClass(card.statusTone)"
+                  class="px-2.5 py-1 rounded-m3-full text-[11px] font-semibold inline-flex items-center gap-1 shrink-0">
+                  <span class="material-symbols-rounded text-xs" aria-hidden="true">{{ card.statusIcon }}</span>
+                  <span>{{ card.statusLabel }}</span>
+                </span>
               </div>
-            </div>
 
-            <div class="pt-3 border-t border-outline-sub flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted">
-              <span>Arriba: ViewTransition</span>
-              <span class="text-primary font-semibold">Aquí: CSS Transitions</span>
-            </div>
-          </m3-card>
+              <div class="flex items-center justify-between gap-2 text-xs text-muted pt-1">
+                <span class="truncate">{{ card.detail }}</span>
+                <span class="material-symbols-rounded text-base text-primary shrink-0" aria-hidden="true">
+                  arrow_forward
+                </span>
+              </div>
+            </a>
+          }
         </div>
-
       </section>
 
     </div>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OverviewComponent {
   readonly taskService = inject(TaskService);
-  readonly themeService = inject(ThemeService);
   readonly dialogService = inject(DialogService);
-
-  readonly isInlineSpecExpanded = signal<boolean>(false);
-
-  readonly contrastLevels: readonly { id: ContrastLevel; label: string }[] = [
-    { id: 'standard', label: 'Estándar' },
-    { id: 'medium', label: 'Medio' },
-    { id: 'high', label: 'Alto' }
-  ];
+  private readonly clinicService = inject(ClinicService);
+  private readonly campusService = inject(CampusService);
+  private readonly posService = inject(PosService);
+  private readonly inventoryService = inject(InventoryService);
+  private readonly kanbanService = inject(KanbanService);
+  private readonly telemetryService = inject(TelemetryService);
 
   readonly previewTasks = computed(() => this.taskService.tasks().slice(0, 4));
 
-  readonly kpiCards = computed(() => [
-    {
-      label: 'Total de Tareas',
-      value: this.taskService.tasks().length,
-      icon: 'done_all',
-      iconClass: 'text-primary'
-    },
-    {
-      label: 'Pendientes',
-      value: this.taskService.pendingCount(),
-      icon: 'hourglass_top',
-      iconClass: 'text-tertiary'
-    },
-    {
-      label: 'Completadas',
-      value: this.taskService.completedCount(),
-      icon: 'check_circle',
-      iconClass: 'text-secondary'
-    }
-  ]);
+  readonly totalActiveAlerts = computed(() => {
+    const clinicAlerts = this.clinicService.kpiSummary().criticalCases;
+    const invSummary = this.inventoryService.kpiSummary();
+    const stockAlerts = invSummary.lowStockSkus + invSummary.outOfStockSkus > 0 ? 1 : 0;
+    const kanbanAlerts = this.kanbanService.kpis().slaBreachCount;
+    const fleetAlerts = this.telemetryService.kpiSummary().delayedCount;
+    const campusAlerts = this.campusService.pendingAssignmentsCount();
+    return clinicAlerts + stockAlerts + kanbanAlerts + fleetAlerts + campusAlerts;
+  });
 
-  setContrastLevel(level: ContrastLevel): void {
-    this.themeService.setContrastLevel(level);
+  readonly modulePulseCards = computed<readonly ModulePulseCard[]>(() => {
+    const clinic = this.clinicService.kpiSummary();
+    const activeClass = this.campusService.activeClass();
+    const pendingAssignments = this.campusService.pendingAssignmentsCount();
+    const creditProgress = this.campusService.creditProgress();
+    const posShift = this.posService.shiftInfo();
+    const cartCount = this.posService.cartCount();
+    const inventory = this.inventoryService.kpiSummary();
+    const stockIssues = inventory.lowStockSkus + inventory.outOfStockSkus;
+    const kanban = this.kanbanService.kpis();
+    const telemetry = this.telemetryService.kpiSummary();
+
+    return [
+      {
+        section: 'clinic',
+        title: 'Clínica & Triaje',
+        route: '/clinic',
+        icon: 'local_hospital',
+        iconBgClass: clinic.criticalCases > 0 ? 'bg-error-box text-on-error-box' : 'bg-primary-box text-on-primary-box',
+        headline: `${clinic.totalActivePatients} en triaje`,
+        detail: `Boxes ${clinic.occupiedBeds}/${clinic.totalBeds} · Shock ${clinic.shockTraumaOccupancy}`,
+        statusLabel: clinic.criticalCases > 0 ? `${clinic.criticalCases} críticos` : 'Estable',
+        statusIcon: clinic.criticalCases > 0 ? 'emergency' : 'check_circle',
+        statusTone: clinic.criticalCases > 0 ? 'error' : 'success'
+      },
+      {
+        section: 'campus',
+        title: 'Campus',
+        route: '/campus',
+        icon: 'school',
+        iconBgClass: 'bg-primary-box text-on-primary-box',
+        headline: activeClass.code,
+        detail: `${activeClass.subject} · ${creditProgress.formattedPercent} avance`,
+        statusLabel: pendingAssignments > 0 ? `${pendingAssignments} entregas` : 'Al día',
+        statusIcon: pendingAssignments > 0 ? 'assignment_late' : 'task_alt',
+        statusTone: pendingAssignments > 0 ? 'warning' : 'primary'
+      },
+      {
+        section: 'pos',
+        title: 'Punto de Venta',
+        route: '/pos',
+        icon: 'point_of_sale',
+        iconBgClass: 'bg-tertiary-box text-on-tertiary-box',
+        headline: `${posShift.salesCountToday} tickets`,
+        detail: `${posShift.register} · ${posShift.shift} · ${cartCount} en carrito`,
+        statusLabel: posShift.sunatOnline ? 'SUNAT OK' : posShift.status,
+        statusIcon: 'verified',
+        statusTone: 'success'
+      },
+      {
+        section: 'inventory',
+        title: 'Inventario',
+        route: '/inventory',
+        icon: 'inventory_2',
+        iconBgClass: 'bg-sec-box text-on-sec-box',
+        headline: `${inventory.healthRate}% salud`,
+        detail: `${inventory.totalUnits} uds · ${inventory.totalSkus} SKUs`,
+        statusLabel: stockIssues > 0 ? `${stockIssues} alertas` : 'Stock OK',
+        statusIcon: stockIssues > 0 ? 'warning' : 'inventory',
+        statusTone: stockIssues > 0 ? 'warning' : 'success'
+      },
+      {
+        section: 'kanban',
+        title: 'Kanban KDS',
+        route: '/kanban',
+        icon: 'view_kanban',
+        iconBgClass: kanban.slaBreachCount > 0 ? 'bg-warning-box text-on-warning-box' : 'bg-primary-box text-on-primary-box',
+        headline: `${kanban.totalActive} órdenes`,
+        detail: `Prom. ${kanban.avgPrepTimeMin} min · ${kanban.onTimeRatePercent}% SLA`,
+        statusLabel: kanban.slaBreachCount > 0 ? `${kanban.slaBreachCount} demoradas` : 'En tiempo',
+        statusIcon: kanban.slaBreachCount > 0 ? 'timer_off' : 'timer',
+        statusTone: kanban.slaBreachCount > 0 ? 'error' : 'success'
+      },
+      {
+        section: 'telemetry',
+        title: 'Telemetría Viva',
+        route: '/telemetry',
+        icon: 'sensors',
+        iconBgClass: 'bg-tertiary-box text-on-tertiary-box',
+        headline: `${telemetry.activeFleetCount}/${telemetry.totalFleetCount} en ruta`,
+        detail: `${telemetry.averageSpeedKmh} km/h · Frío ${telemetry.coldChainAvgTempC}°C`,
+        statusLabel: telemetry.delayedCount > 0 ? `${telemetry.delayedCount} retrasos` : `${telemetry.slaRate}% SLA`,
+        statusIcon: telemetry.delayedCount > 0 ? 'schedule' : 'route',
+        statusTone: telemetry.delayedCount > 0 ? 'warning' : 'primary'
+      }
+    ];
+  });
+
+  badgeClass(tone: PulseTone): string {
+    return PULSE_BADGE_CLASSES[tone];
   }
 
-  toggleInlineSpecExpanded(): void {
-    this.isInlineSpecExpanded.update(expanded => !expanded);
+  priorityBadgeClass(priority: TaskPriority, completed: boolean): string {
+    if (completed) return 'bg-surface-high text-muted';
+    if (priority === 'Alta') return 'bg-error-box text-on-error-box';
+    if (priority === 'Media') return 'bg-warning-box text-on-warning-box';
+    return 'bg-surface-high text-muted';
   }
 }

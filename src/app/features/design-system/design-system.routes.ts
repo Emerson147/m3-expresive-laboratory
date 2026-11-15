@@ -40,6 +40,14 @@ export const DESIGN_SYSTEM_ROUTES: Routes = [
         },
         loadComponent: () => import('./pages/motion-lab.component').then(m => m.MotionLabComponent)
       },
+      {
+        path: 'playbook',
+        data: {
+          labTitle: 'Paso 5: Biblia M3 (De Cero a Sistema)',
+          labSubtitle: 'Qué copiar, cómo armar sistemas reales desde cero y oráculo estricto Google M3 + Web'
+        },
+        loadComponent: () => import('./pages/playbook-lab.component').then(m => m.PlaybookLabComponent)
+      },
       { path: '**', redirectTo: 'styles' }
     ]
   }

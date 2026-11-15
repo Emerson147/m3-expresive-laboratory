@@ -15,7 +15,7 @@ M3 Expressive departs from rigid, sterile enterprise layouts through:
 
 1. **Dynamic Color Science (OKLCH)**: Perceptually uniform lightness across the color spectrum, preventing luminance distortion when shifting hues.
 2. **Spring Physics & Expressive Motion**: Non-linear physics (`cubic-bezier(0.05, 0.7, 0.1, 1)` and spring curves) instead of generic linear/ease transitions.
-3. **Fluid Shape Morphing**: Elements dynamically transition between bounded pill (`h/2`) and squircle radii on interactive controls, and uniform $N=40$ SVG spline polygons on `<m3-loading-indicator>`.
+3. **Fluid Shape Morphing**: Elements dynamically transition between bounded pill (`h/2`) and squircle radii on interactive controls, and uniform $N=180$ SVG spline polygons on `<m3-loading-indicator>`.
 4. **Bento Grid Hierarchy**: Asymmetric modular cards prioritizing content density and focal points over uniform repetition.
 5. **Depth via Stage Recess**: Modal dialogs do not simply cover content with a dark scrim; the entire underlying stage scales down and blurs into a recess layer.
 
@@ -478,10 +478,11 @@ When porting or creating new M3 Expressive components:
   * **Cap-Compensated `4dp` Gap**: Round stroke caps protrude `strokeWidth / 2` on each tip, so both flat `trackDashArray`/`trackDashOffset` and wavy `gapAngle` reserve `effectiveGap = gapLength + strokeWidth` (plus `shouldRenderTrack()` hides degenerate `0px` tracks when remaining arc drops below `2 * effectiveGap`). At `0%` determinate, active indicator hides to prevent orphan caps.
   * **Wavy Variant (`[wavy]="true"`) & `four-color`**: Reserved for indeterminate mode (`[value]="null"`), cycling vivid `primary -> secondary -> tertiary -> color-mix(in oklch, primary 52%, tertiary)` tokens instead of dark ink.
 * **Shape-Morphing Loading Indicator (`m3-loading-indicator`)**:
-  * Dedicated to short indeterminate waits (`200ms – 5s`), pull-to-refresh, and busy surfaces. Active polygon occupies `38dp` inside a `48dp` bounding box (`md`).
-  * Continuous GPU SMIL spline morphing across 7 canonical M3 shapes: `SoftBurst -> Cookie8 -> Pentagon -> Pill -> Squircle -> Cookie4 -> Oval` (`M3_SOFT_BURST_PATH`, `M3_COOKIE8_PATH`, `M3_PENTAGON_PATH`, `M3_PILL_PATH`, `M3_SQUIRCLE_PATH`, `M3_COOKIE4_PATH`, `M3_OVAL_PATH`; plus `M3_CIRCLE_PATH`).
-  * **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path uses `SEGMENT_COUNT = 40` ($\text{lcm}(2, 4, 5, 8, 10)$) closed Catmull-Rom `C` segments centered at `(24, 24)` (`viewBox="0 0 48 48"`). Unmounts `<animate>` reactively when `prefers-reduced-motion: reduce` is active.
-  * Supports `[contained]="true"` (`primary-container` with `on-primary-container` fill, scaling with `sm`/`md`/`lg`) and `[elevated]="true"` (`surface-container-high` floating pull-to-refresh badge).
+  * Dedicated to short indeterminate waits (`200ms – 5s`), pull-to-refresh gestures, and busy surfaces. Default `md` container is `48dp` with a `38dp` active polygon (`38/48` optical ratio) and semantic `role="progressbar"` with contextual action+object `aria-label`.
+  * Supports numeric `[diameter]` clamped `24–240dp` (`effectiveDiameterDp` / `effectiveShapeDp` keeping the exact `38/48` optical ratio across bare and `[contained]` modes), determinate `[progress]` in `[0, 1]` (morphing `Circle +18deg -> SoftBurst` with `aria-valuenow/min/max` for pull-to-refresh drag gestures), and `[paused]` to freeze spring motion cleanly without resetting pose.
+  * Outside-NgZone spring RAF spline morphing (`dampingRatio = 0.6`, `stiffness = 200`, `650ms` intervals paired with `+90deg` spring quarter-turns and `4666ms` baseline rotation) across all 7 canonical M3 shapes: `SoftBurst -> Cookie9 -> Pentagon -> Pill -> Sunny -> Cookie4 -> Oval` (`M3_SOFT_BURST_PATH`, `M3_COOKIE9_PATH`, `M3_PENTAGON_PATH`, `M3_PILL_PATH`, `M3_SUNNY_PATH`, `M3_COOKIE4_PATH`, `M3_OVAL_PATH`; plus `M3_CIRCLE_PATH`).
+  * **Uniform $N = 180$ Cubic Bézier Segment Rule**: Every SVG path uses `M3_LOADING_SEGMENT_COUNT = 180` closed Catmull-Rom `C` segments centered at `(24, 24)` (`viewBox="0 0 48 48"`), avoiding Chromium SMIL `keySplines > 1` rejections. Cancels RAF and freezes on `Pentagon` when `prefers-reduced-motion: reduce` is active (determinate `[progress]` retains gesture shape without spin).
+  * Supports `[contained]="true"` (`primary-container` with `on-primary-container` fill, scaling with `sm`/`md`/`lg` or `[diameter]`) and floating pill extension `[elevated]="true"` (`surface-container-high` wrapping any diameter via auto padding).
 * **Skeleton / Shimmer (`.m3-skeleton`, `.m3-skeleton-shimmer`)**:
   * Zero-layout-shift placeholders with OKLCH reflective wave gradient.
 
@@ -497,8 +498,8 @@ When porting or creating new M3 Expressive components:
 <!-- Wavy circular progress with disjoint smooth track -->
 <m3-circular-progress [wavy]="true" size="md" [value]="uploadPercent" />
 
-<!-- Shape-morphing loading indicator (Pull-to-refresh) -->
-<m3-loading-indicator size="md" [contained]="true" color="primary" />
+<!-- Shape-morphing loading indicator (Contained Pull-to-refresh + Custom Diameter) -->
+<m3-loading-indicator [diameter]="48" [progress]="pullProgressOrNull" [contained]="true" color="primary" ariaLabel="Actualizando contenido..." />
 ```
 
 ---
@@ -599,7 +600,7 @@ Material 3 Expressive dynamically switches navigation patterns based on Window S
 
 * `none`: `0px` | `extra-small`: `4px` | `small`: `8px` | `medium`: `12px` | `large`: `16px`
 * `large-increased`: **`20px` (M3E)** | `extra-large`: `28px` | `extra-large-increased`: **`32px` (M3E)** | `extra-extra-large`: **`48px` (M3E)** | `full`: `9999px` (static pills/circles ONLY — never for animated CSS `border-radius` morphing)
-* **3 Shape Principles**: (1) **Attention Hierarchy** (pills stand out inside organic cards without thick borders), (2) **Optical Concentricity** ($R_{\text{outer}} \approx R_{\text{inner}} + \text{padding}$), (3) **Geometry as Visual Haptics** (Bounded `h/2` Corner Morphing on Web/Desktop + $N=40$ Polygon Spline Morphing on `<m3-loading-indicator>`).
+* **3 Shape Principles**: (1) **Attention Hierarchy** (pills stand out inside organic cards without thick borders), (2) **Optical Concentricity** ($R_{\text{outer}} \approx R_{\text{inner}} + \text{padding}$), (3) **Geometry as Visual Haptics** (Bounded `h/2` Corner Morphing on Web/Desktop + $N=180$ Polygon Spline Morphing on `<m3-loading-indicator>`).
 
 ### Elevation (`0dp → 12dp`), Applying Elevation & State Layers (`_elevation.css`, `_interaction.css`)
 

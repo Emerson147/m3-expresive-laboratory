@@ -1,8 +1,11 @@
 import { Component, computed, signal } from '@angular/core';
+import { M3SwitchComponent } from '../../../shared/components/switch/switch.component';
 import {
   CANONICAL_DURATIONS,
   CANONICAL_EASINGS,
+  MODERN_WEB_MOTION_PRIMITIVES,
   MOTION_THEATER_SETS,
+  SPRING_EXPRESSIVE_FAST_SPATIAL_LINEAR,
   SPRING_PHYSICS_BY_SPEED,
   SPRING_WEB_CURVES,
   SpringSpeed,
@@ -28,6 +31,60 @@ type MotionPatternId =
 @Component({
   selector: 'app-motion-lab',
   standalone: true,
+  imports: [M3SwitchComponent],
+  styles: [`
+    .ml-top-layer-popover {
+      margin: auto;
+      opacity: 0;
+      transform: translateY(10px) scale(0.96);
+      transition:
+        opacity var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate),
+        transform var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate),
+        display var(--md-sys-motion-duration-medium1, 250ms) allow-discrete,
+        overlay var(--md-sys-motion-duration-medium1, 250ms) allow-discrete;
+    }
+
+    .ml-top-layer-popover:popover-open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    @starting-style {
+      .ml-top-layer-popover:popover-open {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+      }
+    }
+
+    .ml-top-layer-popover::backdrop {
+      background-color: oklch(0% 0 0 / 0.36);
+      opacity: 0;
+      transition:
+        opacity var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate),
+        display var(--md-sys-motion-duration-medium1, 250ms) allow-discrete,
+        overlay var(--md-sys-motion-duration-medium1, 250ms) allow-discrete;
+    }
+
+    .ml-top-layer-popover:popover-open::backdrop {
+      opacity: 1;
+    }
+
+    @starting-style {
+      .ml-top-layer-popover:popover-open::backdrop {
+        opacity: 0;
+      }
+    }
+
+    @keyframes mlReducedSnapDemo {
+      0% { opacity: 0; transform: translateX(28px) scale(0.88); }
+      100% { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    @keyframes mlReducedCalmFade {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  `],
   template: `
     <div class="space-y-6">
       <!-- GRID DE 2 COLUMNAS: ASIMETRÍA + FÍSICA DE RESORTES -->
@@ -106,7 +163,7 @@ type MotionPatternId =
             <!-- PLAYGROUND INTERACTIVO DE ASIMETRÍA -->
             <div class="pt-2">
               <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden">
-                <!-- CONTENEDOR ASIMÉTRICO EN VIVO (MISMA ARQUITECTURA DE CAJA ACOTADA) -->
+                <!-- CONTENEDOR ASIMÉTRICO EN VIVO (DOM PERSISTENTE, PROPIEDADES EXPLÍCITAS) -->
                 <div
                   (click)="toggleAsymmetryDemo()"
                   [style.transition-duration]="demoAsymmetryOpen()
@@ -115,36 +172,46 @@ type MotionPatternId =
                   [style.transition-timing-function]="demoAsymmetryMode() === 'disposable'
                     ? (demoAsymmetryOpen() ? 'var(--md-sys-motion-easing-emphasized-decelerate)' : 'var(--md-sys-motion-easing-emphasized-accelerate)')
                     : 'var(--md-sys-motion-easing-emphasized)'"
+                  style="transition-property: width, height, padding, border-radius, background-color, border-color, box-shadow, color;"
                   [class]="demoAsymmetryOpen()
                     ? 'w-[384px] h-36 p-4 bg-surface-box text-main border-primary rounded-m3-xl shadow-lg'
                     : 'w-56 h-10 px-4 bg-primary text-on-primary border-transparent rounded-full shadow-xs'"
-                  class="cursor-pointer overflow-hidden border select-none max-w-full transition-all text-center">
-                  @if (!demoAsymmetryOpen()) {
-                    <div class="h-full flex items-center justify-center gap-2 text-xs font-bold">
-                      <span class="material-symbols-rounded text-base">open_in_full</span>
-                      <span>{{ demoAsymmetryMode() === 'disposable' ? 'Abrir Superficie (400ms)' : 'Expandir en Pantalla (500ms)' }}</span>
+                  class="relative cursor-pointer overflow-hidden border select-none max-w-full text-center">
+                  <div
+                    [attr.inert]="demoAsymmetryOpen() ? '' : null"
+                    [class]="demoAsymmetryOpen() ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                    style="transition-property: opacity;"
+                    [style.transition-duration]="demoAsymmetryOpen() ? 'var(--md-sys-motion-duration-short1)' : 'var(--md-sys-motion-duration-short3)'"
+                    class="h-full flex items-center justify-center gap-2 text-xs font-bold">
+                    <span class="material-symbols-rounded text-base">open_in_full</span>
+                    <span>{{ demoAsymmetryMode() === 'disposable' ? 'Abrir Superficie (400ms)' : 'Expandir en Pantalla (500ms)' }}</span>
+                  </div>
+
+                  <div
+                    [attr.inert]="!demoAsymmetryOpen() ? '' : null"
+                    [class]="demoAsymmetryOpen() ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+                    style="transition-property: opacity;"
+                    [style.transition-duration]="demoAsymmetryOpen() ? 'var(--md-sys-motion-duration-medium1)' : 'var(--md-sys-motion-duration-short2)'"
+                    [style.transition-delay]="demoAsymmetryOpen() ? '60ms' : '0ms'"
+                    class="absolute inset-4 space-y-2 text-left">
+                    <div class="flex items-center justify-between border-b border-outline-sub pb-1.5">
+                      <span class="text-xs font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        <span class="material-symbols-rounded text-sm">notifications</span>
+                        Superficie Revelada
+                      </span>
+                      <span class="material-symbols-rounded text-base text-muted hover:text-main">close</span>
                     </div>
-                  } @else {
-                    <div class="space-y-2 text-left" style="animation: m3ContainerContentIn 250ms var(--md-sys-motion-easing-emphasized-decelerate) both;">
-                      <div class="flex items-center justify-between border-b border-outline-sub pb-1.5">
-                        <span class="text-xs font-extrabold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                          <span class="material-symbols-rounded text-sm">notifications</span>
-                          Superficie Revelada
-                        </span>
-                        <span class="material-symbols-rounded text-base text-muted hover:text-main">close</span>
-                      </div>
-                      <p class="text-xs text-muted leading-relaxed">
-                        @if (demoAsymmetryMode() === 'disposable') {
-                          Desaceleración suave al entrar (400ms) para asimilar la info; al cerrar, salida acelerada e instantánea (200ms).
-                        } @else {
-                          Despegue elástico al abrir (500ms) y retorno ágil (250ms) frenando suave sobre el origen con <code class="font-mono text-main">emphasized</code>.
-                        }
-                      </p>
-                      <div class="text-[10px] font-mono text-primary font-bold">
-                        {{ demoAsymmetryMode() === 'disposable' ? 'Clic para cerrar acelerado (200ms)' : 'Clic para regresar suave (250ms)' }}
-                      </div>
+                    <p class="text-xs text-muted leading-relaxed">
+                      @if (demoAsymmetryMode() === 'disposable') {
+                        Desaceleración suave al entrar (400ms) para asimilar la info; al cerrar, salida acelerada e instantánea (200ms).
+                      } @else {
+                        Despegue elástico al abrir (500ms) y retorno ágil (250ms) frenando suave sobre el origen con <code class="font-mono text-main">emphasized</code>.
+                      }
+                    </p>
+                    <div class="text-[10px] font-mono text-primary font-bold">
+                      {{ demoAsymmetryMode() === 'disposable' ? 'Clic para cerrar acelerado (200ms)' : 'Clic para regresar suave (250ms)' }}
                     </div>
-                  }
+                  </div>
                 </div>
 
                 <!-- BARRA DE TIEMPO VISUAL -->
@@ -251,6 +318,27 @@ type MotionPatternId =
                   </p>
                 </div>
 
+                <!-- COMPARATIVA BEZIER VS CSS LINEAR() SPRING -->
+                <div class="flex items-center justify-between gap-2 text-[10px]">
+                  <span class="text-muted font-semibold">Motor Web:</span>
+                  <div class="inline-flex items-center gap-1 bg-surface-high p-0.5 rounded-full border border-outline-sub">
+                    <button
+                      type="button"
+                      (click)="setSpringCurveMode('bezier')"
+                      [class]="demoSpringCurveMode() === 'bezier' ? 'bg-primary text-on-primary font-bold' : 'text-muted hover:text-main'"
+                      class="px-2 py-0.5 rounded-full cursor-pointer transition-colors">
+                      cubic-bezier()
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setSpringCurveMode('linear')"
+                      [class]="demoSpringCurveMode() === 'linear' ? 'bg-primary text-on-primary font-bold' : 'text-muted hover:text-main'"
+                      class="px-2 py-0.5 rounded-full cursor-pointer transition-colors">
+                      linear() Multi-Rebote
+                    </button>
+                  </div>
+                </div>
+
                 <!-- ELEMENTO ANIMADO SPATIAL -->
                 <div class="h-28 bg-surface-high rounded-m3-md flex items-center justify-center overflow-hidden relative cursor-pointer"
                   (click)="triggerSpringDemo()">
@@ -258,10 +346,10 @@ type MotionPatternId =
                     <div
                       class="w-14 h-14 rounded-m3-md bg-primary text-on-primary flex flex-col items-center justify-center font-bold text-xs shadow-md select-none"
                       [style.animation]="demoSpringCount() > 0
-                        ? ('m3SpringScale ' + activeSpringSpecs().spatial.duration + 'ms ' + activeSpringSpecs().spatial.curve + ' both')
+                        ? ('m3SpringScale ' + activeSpringSpecs().spatial.duration + 'ms ' + activeSpatialCurve() + ' both')
                         : 'none'">
                       <span class="material-symbols-rounded text-xl">transform</span>
-                      <span class="text-[9px] font-mono font-normal">Rebote</span>
+                      <span class="text-[9px] font-mono font-normal">{{ demoSpringCurveMode() === 'linear' ? 'linear()' : 'Rebote' }}</span>
                     </div>
                   }
                 </div>
@@ -276,9 +364,9 @@ type MotionPatternId =
                     <span class="text-muted">Web Curve Token:</span>
                     <span class="font-mono text-primary font-bold">{{ activeSpringSpecs().spatial.token }}</span>
                   </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-muted">CSS Easing &amp; Timing:</span>
-                    <span class="font-mono text-[10px] text-main">{{ activeSpringSpecs().spatial.curve }} • {{ activeSpringSpecs().spatial.duration }}ms</span>
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-muted shrink-0">CSS Easing &amp; Timing:</span>
+                    <span class="font-mono text-[10px] text-main truncate">{{ activeSpatialCurve() }} • {{ activeSpringSpecs().spatial.duration }}ms</span>
                   </div>
                 </div>
               </div>
@@ -370,12 +458,12 @@ type MotionPatternId =
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-main flex items-center gap-1">
                       <span class="material-symbols-rounded text-sm">speed</span>
-                      Standard (Utilitario e Invisible)
+                      Standard / Minimalismo Zen
                     </span>
                     <span class="font-mono text-[10px] text-muted font-bold">y₁ = 1.06 (+6%)</span>
                   </div>
                   <p class="text-[11px] text-muted leading-relaxed">
-                    <strong>Para interfaces densas y alta frecuencia:</strong> tablas de inventario, grillas de datos enterprise, dropdowns continuos y campos de texto. Evita la fatiga visual de rebotes repetitivos mientras mantiene fluidez sin fricción.
+                    <strong>Para interfaces densas y calma operativa:</strong> tablas enterprise, formularios continuos y estilo <em>Minimalismo Zen</em>. Activalo en todo el framework con <code class="font-mono text-main">data-motion-scheme="standard"</code> en <code class="font-mono text-main">&lt;html&gt;</code> o con <code class="font-mono text-main">ThemeService.setMotionScheme('standard')</code>.
                   </p>
                 </div>
               </div>
@@ -385,7 +473,7 @@ type MotionPatternId =
           <div class="text-[11px] text-muted flex items-center justify-between pt-2 border-t border-outline-sub flex-wrap gap-2">
             <div class="flex items-center gap-1.5">
               <span class="material-symbols-rounded text-sm text-primary">verified</span>
-              <span>M3 Web Spec: Curvas <code class="font-mono text-main">cubic-bezier</code> con sobrepaso en eje Y (&gt; 1.0) para inercia real en navegador.</span>
+              <span>M3 Web Spec: Componentes usan <code class="font-mono text-main">--md-sys-motion-spring-*-spatial</code> y heredan <code class="font-mono text-main">[data-motion-scheme="standard"]</code> sin tocar código.</span>
             </div>
             <div class="font-mono text-[10px] text-muted">
               Tokens activos: --md-sys-motion-spring-{{ demoSpringStyle() }}-{{ demoSpringSpeed() }}-spatial
@@ -766,12 +854,12 @@ type MotionPatternId =
                 <div class="w-full h-52 grid place-items-center">
                   <div
                     (click)="toggleContainerDemo()"
-                    class="cursor-pointer overflow-hidden border select-none max-w-full transition-all"
+                    class="cursor-pointer overflow-hidden border select-none max-w-full"
                     [class]="demoContainerExpanded()
                       ? 'w-[448px] h-48 p-4 bg-surface-box text-main rounded-m3-xl border-primary shadow-lg'
                       : 'w-72 h-16 p-3 bg-surface-high hover:bg-surface-box text-main rounded-m3-lg border-outline-sub shadow-xs'"
                     [style.transition-duration]="demoContainerExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
-                    style="transition-timing-function: var(--md-sys-motion-easing-emphasized);">
+                    style="transition-property: width, height, padding, border-radius, background-color, border-color, box-shadow; transition-timing-function: var(--md-sys-motion-easing-emphasized);">
 
                     <!-- ELEMENTO PERSISTENTE: CABECERA QUE ACOMPAÑA LA TRANSFORMACIÓN -->
                     <div class="flex items-center justify-between gap-2">
@@ -1264,7 +1352,7 @@ type MotionPatternId =
             @for (c of motionTheaterSpecs().cards; track c.id) {
               <div
                 (click)="setEasing(c.id); triggerTheater()"
-                class="p-4 rounded-m3-lg bg-surface border border-outline-sub space-y-3 flex flex-col justify-between hover:border-primary/50 transition-all cursor-pointer shadow-xs select-none">
+                class="p-4 rounded-m3-lg bg-surface border border-outline-sub space-y-3 flex flex-col justify-between hover:border-primary/50 transition-colors cursor-pointer shadow-xs select-none">
 
                 <!-- ENCABEZADO DE TARJETA -->
                 <div class="flex items-center justify-between">
@@ -1355,7 +1443,7 @@ type MotionPatternId =
                 [class]="demoSelectedDurationName() === d.name
                   ? 'border-primary ring-2 ring-primary/30 bg-primary-box/20'
                   : 'border-outline-sub hover:border-outline bg-surface'"
-                class="btn-m3 p-2.5 rounded-m3-md border text-left flex flex-col justify-between space-y-1 cursor-pointer transition-all">
+                class="btn-m3 p-2.5 rounded-m3-md border text-left flex flex-col justify-between space-y-1 cursor-pointer transition-colors">
                 <div class="flex items-center justify-between">
                   <span class="text-[9px] font-mono font-bold uppercase tracking-wider text-muted">{{ d.category }}</span>
                   <span class="text-xs font-mono font-bold text-primary">{{ d.ms }}ms</span>
@@ -1385,27 +1473,29 @@ type MotionPatternId =
             </button>
           </div>
 
-          <!-- PISTA DE CARRERA DUAL (BARRA + PUCK FÍSICO) -->
+          <!-- PISTA DE CARRERA DUAL (100% GPU COMPOSITOR: scaleX + translateX cqw) -->
           <div class="space-y-2">
             <!-- BARRA DE RELLENO -->
             <div class="h-3 w-full bg-surface-high rounded-full overflow-hidden relative border border-outline-sub p-0.5">
               @for (run of [demoDurationRunId()]; track run) {
                 <div
-                  class="h-full bg-primary rounded-full shadow-xs"
+                  class="h-full w-full origin-left bg-primary rounded-full shadow-xs"
                   [style.animation]="'m3DurationTrack ' + demoSelectedDuration() + 'ms ' + activeEasingSpec().curve + ' forwards'">
                 </div>
               }
             </div>
 
             <!-- PUCK CINÉTICO -->
-            <div class="h-8 w-full bg-surface-high/40 rounded-m3-md relative overflow-hidden border border-outline-sub flex items-center px-1">
-              @for (run of [demoDurationRunId()]; track run) {
-                <div
-                  class="absolute w-7 h-7 rounded-full bg-primary text-on-primary grid place-items-center shadow-md select-none"
-                  [style.animation]="'m3PuckMove ' + demoSelectedDuration() + 'ms ' + activeEasingSpec().curve + ' forwards'">
-                  <span class="material-symbols-rounded text-sm">arrow_forward</span>
-                </div>
-              }
+            <div class="h-8 w-full bg-surface-high/40 rounded-m3-md p-1 border border-outline-sub flex items-center overflow-hidden">
+              <div class="relative w-full h-full flex items-center" style="container-type: inline-size;">
+                @for (run of [demoDurationRunId()]; track run) {
+                  <div
+                    class="w-7 h-7 rounded-full bg-primary text-on-primary grid place-items-center shadow-md select-none"
+                    [style.animation]="'m3PuckMove ' + demoSelectedDuration() + 'ms ' + activeEasingSpec().curve + ' forwards'">
+                    <span class="material-symbols-rounded text-sm">arrow_forward</span>
+                  </div>
+                }
+              </div>
             </div>
           </div>
 
@@ -1420,7 +1510,7 @@ type MotionPatternId =
               <span class="font-semibold text-main">{{ easingDurationPairingStatus().text }}</span>
             </div>
             <div class="font-mono text-[10px] text-muted">
-              CSS: transition: all var({{ activeEasingSpec().cssVar }}) var(--md-sys-motion-duration-{{ demoSelectedDurationName() }});
+              CSS: transition-property: transform, opacity; transition-duration: var(--md-sys-motion-duration-{{ demoSelectedDurationName() }}); transition-timing-function: var({{ activeEasingSpec().cssVar }});
             </div>
           </div>
         </div>
@@ -1437,7 +1527,7 @@ type MotionPatternId =
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- CASO 1: SHORT (200ms) - SELECTION CONTROLS -->
+            <!-- CASO 1: SHORT (200ms) - SELECTION CONTROLS REAL <m3-switch> -->
             <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub flex flex-col justify-between space-y-3 shadow-xs">
               <div class="space-y-1">
                 <div class="flex items-center justify-between">
@@ -1452,22 +1542,12 @@ type MotionPatternId =
                 </p>
               </div>
 
-              <!-- DEMO INTERACTIVA SWITCH M3 -->
+              <!-- DEMO INTERACTIVA SWITCH REAL M3 -->
               <div class="h-24 bg-surface-high/60 rounded-m3-md p-3 border border-outline-sub grid place-items-center">
-                <button
-                  (click)="toggleCanonicalSelection()"
-                  class="w-14 h-8 rounded-full p-1 cursor-pointer transition-colors relative flex items-center border"
-                  [class]="demoCanonicalSelection() ? 'bg-primary border-primary justify-end' : 'bg-surface-high border-outline justify-start'"
-                  style="transition-duration: var(--md-sys-motion-duration-short4); transition-timing-function: var(--md-sys-motion-easing-standard);">
-                  <div
-                    class="w-6 h-6 rounded-full shadow-sm flex items-center justify-center transition-all"
-                    [class]="demoCanonicalSelection() ? 'bg-on-primary text-primary scale-100' : 'bg-outline text-surface scale-85'"
-                    style="transition-duration: var(--md-sys-motion-duration-short4); transition-timing-function: var(--md-sys-motion-easing-standard);">
-                    <span class="material-symbols-rounded text-xs font-bold">
-                      {{ demoCanonicalSelection() ? 'check' : 'close' }}
-                    </span>
-                  </div>
-                </button>
+                <m3-switch
+                  [(checked)]="demoCanonicalSelection"
+                  [iconMode]="'both'"
+                  [ariaLabel]="'Demo canónica Selection Controls 200ms'" />
               </div>
 
               <div class="text-[10px] font-mono text-muted space-y-0.5 pt-1 border-t border-outline-sub">
@@ -1476,7 +1556,7 @@ type MotionPatternId =
               </div>
             </div>
 
-            <!-- CASO 2: MEDIUM (400ms) - FAB TO SHEET -->
+            <!-- CASO 2: MEDIUM (400ms) - FAB TO SHEET (DOM PERSISTENTE SIN TRAMPA 2) -->
             <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub flex flex-col justify-between space-y-3 shadow-xs">
               <div class="space-y-1">
                 <div class="flex items-center justify-between">
@@ -1495,22 +1575,32 @@ type MotionPatternId =
               <div class="h-24 bg-surface-high/60 rounded-m3-md p-2 border border-outline-sub grid place-items-center overflow-hidden">
                 <div
                   (click)="toggleCanonicalFabSheet()"
-                  class="cursor-pointer overflow-hidden shadow-md flex items-center justify-center transition-all"
+                  class="relative cursor-pointer overflow-hidden shadow-md flex items-center justify-center"
                   [class]="demoCanonicalFabSheet()
                     ? 'w-full h-16 rounded-m3-md bg-surface-box border border-primary/40 px-3 py-1'
                     : 'w-10 h-10 rounded-full bg-primary text-on-primary'"
-                  style="transition-duration: var(--md-sys-motion-duration-medium4); transition-timing-function: var(--md-sys-motion-easing-emphasized);">
-                  @if (demoCanonicalFabSheet()) {
-                    <div class="w-full flex items-center justify-between text-xs">
-                      <div class="flex items-center gap-1.5 truncate">
-                        <span class="material-symbols-rounded text-primary text-sm">tune</span>
-                        <span class="font-bold text-main text-[11px] truncate">Sheet de Acciones</span>
-                      </div>
-                      <span class="material-symbols-rounded text-muted text-xs hover:text-main">close</span>
+                  style="transition-property: width, height, padding, border-radius, background-color, border-color, box-shadow; transition-duration: var(--md-sys-motion-duration-medium4); transition-timing-function: var(--md-sys-motion-easing-emphasized);">
+                  <span
+                    aria-hidden="true"
+                    [class]="demoCanonicalFabSheet() ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'"
+                    style="transition-property: opacity, transform; transition-duration: var(--md-sys-motion-duration-short2);"
+                    class="material-symbols-rounded text-base">
+                    add
+                  </span>
+
+                  <div
+                    [attr.inert]="!demoCanonicalFabSheet() ? '' : null"
+                    [class]="demoCanonicalFabSheet() ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+                    style="transition-property: opacity;"
+                    [style.transition-duration]="demoCanonicalFabSheet() ? 'var(--md-sys-motion-duration-medium1)' : 'var(--md-sys-motion-duration-short2)'"
+                    [style.transition-delay]="demoCanonicalFabSheet() ? '60ms' : '0ms'"
+                    class="absolute inset-x-3 inset-y-1 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-1.5 truncate">
+                      <span class="material-symbols-rounded text-primary text-sm">tune</span>
+                      <span class="font-bold text-main text-[11px] truncate">Sheet de Acciones</span>
                     </div>
-                  } @else {
-                    <span class="material-symbols-rounded text-base">add</span>
-                  }
+                    <span class="material-symbols-rounded text-muted text-xs hover:text-main">close</span>
+                  </div>
                 </div>
               </div>
 
@@ -1520,7 +1610,7 @@ type MotionPatternId =
               </div>
             </div>
 
-            <!-- CASO 3: LONG (500ms / 250ms) - CARD TO FULL SCREEN -->
+            <!-- CASO 3: LONG (500ms / 250ms) - CARD TO FULL SCREEN (DOM PERSISTENTE SIN TRAMPA 2) -->
             <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub flex flex-col justify-between space-y-3 shadow-xs">
               <div class="space-y-1">
                 <div class="flex items-center justify-between">
@@ -1539,23 +1629,27 @@ type MotionPatternId =
               <div class="h-24 bg-surface-high/60 rounded-m3-md p-2 border border-outline-sub grid place-items-center overflow-hidden">
                 <div
                   (click)="toggleCanonicalCardExpanded()"
-                  class="cursor-pointer overflow-hidden border shadow-sm max-w-full transition-all"
+                  class="cursor-pointer overflow-hidden border shadow-sm max-w-full"
                   [class]="demoCanonicalCardExpanded()
                     ? 'w-56 h-20 rounded-m3-md bg-surface border-primary p-2'
                     : 'w-24 h-12 rounded-m3-sm bg-surface-box border-outline-sub p-1.5'"
                   [style.transition-duration]="demoCanonicalCardExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
-                  style="transition-timing-function: var(--md-sys-motion-easing-emphasized);">
+                  style="transition-property: width, height, padding, border-radius, background-color, border-color, box-shadow; transition-timing-function: var(--md-sys-motion-easing-emphasized);">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-primary text-xs">dashboard</span>
                     <span class="font-bold text-main text-[10px] truncate">
                       {{ demoCanonicalCardExpanded() ? 'Vista Detallada' : 'Bento Card' }}
                     </span>
                   </div>
-                  @if (demoCanonicalCardExpanded()) {
-                    <p class="text-[9px] text-muted mt-1 leading-tight">
-                      Abrir 500ms &harr; Volver 250ms (Emphasized).
-                    </p>
-                  }
+                  <p
+                    [attr.inert]="!demoCanonicalCardExpanded() ? '' : null"
+                    [class]="demoCanonicalCardExpanded() ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+                    style="transition-property: opacity;"
+                    [style.transition-duration]="demoCanonicalCardExpanded() ? 'var(--md-sys-motion-duration-medium1)' : 'var(--md-sys-motion-duration-short2)'"
+                    [style.transition-delay]="demoCanonicalCardExpanded() ? '80ms' : '0ms'"
+                    class="text-[9px] text-muted mt-1 leading-tight">
+                    Abrir 500ms &harr; Volver 250ms (Emphasized).
+                  </p>
                 </div>
               </div>
 
@@ -1641,7 +1735,7 @@ type MotionPatternId =
                     <div
                       (click)="setEasing(e.name)"
                       [class]="demoSelectedEasing() === e.name ? 'border-primary ring-2 ring-primary/30 bg-primary-box/15' : 'border-outline-sub hover:border-outline bg-surface-box'"
-                      class="p-2.5 rounded-m3-md border flex flex-col justify-between space-y-2 cursor-pointer transition-all">
+                      class="p-2.5 rounded-m3-md border flex flex-col justify-between space-y-2 cursor-pointer transition-colors">
                       <!-- GRÁFICA VECTORIAL MINIATURA -->
                       <div class="h-16 w-full bg-surface-high/60 rounded-m3-xs relative overflow-hidden flex items-center justify-center p-1">
                         <svg class="w-full h-full overflow-visible" viewBox="0 0 100 70">
@@ -1842,23 +1936,134 @@ type MotionPatternId =
         </div>
       </div>
 
-      <!-- PILAR 5: ACCESIBILIDAD Y REDUCED MOTION -->
-      <div class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div class="space-y-1 max-w-2xl">
-          <div class="flex items-center gap-2 text-xs font-semibold text-muted uppercase tracking-wider">
-            <span class="material-symbols-rounded text-base text-primary">accessibility_new</span>
-            Accesibilidad Universal • WCAG 2.2 SC 2.3.3
+      <!-- PILAR 5: ACCESIBILIDAD, SIMULADOR REDUCED MOTION Y MODERN WEB MOTION -->
+      <div class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl shadow-xs space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="space-y-1 max-w-2xl">
+            <div class="flex items-center gap-2 text-xs font-semibold text-muted uppercase tracking-wider">
+              <span class="material-symbols-rounded text-base text-primary">accessibility_new</span>
+              Pilar 5 • WCAG 2.2 SC 2.3.3 &amp; Modern Web Motion
+            </div>
+            <h3 class="text-base font-bold text-main">Reduced Motion Calm Fade &amp; Primitivas Web Modernas</h3>
+            <p class="text-xs text-muted leading-relaxed">
+              Nunca apliques un reset global <code class="font-mono text-error">* {{ '{' }} animation-duration: 1ms !important {{ '}' }}</code>: vuelve bruscos los fades y pisa las disolvencias de overlays. En su lugar, <code class="font-mono text-primary">&#64;media (prefers-reduced-motion: reduce)</code> reemplaza traslaciones/rebotes por fades sutiles de <strong>150ms</strong> y detiene loops continuos como <code class="font-mono text-primary">.m3-aurora-orb</code> (<code class="font-mono text-main">animation: none</code>).
+            </p>
           </div>
-          <h3 class="text-base font-bold text-main">Respeto por Prefers-Reduced-Motion</h3>
-          <p class="text-xs text-muted leading-relaxed">
-            Cuando el usuario activa <code class="font-mono text-primary">&#64;media (prefers-reduced-motion: reduce)</code>, las transiciones de vista colapsan a <strong>1ms</strong> y los fondos ambientales continuos como <code class="font-mono text-primary">.m3-aurora-orb</code> pasan a estado estático (<code class="font-mono text-main">animation: none</code>) para garantizar confort vestibular absoluto.
-          </p>
+
+          <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub text-xs space-y-1 shrink-0 font-mono">
+            <div class="text-muted text-[10px] uppercase font-bold tracking-wider">Regla CSS en _motion.css</div>
+            <div class="text-main font-bold">&#64;media (prefers-reduced-motion)</div>
+            <div class="text-primary text-[11px]">.m3-aurora-orb {{ '{' }} animation: none; {{ '}' }}</div>
+          </div>
         </div>
 
-        <div class="p-3.5 rounded-m3-md bg-surface border border-outline-sub text-xs space-y-1 shrink-0 font-mono">
-          <div class="text-muted text-[10px] uppercase font-bold tracking-wider">Regla CSS en _motion.css</div>
-          <div class="text-main font-bold">&#64;media (prefers-reduced-motion)</div>
-          <div class="text-primary text-[11px]">.m3-aurora-orb {{ '{' }} animation: none; {{ '}' }}</div>
+        <!-- SIMULADOR EN VIVO: REDUCED MOTION + @starting-style TOP LAYER -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- SIMULADOR DE REDUCED MOTION -->
+          <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub space-y-3 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider font-bold text-primary">Simulador Interactivo A11y</span>
+                <h4 class="text-xs font-bold text-main">Reduced Motion: Calm Fade vs. Corte de 1ms</h4>
+              </div>
+              <m3-switch
+                [checked]="demoReducedMotionSim()"
+                (changed)="setReducedMotionSim($event)"
+                [iconMode]="'both'"
+                [label]="'Simular Reduce'" />
+            </div>
+
+            <div class="h-24 rounded-m3-md bg-surface-high/60 border border-outline-sub px-4 flex items-center justify-between gap-3 overflow-hidden">
+              @for (tick of [demoReducedSimRunId()]; track tick) {
+                <div
+                  class="px-3 py-2 rounded-m3-md bg-primary text-on-primary text-xs font-bold shadow-sm select-none"
+                  [style.animation]="demoReducedMotionSim()
+                    ? 'mlReducedCalmFade 150ms linear both'
+                    : 'mlReducedSnapDemo 400ms var(--md-sys-motion-easing-emphasized-decelerate) both'">
+                  {{ demoReducedMotionSim() ? 'Calm Fade (150ms, 0 traslación)' : 'Movimiento Espacial Completo (400ms)' }}
+                </div>
+              }
+              <button
+                type="button"
+                (click)="replayReducedMotionSim()"
+                class="btn-m3 px-3 py-1.5 rounded-full bg-surface border border-outline-sub text-xs font-bold text-main shrink-0 cursor-pointer">
+                Repetir
+              </button>
+            </div>
+
+            <p class="text-[11px] text-muted leading-relaxed">
+              {{ demoReducedMotionSim()
+                ? 'Modo Accesible activo: se eliminó translateX/scale y se preservó un fade óptico de 150ms linear (sin flashes bruscos ni bloqueo de _overlays.css).'
+                : 'Modo Estándar: usa desplazamiento horizontal y escala desacelerada. Activa el switch para probar la sustitución segura WCAG.' }}
+            </p>
+          </div>
+
+          <!-- DEMO NATIVA @starting-style TOP LAYER POPOVER -->
+          <div class="p-4 rounded-m3-lg bg-surface border border-outline-sub space-y-3 flex flex-col justify-between">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider font-bold text-primary">CSS Top-Layer Nativo</span>
+                <h4 class="text-xs font-bold text-main">&#64;starting-style + transition-behavior: allow-discrete</h4>
+              </div>
+              <span class="px-2 py-0.5 rounded-full bg-primary-box text-on-primary-box text-[10px] font-mono font-bold">
+                0 JS Timers
+              </span>
+            </div>
+
+            <div class="h-24 rounded-m3-md bg-surface-high/60 border border-outline-sub px-4 flex items-center justify-between gap-3">
+              <div class="text-[11px] text-muted leading-snug max-w-xs">
+                Abre una hoja real en el <strong>Top Layer</strong> del navegador animando desde y hacia <code class="font-mono text-main">display: none</code>.
+              </div>
+              <button
+                type="button"
+                popovertarget="motion-top-layer-demo"
+                class="btn-m3 px-3.5 py-2 rounded-full bg-primary text-on-primary text-xs font-bold shrink-0 cursor-pointer">
+                Abrir Popover Nativo
+              </button>
+            </div>
+
+            <p class="text-[11px] text-muted leading-relaxed">
+              Combina <code class="font-mono text-primary">&#64;starting-style</code> dentro de <code class="font-mono text-main">:popover-open</code> con <code class="font-mono text-main">display/overlay allow-discrete</code> para animar tanto la entrada como la salida.
+            </p>
+
+            <div
+              id="motion-top-layer-demo"
+              popover="auto"
+              class="ml-top-layer-popover w-80 max-w-[90vw] p-5 rounded-m3-xl bg-surface-box border border-outline-sub shadow-xl text-main space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold text-primary uppercase tracking-wider">Top Layer • M3 Expressive</span>
+                <button
+                  type="button"
+                  popovertarget="motion-top-layer-demo"
+                  popovertargetaction="hide"
+                  class="btn-m3 px-2.5 py-1 rounded-full bg-surface-high text-xs font-bold text-main cursor-pointer">
+                  Cerrar
+                </button>
+              </div>
+              <p class="text-xs text-muted leading-relaxed">
+                Este popover entró suavemente desde <code class="font-mono text-main">display: none</code> usando <code class="font-mono text-primary">&#64;starting-style</code> + <code class="font-mono text-main">allow-discrete</code>, y también conservará su salida suave al cerrar.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARDS DE PRIMITIVAS WEB MODERNAS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 pt-2 border-t border-outline-sub">
+          @for (item of modernMotionPrimitives; track item.id) {
+            <div class="p-3.5 rounded-m3-lg bg-surface border border-outline-sub space-y-2 flex flex-col justify-between">
+              <div class="space-y-1.5">
+                <span class="inline-block px-2 py-0.5 rounded-full bg-primary-box text-on-primary-box text-[10px] font-bold">
+                  {{ item.badge }}
+                </span>
+                <h5 class="text-xs font-bold text-main">{{ item.title }}</h5>
+                <p class="text-[11px] text-muted leading-relaxed">{{ item.summary }}</p>
+              </div>
+              <div class="pt-2 border-t border-outline-sub space-y-1.5">
+                <div class="text-[10px] text-primary font-semibold leading-snug">{{ item.rule }}</div>
+                <pre class="p-2 rounded-m3-sm bg-surface-high border border-outline-sub text-[10px] font-mono text-main overflow-x-auto whitespace-pre-wrap">{{ item.snippet }}</pre>
+              </div>
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -1870,6 +2075,16 @@ export class MotionLabComponent {
   readonly demoSpringCount = signal<number>(0);
   readonly demoSpringStyle = signal<SpringStyle>('expressive');
   readonly demoSpringSpeed = signal<SpringSpeed>('fast');
+  readonly demoSpringCurveMode = signal<'bezier' | 'linear'>('bezier');
+  readonly demoReducedMotionSim = signal<boolean>(false);
+  readonly demoReducedSimRunId = signal<number>(1);
+  readonly modernMotionPrimitives = MODERN_WEB_MOTION_PRIMITIVES;
+
+  readonly activeSpatialCurve = computed(() =>
+    this.demoSpringStyle() === 'expressive' && this.demoSpringCurveMode() === 'linear'
+      ? SPRING_EXPRESSIVE_FAST_SPATIAL_LINEAR
+      : this.activeSpringSpecs().spatial.curve
+  );
   readonly demoContainerExpanded = signal<boolean>(false);
   readonly demoActivePattern = signal<MotionPatternId>('container');
 
@@ -1936,7 +2151,7 @@ export class MotionLabComponent {
   readonly activeSpringSpecs = computed(() => {
     const style = this.demoSpringStyle();
     const speed = this.demoSpringSpeed();
-    const physics = SPRING_PHYSICS_BY_SPEED[speed];
+    const physics = SPRING_PHYSICS_BY_SPEED[style][speed];
     const webCurves = SPRING_WEB_CURVES[style];
 
     return {
@@ -1971,6 +2186,20 @@ export class MotionLabComponent {
   setSpringStyle(style: SpringStyle): void {
     this.demoSpringStyle.set(style);
     this.triggerSpringDemo();
+  }
+
+  setSpringCurveMode(mode: 'bezier' | 'linear'): void {
+    this.demoSpringCurveMode.set(mode);
+    this.triggerSpringDemo();
+  }
+
+  setReducedMotionSim(enabled: boolean): void {
+    this.demoReducedMotionSim.set(enabled);
+    this.replayReducedMotionSim();
+  }
+
+  replayReducedMotionSim(): void {
+    this.demoReducedSimRunId.update(id => id + 1);
   }
 
   setPattern(pattern: MotionPatternId): void {

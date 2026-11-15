@@ -144,4 +144,130 @@ describe('ClinicService', () => {
     expect(updated?.bedAssignedId).toBeTruthy();
     expect(updated?.status).toBe('in_observation');
   });
+
+  it('should keep selectedPatient computed state synchronized after triage and bed updates', () => {
+    const pt = service.patients().find(p => !p.bedAssignedId);
+    expect(pt).toBeTruthy();
+    if (!pt) return;
+
+    service.selectPatient(pt);
+    expect(service.selectedPatient()?.id).toBe(pt.id);
+
+    service.updateTriageLevel(pt.id, 'resuscitation');
+    expect(service.selectedPatient()?.triageLevel).toBe('resuscitation');
+
+    const availableBed = service.beds().find(b => b.status === 'available');
+    expect(availableBed).toBeTruthy();
+    if (!availableBed) return;
+
+    service.assignBed(pt.id, availableBed.id);
+    expect(service.selectedPatient()?.bedAssignedId).toBe(availableBed.id);
+    expect(service.selectedPatient()?.status).toBe('in_observation');
+  });
+
+  it('should notify cleanly and return false when all beds are occupied', () => {
+    service.beds().forEach(b => service.setBedStatus(b.id, 'occupied'));
+    const waiting = service.patients().find(p => !p.bedAssignedId);
+    expect(waiting).toBeTruthy();
+    if (!waiting) return;
+
+    const assigned = service.assignImmediateShockTrauma(waiting.id);
+    expect(assigned).toBe(false);
+    expect(service.toastMessage()).toContain('No hay camas libres');
+  });
+
+  it('should clear patient bed assignment when bed transitions to cleaning directly', () => {
+    const patientWithBed = service.patients().find(p => !!p.bedAssignedId);
+    expect(patientWithBed).toBeTruthy();
+    if (!patientWithBed) return;
+
+    const bedId = patientWithBed.bedAssignedId!;
+    service.setBedStatus(bedId, 'cleaning');
+
+    const updatedPatient = service.patients().find(p => p.id === patientWithBed.id);
+    expect(updatedPatient?.bedAssignedId).toBeUndefined();
+    expect(updatedPatient?.status).toBe('waiting_bed');
+  });
+
+  it('should manage portaled admission dialog open and close states', () => {
+    expect(service.isAdmissionDialogOpen()).toBe(false);
+
+    service.openAdmissionDialog('clinic-header-admit-btn');
+    expect(service.isAdmissionDialogOpen()).toBe(true);
+    expect(service.activeDialogTrigger()).toBe('clinic-header-admit-btn');
+
+    service.closeAdmissionDialog();
+    expect(service.isAdmissionDialogOpen()).toBe(false);
+    expect(service.activeDialogTrigger()).toBeNull();
+  });
+
+  it('should initialize active emergency code when admitting patient with activeCodeType', () => {
+    const admitted = service.admitPatient({
+      fullName: 'Lucía Paredes',
+      age: 62,
+      gender: 'F',
+      triageLevel: 'resuscitation',
+      chiefComplaint: 'Déficit neurológico súbito',
+      activeCodeType: 'code_stroke',
+      vitals: {
+        heartRate: 98,
+        bloodPressureSys: 175,
+        bloodPressureDia: 100,
+        oxygenSat: 96,
+        temperature: 36.8,
+        painScale: 2
+      }
+    });
+
+    expect(admitted.activeCode).toBeTruthy();
+    expect(admitted.activeCode?.type).toBe('code_stroke');
+    expect(admitted.activeCode?.title).toBe('Código Ictus (ACV)');
+    expect(admitted.activeCode?.targetMinutes).toBe(45);
+    expect(admitted.activeCode?.elapsedMinutes).toBe(0);
+    expect(admitted.activeCode?.remainingMinutes).toBe(45);
+  });
+
+  it('should recalculate NEWS2 score live when updating patient vitals', () => {
+    const stablePatient = service.patients().find(p => p.news2.riskLevel === 'low');
+    expect(stablePatient).toBeTruthy();
+    if (!stablePatient) return;
+
+    service.selectPatient(stablePatient);
+    service.updatePatientVitals(stablePatient.id, {
+      heartRate: 138,
+      bloodPressureSys: 82,
+      bloodPressureDia: 48,
+      oxygenSat: 87,
+      temperature: 39.5,
+      painScale: 9
+    });
+
+    const updated = service.selectedPatient();
+    expect(updated?.id).toBe(stablePatient.id);
+    expect(updated?.vitals.oxygenSat).toBe(87);
+    expect(updated?.news2.riskLevel).toBe('high');
+    expect(updated?.news2.score).toBeGreaterThanOrEqual(7);
+  });
+
+  it('should manage discharge dialog state and handle ICU transfer disposition', () => {
+    const patientWithBed = service.patients().find(p => !!p.bedAssignedId);
+    expect(patientWithBed).toBeTruthy();
+    if (!patientWithBed) return;
+
+    const bedId = patientWithBed.bedAssignedId!;
+    service.openDischargeDialog(patientWithBed.id);
+    expect(service.isDischargeDialogOpen()).toBe(true);
+    expect(service.dischargeDialogPatient()?.id).toBe(patientWithBed.id);
+
+    service.dischargePatient(patientWithBed.id, 'icu', 'Derivado a UCI Coronaria');
+
+    const updatedPatient = service.patients().find(p => p.id === patientWithBed.id);
+    const updatedBed = service.beds().find(b => b.id === bedId);
+
+    expect(updatedPatient?.status).toBe('transferred_icu');
+    expect(updatedPatient?.notes).toContain('Derivado a UCI Coronaria');
+    expect(service.activePatients().some(p => p.id === patientWithBed.id)).toBe(false);
+    expect(updatedBed?.status).toBe('cleaning');
+    expect(service.isDischargeDialogOpen()).toBe(false);
+  });
 });

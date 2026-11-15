@@ -1,5 +1,6 @@
-import { ApplicationRef, inject, Injectable, signal } from '@angular/core';
-import { DialogView, NavStyle, TransitionType, TriggerMode } from '../../shared/models/ui.models';
+import { ApplicationRef, computed, inject, Injectable, signal } from '@angular/core';
+import { DialogView, NavChromeMode, NavStyle, resolveNavChrome, TransitionType, TriggerMode } from '../../shared/models/ui.models';
+import { AdaptiveLayoutService } from '../layout/adaptive-layout.service';
 import { TaskItem, TaskPriority, TaskService } from '../tasks/task.service';
 import { ThemeService } from '../theme/theme.service';
 import { StageOverlayService } from './stage-overlay.service';
@@ -9,6 +10,7 @@ import { StageOverlayService } from './stage-overlay.service';
 })
 export class DialogService {
   private readonly appRef = inject(ApplicationRef);
+  private readonly adaptiveLayout = inject(AdaptiveLayoutService);
   private readonly taskService = inject(TaskService);
   private readonly themeService = inject(ThemeService);
   private readonly stageOverlay = inject(StageOverlayService);
@@ -19,7 +21,17 @@ export class DialogService {
   readonly isHeroExpanded = signal<boolean>(false);
   readonly activeTransition = signal<TransitionType>(null);
   readonly activeTaskId = signal<number | null>(null);
-  readonly navStyle = signal<NavStyle>('rail');
+  readonly navStyle = signal<NavStyle>('auto');
+  readonly isRailManuallyExpanded = signal<boolean | null>(null);
+
+  /** Canonical M3 Expressive chrome mode resolved from NavStyle + AdaptiveLayoutService breakpoints. */
+  readonly effectiveChrome = computed<NavChromeMode>(() =>
+    resolveNavChrome(
+      this.navStyle(),
+      this.adaptiveLayout.windowWidth(),
+      this.isRailManuallyExpanded()
+    )
+  );
 
   // Draft form state
   readonly draftTitle = signal<string>('');
@@ -139,6 +151,9 @@ export class DialogService {
 
   setNavStyle(style: NavStyle): void {
     if (this.navStyle() === style) return;
+    if (style === 'auto') {
+      this.isRailManuallyExpanded.set(null);
+    }
     this.activeTransition.set('nav');
     this.appRef.tick();
 

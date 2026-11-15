@@ -11,6 +11,8 @@
      ========================================================= */
   color-scheme: light;
   accent-color: var(--md-sys-color-primary);
+  --in-oklab: ;
+  --in-oklch: ;
 
   /* --- 1.1 Reference Typefaces & Weights --- */
   --md-ref-typeface-brand: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -246,9 +248,9 @@
   /* --- 2.10 Scrim, Shadow & Expressive Glow --- */
   --md-sys-color-shadow: oklch(0% 0 0 / 0.25);
   --md-sys-color-scrim: oklch(0% 0 0 / 0.35);
-  --md-sys-hero-glow: oklch(70% 0.18 var(--seed-hue) / 0.34);
-  --md-sys-hero-glow-secondary: oklch(74% 0.16 var(--tertiary-hue) / 0.30);
-  --md-sys-hero-glow-ambient: oklch(76% 0.14 calc(var(--seed-hue) - 24) / 0.28);
+  --md-sys-hero-glow: oklch(68% 0.22 var(--seed-hue) / 0.44);
+  --md-sys-hero-glow-secondary: oklch(72% 0.20 var(--tertiary-hue) / 0.38);
+  --md-sys-hero-glow-ambient: oklch(74% 0.18 calc(var(--seed-hue) - 36) / 0.34);
 
   /* =========================================================
      3. M3 SYSTEM STATE TOKENS (--md-sys-state-*)
@@ -339,9 +341,16 @@
   /* Scrim, Shadow & Expressive Glow */
   --md-sys-color-shadow: oklch(0% 0 0 / 0.65);
   --md-sys-color-scrim: oklch(0% 0 0 / 0.55);
-  --md-sys-hero-glow: oklch(62% 0.20 var(--seed-hue) / 0.42);
-  --md-sys-hero-glow-secondary: oklch(58% 0.18 var(--tertiary-hue) / 0.36);
-  --md-sys-hero-glow-ambient: oklch(48% 0.19 calc(var(--seed-hue) - 24) / 0.44);
+  --md-sys-hero-glow: oklch(66% 0.24 var(--seed-hue) / 0.56);
+  --md-sys-hero-glow-secondary: oklch(62% 0.22 var(--tertiary-hue) / 0.48);
+  --md-sys-hero-glow-ambient: oklch(54% 0.22 calc(var(--seed-hue) - 38) / 0.52);
+}
+
+@supports (linear-gradient(in oklab, white, black)) {
+  :root {
+    --in-oklab: in oklab;
+    --in-oklch: in oklch;
+  }
 }
 
 /* =========================================================

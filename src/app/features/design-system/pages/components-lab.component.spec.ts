@@ -95,5 +95,32 @@ describe('ComponentsLabComponent', () => {
     expect(component.demoProgressWavelength()).toBe(40);
     expect(component.demoProgressSpeed()).toBe(40);
   });
+
+  it('should render essential selection controls, slider, tabs, native dialog, and Biblia M3 shortcut link', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('a[href="/design-system/playbook"]')).toBeTruthy();
+    expect(el.querySelectorAll('m3-checkbox').length).toBeGreaterThanOrEqual(4);
+    expect(el.querySelector('m3-radio-group')).toBeTruthy();
+    expect(el.querySelector('m3-slider')).toBeTruthy();
+    expect(el.querySelector('m3-tabs')).toBeTruthy();
+    expect(el.querySelector('m3-dialog')).toBeTruthy();
+
+    // Master tri-state starts indeterminate because demoCheckboxAudit is true and demoCheckboxBackup is false
+    expect(component.demoCheckboxIndeterminate()).toBe(true);
+    component.toggleDemoCheckboxMaster();
+    fixture.detectChanges();
+    expect(component.demoCheckboxMaster()).toBe(true);
+    expect(component.demoCheckboxIndeterminate()).toBe(false);
+
+    // Open and close native dialog specimen
+    component.demoDialogOpen.set(true);
+    fixture.detectChanges();
+    const nativeDialog = el.querySelector('dialog.m3-dialog');
+    expect(nativeDialog?.hasAttribute('open')).toBe(true);
+
+    component.onDemoDialogClosed('confirm');
+    fixture.detectChanges();
+    expect(component.demoDialogLastClose()).toBe('confirm');
+  });
 });
 

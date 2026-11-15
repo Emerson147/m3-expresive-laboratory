@@ -216,8 +216,8 @@ M3 Expressive implements two distinct Shape Morph mechanisms:
      - **Buttons (`_button.css`)**: `--md-comp-button-shape-pill` (`24px` or `20px` on `40px` buttons $\leftrightarrow$ `12px`/`10px` on `:active`).
      - **Filter Chips (`_chip.css`)**: `--md-comp-chip-shape-pill` (`16px` on `32px` chips $\leftrightarrow$ `8px` on `.is-selected`).
      - **Interactive Cards**: `medium 12px` / `large 16px` $\leftrightarrow$ `extra-large 28px`.
-2. **Polygon / Spline Path Morphing (Organic Shapes)**: Continuous SVG path interpolation (`Rounded Pentagon` $\leftrightarrow$ `Squircle` $\leftrightarrow$ `4-Petal Clover` $\leftrightarrow$ `Circle`) in `<m3-loading-indicator>`.
-   - **Uniform $N = 40$ Cubic Bézier Segment Rule**: Every SVG path (`M3_PENTAGON_PATH`, `M3_SQUIRCLE_PATH`, `M3_COOKIE4_PATH`, `M3_CIRCLE_PATH`) MUST be generated with the exact same `SEGMENT_COUNT = 40` ($\text{lcm}(4, 5, 8, 10)$) cubic Bézier `C` commands centered at `(24, 24)` (`viewBox="0 0 48 48"`) via Catmull-Rom closed splines so SMIL `<animate attributeName="d">` morphs symmetrically at 60fps.
+2. **Polygon / Spline Path Morphing (Organic Shapes)**: Continuous SVG path interpolation across the 7 canonical M3 shapes (`SoftBurst` $\to$ `Cookie9` $\to$ `Pentagon` $\to$ `Pill` $\to$ `Sunny` $\to$ `Cookie4` $\to$ `Oval`) in `<m3-loading-indicator>` driven by M3 underdamped spring physics (`dampingRatio: 0.6, stiffness: 200` every `650ms` + `+90°` quarter-turn + `4666ms` continuous rotation).
+   - **Uniform $N = 180$ Cubic Bézier Segment Rule**: Every SVG path (`M3_SOFT_BURST_PATH`, `M3_COOKIE9_PATH`, `M3_PENTAGON_PATH`, `M3_PILL_PATH`, `M3_SUNNY_PATH`, `M3_COOKIE4_PATH`, `M3_OVAL_PATH`, `M3_CIRCLE_PATH`) MUST be generated with the exact same `M3_LOADING_SEGMENT_COUNT = 180` cubic Bézier `C` commands centered at `(24, 24)` (`viewBox="0 0 48 48"`) via Catmull-Rom closed splines so spring vertex interpolation runs symmetrically outside NgZone without Chromium SMIL `keySplines > 1` spec rejections.
 
 ---
 

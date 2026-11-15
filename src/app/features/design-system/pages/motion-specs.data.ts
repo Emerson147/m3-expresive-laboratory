@@ -52,6 +52,15 @@ export interface SpringCurveSpec {
   token: string;
 }
 
+export interface ModernWebMotionPrimitiveSpec {
+  readonly id: string;
+  readonly badge: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly rule: string;
+  readonly snippet: string;
+}
+
 export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSpec> = {
   emphasized: {
     title: 'Emphasized Easing Set',
@@ -71,8 +80,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'decelerate',
         why: 'Comienza a alta velocidad para dar feedback inmediato y desacelera suavemente para que el ojo asimile el contenido sin frenazos bruscos.',
         when: 'Modales, diálogos, drawers laterales, bottom sheets y menús principales.',
-        svgCurve: 'M 5 80 C 15 25, 25 10, 135 10',
-        svgArea: 'M 5 80 C 15 25, 25 10, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 11.5 31, 18 10, 135 10',
+        svgArea: 'M 5 80 C 11.5 31, 18 10, 135 10 L 135 80 Z'
       },
       {
         id: 'emphasized',
@@ -87,8 +96,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'onscreen',
         why: 'Despegue rápido en el primer 22% y frenado prolongado y sedoso en el 78% final. Regla M3 para todo elemento que inicia y termina visible en pantalla.',
         when: 'Container Transform (abrir 500ms / volver 250ms), expansión de cards, morphing en pantalla y drawers recuperables.',
-        svgCurve: 'M 5 80 C 30 75, 35 45, 70 20 C 90 10, 115 10, 135 10',
-        svgArea: 'M 5 80 C 30 75, 35 45, 70 20 C 90 10, 115 10, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 11.5 80, 22.3 75.8, 26.6 52 C 32 22.6, 37.5 10, 135 10',
+        svgArea: 'M 5 80 C 11.5 80, 22.3 75.8, 26.6 52 C 32 22.6, 37.5 10, 135 10 L 135 80 Z'
       },
       {
         id: 'emphasized-accelerate',
@@ -103,8 +112,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'accelerate',
         why: 'Arranca lento y termina a velocidad máxima fuera del marco para comunicar descarte definitivo. Nunca usarla si el elemento vuelve a reposar en pantalla.',
         when: 'Cierre de diálogos descartables, dismiss de snackbars/banners (no para retorno de Hero/Cards).',
-        svgCurve: 'M 5 80 C 45 80, 105 70, 135 10',
-        svgArea: 'M 5 80 C 45 80, 105 70, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 44 80, 109 69.5, 135 10',
+        svgArea: 'M 5 80 C 44 80, 109 69.5, 135 10 L 135 80 Z'
       }
     ]
   },
@@ -126,8 +135,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'decelerate',
         why: 'Entrada directa sin aceleración previa. Ideal para componentes compactos donde la inercia dramática sería exagerada.',
         when: 'Tooltips, popovers, menús desplegables, select dropdowns.',
-        svgCurve: 'M 5 80 C 5 15, 5 10, 135 10',
-        svgArea: 'M 5 80 C 5 15, 5 10, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 5 80, 5 10, 135 10',
+        svgArea: 'M 5 80 C 5 80, 5 10, 135 10 L 135 80 Z'
       },
       {
         id: 'standard',
@@ -142,8 +151,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'onscreen',
         why: 'Curva equilibrada sin sobrepaso elástico. Mueve elementos rápidamente manteniendo la interfaz controlada.',
         when: 'Micro-interacciones simples, hover states, switches, focus rings.',
-        svgCurve: 'M 5 80 C 30 80, 5 10, 135 10',
-        svgArea: 'M 5 80 C 30 80, 5 10, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 31 80, 5 10, 135 10',
+        svgArea: 'M 5 80 C 31 80, 5 10, 135 10 L 135 80 Z'
       },
       {
         id: 'standard-accelerate',
@@ -158,8 +167,8 @@ export const MOTION_THEATER_SETS: Record<'emphasized' | 'standard', TheaterSetSp
         animationType: 'accelerate',
         why: 'Salida limpia y predecible. Cierra elementos secundarios de forma instantánea sin retrasos perceptibles.',
         when: 'Ocultar tooltips, cerrar menús emergentes, descartar chips.',
-        svgCurve: 'M 5 80 C 45 80, 135 10, 135 10',
-        svgArea: 'M 5 80 C 45 80, 135 10, 135 10 L 135 80 Z'
+        svgCurve: 'M 5 80 C 44 80, 135 10, 135 10',
+        svgArea: 'M 5 80 C 44 80, 135 10, 135 10 L 135 80 Z'
       }
     ]
   }
@@ -176,8 +185,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(M 0,0 C 0.05, 0, 0.133, 0.06, 0.166, 0.4 C 0.208, 0.82, 0.25, 1, 1, 1)',
     flutter: 'Curves.easeInOutCubicEmphasized',
     ios: 'ControlPoints:0.2f:0.0f:0.0f:1.0f (Fallback)',
-    svgCurve: 'M 15 55 C 25 55, 35 15, 85 15',
-    svgArea: 'M 15 55 C 25 55, 35 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 18.5 55, 24.3 52.6, 26.6 39 C 29.6 22.2, 32.5 15, 85 15',
+    svgArea: 'M 15 55 C 18.5 55, 24.3 52.6, 26.6 39 C 29.6 22.2, 32.5 15, 85 15 L 85 55 Z',
     usage: 'Transiciones que inician y terminan en pantalla (500ms abrir / 250ms regresar).'
   },
   {
@@ -190,8 +199,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.05f, 0.7f, 0.1f, 1f)',
     flutter: 'Cubic(0.05, 0.7, 0.1, 1.0)',
     ios: 'ControlPoints:0.05f:0.7f:0.1f:1.0f',
-    svgCurve: 'M 15 55 C 18 18, 45 15, 85 15',
-    svgArea: 'M 15 55 C 18 18, 45 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 18.5 27, 22 15, 85 15',
+    svgArea: 'M 15 55 C 18.5 27, 22 15, 85 15 L 85 55 Z',
     usage: 'Entrada a pantalla con frenado suave (diálogos, drawers, cards expandidas).'
   },
   {
@@ -204,8 +213,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.3f, 0f, 0.8f, 0.15f)',
     flutter: 'Cubic(0.3, 0.0, 0.8, 0.15)',
     ios: 'ControlPoints:0.3f:0.0f:0.8f:0.15f',
-    svgCurve: 'M 15 55 C 45 55, 75 50, 85 15',
-    svgArea: 'M 15 55 C 45 55, 75 50, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 36 55, 71 49, 85 15',
+    svgArea: 'M 15 55 C 36 55, 71 49, 85 15 L 85 55 Z',
     usage: 'Salida de pantalla rápida para elementos descartados (dismiss, cerrar modal).'
   },
   {
@@ -218,8 +227,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.2f, 0f, 0f, 1f)',
     flutter: 'Cubic(0.2, 0.0, 0, 1.0)',
     ios: 'ControlPoints:0.2f:0.0f:0.0f:1.0f',
-    svgCurve: 'M 15 55 C 30 55, 20 15, 85 15',
-    svgArea: 'M 15 55 C 30 55, 20 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 29 55, 15 15, 85 15',
+    svgArea: 'M 15 55 C 29 55, 15 15, 85 15 L 85 55 Z',
     usage: 'Transición utilitaria sobria para elementos en pantalla.'
   },
   {
@@ -232,8 +241,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0f, 0f, 0f, 1f)',
     flutter: 'Cubic(0, 0, 0, 1)',
     ios: 'ControlPoints:0.0f:0.0f:0.0f:1.0f',
-    svgCurve: 'M 15 55 C 15 15, 40 15, 85 15',
-    svgArea: 'M 15 55 C 15 15, 40 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 15 55, 15 15, 85 15',
+    svgArea: 'M 15 55 C 15 55, 15 15, 85 15 L 85 55 Z',
     usage: 'Entrada directa sin aceleración inicial para elementos pequeños (popovers).'
   },
   {
@@ -246,8 +255,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.3f, 0f, 1f, 1f)',
     flutter: 'Cubic(0.3, 0.0, 1.0, 1.0)',
     ios: 'ControlPoints:0.3f:0.0f:1.0f:1.0f',
-    svgCurve: 'M 15 55 C 40 55, 85 15, 85 15',
-    svgArea: 'M 15 55 C 40 55, 85 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 36 55, 85 15, 85 15',
+    svgArea: 'M 15 55 C 36 55, 85 15, 85 15 L 85 55 Z',
     usage: 'Salida utilitaria compacta para descartar elementos secundarios rápido.'
   },
   {
@@ -260,8 +269,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.4f, 0f, 0.2f, 1f)',
     flutter: 'Curves.fastOutSlowIn',
     ios: 'ControlPoints:0.4f:0.0f:0.2f:1.0f',
-    svgCurve: 'M 15 55 C 35 55, 25 15, 85 15',
-    svgArea: 'M 15 55 C 35 55, 25 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 43 55, 29 15, 85 15',
+    svgArea: 'M 15 55 C 43 55, 29 15, 85 15 L 85 55 Z',
     usage: 'Curva Material 2 clásica de transición simétrica.'
   },
   {
@@ -274,8 +283,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0f, 0f, 0.2f, 1f)',
     flutter: 'Curves.decelerate',
     ios: 'ControlPoints:0.0f:0.0f:0.2f:1.0f',
-    svgCurve: 'M 15 55 C 20 20, 50 15, 85 15',
-    svgArea: 'M 15 55 C 20 20, 50 15, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 15 55, 29 15, 85 15',
+    svgArea: 'M 15 55 C 15 55, 29 15, 85 15 L 85 55 Z',
     usage: 'Desaceleración clásica de Material 2.'
   },
   {
@@ -288,8 +297,8 @@ export const CANONICAL_EASINGS: CanonicalEasingSpec[] = [
     android: 'PathInterpolator(0.4f, 0f, 1f, 1f)',
     flutter: 'Curves.fastInSlowOut',
     ios: 'ControlPoints:0.4f:0.0f:1.0f:1.0f',
-    svgCurve: 'M 15 55 C 45 55, 80 20, 85 15',
-    svgArea: 'M 15 55 C 45 55, 80 20, 85 15 L 85 55 Z',
+    svgCurve: 'M 15 55 C 43 55, 85 15, 85 15',
+    svgArea: 'M 15 55 C 43 55, 85 15, 85 15 L 85 55 Z',
     usage: 'Aceleración clásica de Material 2.'
   },
   {
@@ -328,12 +337,22 @@ export const CANONICAL_DURATIONS: CanonicalDurationSpec[] = [
 ];
 
 export const SPRING_PHYSICS_BY_SPEED: Record<
-  SpringSpeed,
-  { spatial: { damping: number; stiffness: number }; effects: { damping: number; stiffness: number } }
+  SpringStyle,
+  Record<
+    SpringSpeed,
+    { spatial: { damping: number; stiffness: number }; effects: { damping: number; stiffness: number } }
+  >
 > = {
-  fast: { spatial: { damping: 0.9, stiffness: 1400 }, effects: { damping: 1.0, stiffness: 3800 } },
-  default: { spatial: { damping: 0.9, stiffness: 700 }, effects: { damping: 1.0, stiffness: 1600 } },
-  slow: { spatial: { damping: 0.9, stiffness: 300 }, effects: { damping: 1.0, stiffness: 800 } }
+  expressive: {
+    fast: { spatial: { damping: 0.6, stiffness: 800 }, effects: { damping: 1.0, stiffness: 3800 } },
+    default: { spatial: { damping: 0.8, stiffness: 380 }, effects: { damping: 1.0, stiffness: 1600 } },
+    slow: { spatial: { damping: 0.8, stiffness: 200 }, effects: { damping: 1.0, stiffness: 800 } }
+  },
+  standard: {
+    fast: { spatial: { damping: 0.9, stiffness: 1400 }, effects: { damping: 1.0, stiffness: 3800 } },
+    default: { spatial: { damping: 0.9, stiffness: 700 }, effects: { damping: 1.0, stiffness: 1600 } },
+    slow: { spatial: { damping: 0.9, stiffness: 300 }, effects: { damping: 1.0, stiffness: 800 } }
+  }
 };
 
 export const SPRING_WEB_CURVES: Record<
@@ -365,3 +384,67 @@ export const SPRING_WEB_CURVES: Record<
     }
   }
 };
+
+export const SPRING_EXPRESSIVE_FAST_SPATIAL_LINEAR =
+  'linear(0, 0.233 6%, 0.633 12%, 0.937 18%, 1.099 26%, 1.085 34%, 1.024 43%, 0.99 54%, 0.995 68%, 1.001 84%, 1)';
+
+export const MODERN_WEB_MOTION_PRIMITIVES: readonly ModernWebMotionPrimitiveSpec[] = [
+  {
+    id: 'starting-style-top-layer',
+    badge: 'CSS Top Layer',
+    title: '@starting-style + allow-discrete + overlay',
+    summary: 'Anima entradas y salidas nativas desde display: none en <dialog> y [popover] sin timers JS ni nodos fantasmas.',
+    rule: 'Declara @starting-style al final de la regla activa e incluye overlay y display con allow-discrete para preservar el fade de cierre.',
+    snippet: `.m3-sheet-popover {
+  transition: opacity 250ms var(--md-sys-motion-easing-emphasized-decelerate),
+              transform 250ms var(--md-sys-motion-easing-emphasized-decelerate),
+              display 250ms allow-discrete,
+              overlay 250ms allow-discrete;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+}
+.m3-sheet-popover:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}`
+  },
+  {
+    id: 'linear-spring-oscillation',
+    badge: 'Physics in CSS',
+    title: 'linear() Multi-Rebote vs cubic-bezier()',
+    summary: 'cubic-bezier() solo soporta 2 puntos de control (máximo un sobrepaso). linear() captura rebote + contra-ajuste amortiguado real.',
+    rule: 'Reserva --md-sys-motion-spring-expressive-fast-spatial-linear para elementos focales en reposo; nunca en salidas descartables.',
+    snippet: `.hero-fab {
+  transition: transform 350ms var(--md-sys-motion-spring-expressive-fast-spatial-linear);
+}`
+  },
+  {
+    id: 'directional-vt-router',
+    badge: 'View Transitions',
+    title: 'Directional Step VT vs Top-Level Fade-Through',
+    summary: 'onViewTransitionCreated distingue pasos secuenciales (Shared-Axis X forward/backward) de cambios globales (Clean Fade-Through).',
+    rule: 'Separa salida rápida (short3) de entrada retardada (medium1 + short2 delay) para evitar fantasmas superpuestos.',
+    snippet: `withViewTransitions({
+  onViewTransitionCreated: classifyNavigationTransition
+})`
+  },
+  {
+    id: 'reduced-motion-calm-fade',
+    badge: 'WCAG A11y',
+    title: 'prefers-reduced-motion: Fade Sutil vs 1ms Trap',
+    summary: 'Aplicar * { animation-duration: 1ms !important } provoca cortes bruscos y pisa fades accesibles en overlays y snackbars.',
+    rule: 'Colapsa traslaciones y rebotes espaciales a linear(), conserva disolvencias suaves de 150ms y congela loops infinitos (.m3-aurora-orb).',
+    snippet: `@media (prefers-reduced-motion: reduce) {
+  .m3-anim-spring-pop {
+    animation: m3ReducedFadeIn 150ms linear both;
+  }
+  .m3-aurora-orb {
+    animation: none !important;
+  }
+}`
+  }
+];

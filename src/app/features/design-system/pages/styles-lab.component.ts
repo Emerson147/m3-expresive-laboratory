@@ -1,10 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ContrastLevel, ThemeService } from '../../../core/theme/theme.service';
 import {
-  M3_CIRCLE_PATH,
   M3_COOKIE4_PATH,
+  M3_COOKIE9_PATH,
+  M3_OVAL_PATH,
   M3_PENTAGON_PATH,
-  M3_SQUIRCLE_PATH,
+  M3_PILL_PATH,
+  M3_SOFT_BURST_PATH,
+  M3_SUNNY_PATH,
   M3LoadingIndicatorComponent
 } from '../../../shared/components/progress';
 import {
@@ -739,21 +742,21 @@ export type ForcedStateMode = 'live' | 'hover' | 'focus' | 'pressed' | 'dragged'
               <div class="space-y-1">
                 <div class="text-[11px] font-bold text-main">D. Polygon Morph (&lt;m3-loading-indicator&gt;)</div>
                 <div class="text-[10px] text-muted">
-                  40 segmentos Bézier simétricos: Pentágono Regular ↔ Squircle ↔ Cookie 4 Pétalos ↔ Círculo.
+                  7 formas canónicas a 180 splines cúbicos con resorte M3 (0.6 / 200) cada 650ms y +90° por paso.
                 </div>
               </div>
               <div class="flex items-center justify-around py-1">
                 <m3-loading-indicator size="md" [contained]="true" color="primary" ariaLabel="Demo loading indicator contained" />
                 <m3-loading-indicator size="md" [contained]="false" color="tertiary" ariaLabel="Demo loading indicator uncontained" />
               </div>
-              <!-- Galería de los 4 polígonos exactos que componen el ciclo -->
-              <div class="grid grid-cols-4 gap-1 pt-1.5 border-t border-outline-sub/60 text-center">
+              <!-- Galería de los 7 polígonos canónicos que componen el ciclo -->
+              <div class="grid grid-cols-7 gap-1 pt-1.5 border-t border-outline-sub/60 text-center">
                 @for (poly of canonicalPolygons; track poly.name) {
                   <div class="flex flex-col items-center">
-                    <svg viewBox="0 0 48 48" class="w-6 h-6 text-primary fill-current">
+                    <svg viewBox="0 0 48 48" aria-hidden="true" class="w-5 h-5 text-primary fill-current">
                       <path [attr.d]="poly.path" />
                     </svg>
-                    <span class="text-[9px] font-mono text-muted">{{ poly.name }}</span>
+                    <span class="text-[8px] font-mono text-muted truncate max-w-full">{{ poly.name }}</span>
                   </div>
                 }
               </div>
@@ -1230,10 +1233,13 @@ export class StylesLabComponent {
   ];
 
   readonly canonicalPolygons: readonly { name: string; path: string }[] = [
-    { name: 'Pentágono', path: M3_PENTAGON_PATH },
-    { name: 'Squircle', path: M3_SQUIRCLE_PATH },
-    { name: 'Cookie 4', path: M3_COOKIE4_PATH },
-    { name: 'Círculo', path: M3_CIRCLE_PATH }
+    { name: 'Burst', path: M3_SOFT_BURST_PATH },
+    { name: 'Cookie9', path: M3_COOKIE9_PATH },
+    { name: 'Pentág.', path: M3_PENTAGON_PATH },
+    { name: 'Pill', path: M3_PILL_PATH },
+    { name: 'Sunny', path: M3_SUNNY_PATH },
+    { name: 'Cookie4', path: M3_COOKIE4_PATH },
+    { name: 'Oval', path: M3_OVAL_PATH }
   ];
 
   readonly forcedStateModes: readonly { id: ForcedStateMode; label: string }[] = [

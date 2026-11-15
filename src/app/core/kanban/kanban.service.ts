@@ -1,12 +1,41 @@
-import { Injectable, signal, computed, inject, ApplicationRef, PLATFORM_ID, NgZone } from '@angular/core';
+import {
+  Injectable,
+  signal,
+  computed,
+  inject,
+  PLATFORM_ID,
+  NgZone,
+  DestroyRef
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { 
-  KanbanOrder, 
-  KanbanColumn, 
-  KanbanFilter, 
-  KanbanKpiSummary, 
-  OrderStage 
+import {
+  KanbanOrder,
+  KanbanColumn,
+  KanbanFilter,
+  KanbanFilterCounts,
+  KanbanKpiSummary,
+  OrderStage,
+  OrderCategory,
+  OrderItem,
+  CreateOrderDto,
+  CreateOrderItemDto,
+  isOrderSlaBreached,
+  matchesKanbanFilter,
+  matchesKanbanSearch
 } from './kanban.models';
+import { StageOverlayService } from '../dialog/stage-overlay.service';
+
+export const KANBAN_LIVE_TICK_MS = 30_000;
+
+export const KANBAN_STAFF_OPTIONS: readonly string[] = [
+  'Asignación pendiente',
+  'Chef Carlos Ruiz',
+  'Sous Chef Elena V.',
+  'Itamae Kenji M.',
+  'Control Calidad: M. Torres',
+  'Despacho: Javier L.',
+  'Mozo: Andrea S.'
+];
 
 const INITIAL_ORDERS: KanbanOrder[] = [
   {
@@ -157,15 +186,13 @@ const INITIAL_ORDERS: KanbanOrder[] = [
   }
 ];
 
-export const KANBAN_COLUMNS: KanbanColumn[] = [
+export const KANBAN_COLUMNS: readonly KanbanColumn[] = [
   {
     id: 'queue',
     title: 'Cola de Entrada',
     subtitle: 'Ingreso & Comandas',
     icon: 'inbox',
-    accentClass: 'text-main bg-surface-high',
-    accentBorderClass: 'border-outline-sub',
-    badgeBgClass: 'bg-surface-high text-main border border-outline-sub/60',
+    tone: 'primary',
     wipLimit: 6
   },
   {
@@ -173,9 +200,7 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     title: 'En Preparación',
     subtitle: 'Wok, Cocina & Frío',
     icon: 'skillet',
-    accentClass: 'text-main bg-surface-high',
-    accentBorderClass: 'border-outline-sub',
-    badgeBgClass: 'bg-surface-high text-main border border-outline-sub/60',
+    tone: 'warning',
     wipLimit: 4
   },
   {
@@ -183,9 +208,7 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     title: 'Control Calidad',
     subtitle: 'Embalaje & Auditoría',
     icon: 'fact_check',
-    accentClass: 'text-main bg-surface-high',
-    accentBorderClass: 'border-outline-sub',
-    badgeBgClass: 'bg-surface-high text-main border border-outline-sub/60',
+    tone: 'tertiary',
     wipLimit: 4
   },
   {
@@ -193,73 +216,143 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
     title: 'Listo Despacho',
     subtitle: 'Mesa & Courier',
     icon: 'check_circle',
-    accentClass: 'text-main bg-surface-high',
-    accentBorderClass: 'border-outline-sub',
-    badgeBgClass: 'bg-surface-high text-main border border-outline-sub/60',
+    tone: 'success',
     wipLimit: 8
   }
 ];
 
-const STAGE_ORDER: OrderStage[] = ['queue', 'prep', 'qa', 'ready'];
+const STAGE_ORDER: readonly OrderStage[] = ['queue', 'prep', 'qa', 'ready'];
+
+const STAGE_TITLES: Record<OrderStage, string> = {
+  queue: 'Cola de Entrada',
+  prep: 'En Preparación',
+  qa: 'Control Calidad',
+  ready: 'Listo Despacho'
+};
+
+const DEFAULT_CATEGORY_ITEMS: Record<OrderCategory, { name: string; price: number }[]> = {
+  kitchen: [
+    { name: 'Lomo Saltado al Wok', price: 52.00 },
+    { name: 'Chicha Morada Artesanal', price: 14.00 }
+  ],
+  cold_chain: [
+    { name: 'Ceviche Mixto con Chicharrón', price: 48.00 },
+    { name: 'Maracuyá Sour', price: 16.00 }
+  ],
+  express: [
+    { name: 'Arroz Chaufa Amazónico', price: 42.00 },
+    { name: 'Empaque Térmico Sellado', price: 6.00 }
+  ],
+  dispatch: [
+    { name: 'Pollo a la Brasa 1/2', price: 38.00 },
+    { name: 'Papas Rústicas Nativas', price: 16.00 }
+  ]
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class KanbanService {
-  private readonly appRef = inject(ApplicationRef);
   private readonly ngZone = inject(NgZone);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly stageOverlay = inject(StageOverlayService);
+
+  private nextOrderSequence = 4829;
+  private audioContext: AudioContext | null = null;
 
   // Core reactive state
   readonly orders = signal<KanbanOrder[]>(INITIAL_ORDERS);
   readonly activeFilter = signal<KanbanFilter>('all');
-  readonly selectedOrder = signal<KanbanOrder | null>(null);
+  readonly searchQuery = signal<string>('');
+  readonly selectedOrderId = signal<string | null>(null);
   readonly isInspectionOpen = signal<boolean>(false);
+  readonly isCreateModalOpen = signal<boolean>(false);
 
-  // Drag and Drop interactive state
+  // Modal & FLIP View Transition coordination
+  readonly activeInspectTrigger = signal<string | null>(null);
+  readonly activeCreateTrigger = signal<string | null>(null);
+  readonly isModalTransitioning = signal<boolean>(false);
+  readonly isBoardFlipActive = signal<boolean>(false);
+
+  // Drag and Drop / Interactive state
   readonly draggedOrderId = signal<string | null>(null);
   readonly dragOverStage = signal<OrderStage | null>(null);
+  readonly dragOverOrderId = signal<string | null>(null);
   readonly activeTransitionOrderId = signal<string | null>(null);
+  readonly dispatchedCount = signal<number>(0);
   readonly buzzerEnabled = signal<boolean>(true);
+  readonly isLiveSimulationActive = signal<boolean>(true);
 
-  private audioContext: AudioContext | null = null;
+  // User feedback notifications & assistive announcements
+  readonly toastMessage = signal<string | null>(null);
+  readonly liveAnnouncement = signal<string>('');
 
-  // Static columns definition
+  // Static columns definition (pure domain data without Tailwind presentation strings)
   readonly columns: readonly KanbanColumn[] = KANBAN_COLUMNS;
+
+  /** Reactive selected ticket linked to the live order list (stays synchronized on stage/SLA updates). */
+  readonly selectedOrder = computed<KanbanOrder | null>(() => {
+    const id = this.selectedOrderId();
+    if (!id) return null;
+    return this.orders().find(o => o.id === id) ?? null;
+  });
 
   // Computed views
   readonly filteredOrders = computed(() => {
     const list = this.orders();
     const filter = this.activeFilter();
+    const query = this.searchQuery();
+    return list.filter(o => matchesKanbanFilter(o, filter) && matchesKanbanSearch(o, query));
+  });
 
-    switch (filter) {
-      case 'urgent':
-        return list.filter(o => o.priority === 'urgent' || o.elapsedMinutes >= o.prepTimeTargetMin);
-      case 'kitchen':
-        return list.filter(o => o.category === 'kitchen');
-      case 'cold_chain':
-        return list.filter(o => o.category === 'cold_chain');
-      case 'express':
-        return list.filter(o => o.category === 'express' || o.channel === 'delivery');
-      case 'all':
-      default:
-        return list;
+  /** Single-pass stage grouping to avoid redundant per-column filters during template checks. */
+  readonly ordersByStage = computed<Record<OrderStage, KanbanOrder[]>>(() => {
+    const grouped: Record<OrderStage, KanbanOrder[]> = {
+      queue: [],
+      prep: [],
+      qa: [],
+      ready: []
+    };
+    for (const order of this.filteredOrders()) {
+      grouped[order.stage].push(order);
     }
+    return grouped;
+  });
+
+  readonly filterCounts = computed<KanbanFilterCounts>(() => {
+    const list = this.orders();
+    return {
+      all: list.length,
+      urgent: list.filter(o => matchesKanbanFilter(o, 'urgent')).length,
+      kitchen: list.filter(o => matchesKanbanFilter(o, 'kitchen')).length,
+      cold_chain: list.filter(o => matchesKanbanFilter(o, 'cold_chain')).length,
+      express: list.filter(o => matchesKanbanFilter(o, 'express')).length
+    };
   });
 
   readonly kpis = computed<KanbanKpiSummary>(() => {
     const all = this.orders();
+    const byStage = this.ordersByStage();
     const totalActive = all.filter(o => o.stage !== 'ready').length;
-    const slaBreachCount = all.filter(o => o.elapsedMinutes >= o.prepTimeTargetMin && o.stage !== 'ready').length;
+    const readyCount = all.length - totalActive;
+    const slaBreachCount = all.filter(isOrderSlaBreached).length;
     const totalElapsed = all.reduce((acc, curr) => acc + curr.elapsedMinutes, 0);
     const avgPrepTimeMin = all.length ? Math.round((totalElapsed / all.length) * 10) / 10 : 0;
-    const throughputPerHour = Math.round(all.filter(o => o.stage === 'ready').length * 4.2);
+    const throughputPerHour = Math.round((readyCount + this.dispatchedCount()) * 4.2);
+    const wipExceededColumns = this.columns.filter(col => byStage[col.id].length > col.wipLimit).length;
+    const onTimeRatePercent = all.length
+      ? Math.round(((all.length - slaBreachCount) / all.length) * 100)
+      : 100;
 
     return {
       totalActive,
       avgPrepTimeMin,
       slaBreachCount,
-      throughputPerHour
+      throughputPerHour,
+      wipExceededColumns,
+      readyCount,
+      onTimeRatePercent
     };
   });
 
@@ -268,24 +361,40 @@ export class KanbanService {
   }
 
   getOrdersByStage(stage: OrderStage): KanbanOrder[] {
-    return this.filteredOrders().filter(o => o.stage === stage);
+    return this.ordersByStage()[stage];
   }
 
   setFilter(filter: KanbanFilter): void {
-    this.runViewTransition(() => {
-      this.activeFilter.set(filter);
-    });
+    if (this.activeFilter() === filter) return;
+    this.isBoardFlipActive.set(true);
+    this.stageOverlay.runViewTransition(
+      () => this.activeFilter.set(filter),
+      () => this.isBoardFlipActive.set(false),
+      { rootClass: 'vt-board-flip' }
+    );
+  }
+
+  setSearchQuery(query: string): void {
+    this.searchQuery.set(query);
   }
 
   toggleBuzzer(): void {
     this.buzzerEnabled.update(v => !v);
   }
 
+  toggleLiveSimulation(): void {
+    this.isLiveSimulationActive.update(v => !v);
+  }
+
+  dismissToast(): void {
+    this.toastMessage.set(null);
+  }
+
   playKdsChime(type: 'created' | 'ready' | 'advance'): void {
     if (!isPlatformBrowser(this.platformId) || !this.buzzerEnabled()) return;
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
 
       if (!this.audioContext || this.audioContext.state === 'suspended') {
@@ -330,34 +439,159 @@ export class KanbanService {
     osc.stop(startTime + duration);
   }
 
-  moveOrder(orderId: string, targetStage: OrderStage): void {
+  moveOrder(orderId: string, targetStage: OrderStage, beforeOrderId?: string): void {
     const current = this.orders().find(o => o.id === orderId);
-    if (!current || current.stage === targetStage) return;
+    if (!current) return;
+
+    const isSameStageReorder =
+      current.stage === targetStage && Boolean(beforeOrderId) && beforeOrderId !== orderId;
+    if (current.stage === targetStage && !isSameStageReorder) return;
 
     this.activeTransitionOrderId.set(orderId);
+    this.isBoardFlipActive.set(true);
 
-    if (targetStage === 'ready') {
-      this.playKdsChime('ready');
-    } else {
-      this.playKdsChime('advance');
+    if (current.stage !== targetStage) {
+      this.playKdsChime(targetStage === 'ready' ? 'ready' : 'advance');
     }
 
-    this.runViewTransition(
+    let statusMsg: string;
+    if (isSameStageReorder) {
+      statusMsg = `Comanda ${current.ticketNumber} reordenada en ${STAGE_TITLES[targetStage]}.`;
+    } else if (targetStage === 'ready') {
+      statusMsg = `Comanda ${current.ticketNumber} lista para despacho.`;
+    } else {
+      statusMsg = `Comanda ${current.ticketNumber} movida a ${STAGE_TITLES[targetStage]}.`;
+    }
+
+    this.stageOverlay.runViewTransition(
       () => {
-        this.orders.update(list =>
-          list.map(order => {
-            if (order.id !== orderId) return order;
-            return {
-              ...order,
-              stage: targetStage
-            };
-          })
-        );
+        this.orders.update(list => this.applyOrderMove(list, orderId, targetStage, beforeOrderId));
+        this.liveAnnouncement.set(statusMsg);
+        this.toastMessage.set(statusMsg);
       },
       () => {
         this.activeTransitionOrderId.set(null);
-      }
+        this.isBoardFlipActive.set(false);
+      },
+      { rootClass: 'vt-board-flip' }
     );
+  }
+
+  reorderOrderInStage(orderId: string, direction: 'up' | 'down'): void {
+    const current = this.orders().find(o => o.id === orderId);
+    if (!current) return;
+
+    const stageOrders = this.ordersByStage()[current.stage];
+    const currentIdx = stageOrders.findIndex(o => o.id === orderId);
+    const partnerIdx = direction === 'up' ? currentIdx - 1 : currentIdx + 1;
+    if (currentIdx < 0 || partnerIdx < 0 || partnerIdx >= stageOrders.length) return;
+
+    const partnerId = stageOrders[partnerIdx].id;
+    const statusMsg = `Comanda ${current.ticketNumber} reordenada en ${STAGE_TITLES[current.stage]}.`;
+
+    this.activeTransitionOrderId.set(orderId);
+    this.isBoardFlipActive.set(true);
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.orders.update(list => {
+          const idxA = list.findIndex(o => o.id === orderId);
+          const idxB = list.findIndex(o => o.id === partnerId);
+          if (idxA < 0 || idxB < 0) return list;
+          const next = [...list];
+          [next[idxA], next[idxB]] = [next[idxB], next[idxA]];
+          return next;
+        });
+        this.liveAnnouncement.set(statusMsg);
+      },
+      () => {
+        this.activeTransitionOrderId.set(null);
+        this.isBoardFlipActive.set(false);
+      },
+      { rootClass: 'vt-board-flip' }
+    );
+  }
+
+  dispatchOrder(orderId: string): void {
+    const order = this.orders().find(o => o.id === orderId);
+    if (!order) return;
+
+    this.playKdsChime('ready');
+    this.removeOrderFromBoard(
+      orderId,
+      `Comanda ${order.ticketNumber} entregada y cerrada del tablero.`,
+      true
+    );
+  }
+
+  cancelOrder(orderId: string): void {
+    const order = this.orders().find(o => o.id === orderId);
+    if (!order) return;
+
+    this.removeOrderFromBoard(orderId, `Comanda ${order.ticketNumber} anulada del flujo.`, false);
+  }
+
+  private removeOrderFromBoard(orderId: string, notice: string, countAsDispatched: boolean): void {
+    this.isBoardFlipActive.set(true);
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.orders.update(list => list.filter(o => o.id !== orderId));
+        if (countAsDispatched) {
+          this.dispatchedCount.update(count => count + 1);
+        }
+        if (this.selectedOrderId() === orderId) {
+          this.isInspectionOpen.set(false);
+          this.selectedOrderId.set(null);
+          this.stageOverlay.setOverlayOpen(this.isCreateModalOpen());
+        }
+        this.liveAnnouncement.set(notice);
+        this.toastMessage.set(notice);
+      },
+      () => {
+        this.isBoardFlipActive.set(false);
+      },
+      { rootClass: 'vt-board-flip' }
+    );
+  }
+
+  assignOrderStaff(orderId: string, staff: string): void {
+    const order = this.orders().find(o => o.id === orderId);
+    if (!order) return;
+
+    const cleanStaff = staff.trim() || 'Asignación pendiente';
+    if (order.assignedStaff === cleanStaff) return;
+
+    this.orders.update(list =>
+      list.map(o => (o.id === orderId ? { ...o, assignedStaff: cleanStaff } : o))
+    );
+    const notice = `Responsable de ${order.ticketNumber}: ${cleanStaff}.`;
+    this.liveAnnouncement.set(notice);
+    this.toastMessage.set(notice);
+  }
+
+  private applyOrderMove(
+    list: KanbanOrder[],
+    orderId: string,
+    targetStage: OrderStage,
+    beforeOrderId?: string
+  ): KanbanOrder[] {
+    const moving = list.find(o => o.id === orderId);
+    if (!moving) return list;
+
+    const updated: KanbanOrder = { ...moving, stage: targetStage };
+    const withoutMoving = list.filter(o => o.id !== orderId);
+
+    if (beforeOrderId && beforeOrderId !== orderId) {
+      const targetIndex = withoutMoving.findIndex(o => o.id === beforeOrderId);
+      if (targetIndex >= 0) {
+        const next = [...withoutMoving];
+        next.splice(targetIndex, 0, updated);
+        return next;
+      }
+    }
+
+    return [...withoutMoving, updated];
   }
 
   advanceOrder(orderId: string): void {
@@ -380,17 +614,90 @@ export class KanbanService {
     }
   }
 
-  openOrderInspection(order: KanbanOrder): void {
-    this.selectedOrder.set(order);
-    this.isInspectionOpen.set(true);
+  openOrderInspection(order: KanbanOrder, triggerId?: string): void {
+    this.activeInspectTrigger.set(triggerId ?? `ticket-${order.id}`);
+    this.isModalTransitioning.set(true);
+
+    // Guard against bluring/inerting unportaled in-stage dialogs before Phase 3 external host portal is mounted.
+    const shouldRecessStage = Boolean(this.stageOverlay.overlayTemplate());
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.selectedOrderId.set(order.id);
+        this.isInspectionOpen.set(true);
+        if (shouldRecessStage) {
+          this.stageOverlay.setOverlayOpen(true);
+        }
+      },
+      () => {
+        this.isModalTransitioning.set(false);
+      }
+    );
   }
 
   closeOrderInspection(): void {
-    this.isInspectionOpen.set(false);
-    this.selectedOrder.set(null);
+    if (!this.isInspectionOpen()) return;
+    this.isModalTransitioning.set(true);
+
+    const shouldSyncOverlay = Boolean(this.stageOverlay.overlayTemplate()) && !this.isCreateModalOpen();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isInspectionOpen.set(false);
+        this.selectedOrderId.set(null);
+        if (shouldSyncOverlay) {
+          this.stageOverlay.setOverlayOpen(false);
+        }
+      },
+      () => {
+        this.isModalTransitioning.set(false);
+        this.activeInspectTrigger.set(null);
+      },
+      { isExiting: true }
+    );
   }
 
-  // Drag and Drop Event Handlers
+  openCreateModal(triggerId = 'create-order'): void {
+    this.activeCreateTrigger.set(triggerId);
+    this.isModalTransitioning.set(true);
+
+    const shouldRecessStage = Boolean(this.stageOverlay.overlayTemplate());
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isCreateModalOpen.set(true);
+        if (shouldRecessStage) {
+          this.stageOverlay.setOverlayOpen(true);
+        }
+      },
+      () => {
+        this.isModalTransitioning.set(false);
+      }
+    );
+  }
+
+  closeCreateModal(): void {
+    if (!this.isCreateModalOpen()) return;
+    this.isModalTransitioning.set(true);
+
+    const shouldSyncOverlay = Boolean(this.stageOverlay.overlayTemplate()) && !this.isInspectionOpen();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isCreateModalOpen.set(false);
+        if (shouldSyncOverlay) {
+          this.stageOverlay.setOverlayOpen(false);
+        }
+      },
+      () => {
+        this.isModalTransitioning.set(false);
+        this.activeCreateTrigger.set(null);
+      },
+      { isExiting: true }
+    );
+  }
+
+  // Drag and Drop Event Handlers (shared across Pointer Events and HTML5 drag events)
   onDragStart(orderId: string, event?: DragEvent): void {
     this.draggedOrderId.set(orderId);
     if (event?.dataTransfer) {
@@ -399,88 +706,141 @@ export class KanbanService {
     }
   }
 
-  onDragOver(stage: OrderStage, event: DragEvent): void {
+  updateDragTarget(stage: OrderStage | null, targetOrderId?: string | null): void {
+    if (this.dragOverStage() !== stage) {
+      this.dragOverStage.set(stage);
+    }
+    const nextOrderTarget =
+      stage && targetOrderId && targetOrderId !== this.draggedOrderId() ? targetOrderId : null;
+    if (this.dragOverOrderId() !== nextOrderTarget) {
+      this.dragOverOrderId.set(nextOrderTarget);
+    }
+  }
+
+  commitDragDrop(
+    targetStage: OrderStage | null,
+    beforeOrderId?: string | null,
+    fallbackOrderId?: string | null
+  ): void {
+    const orderId = this.draggedOrderId() || fallbackOrderId || null;
+    this.dragOverStage.set(null);
+    this.dragOverOrderId.set(null);
+    this.draggedOrderId.set(null);
+
+    if (orderId && targetStage) {
+      this.moveOrder(orderId, targetStage, beforeOrderId ?? undefined);
+    }
+  }
+
+  onDragOver(stage: OrderStage, event: DragEvent, targetOrderId?: string | null): void {
     event.preventDefault();
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
-    if (this.dragOverStage() !== stage) {
-      this.dragOverStage.set(stage);
-    }
+    this.updateDragTarget(stage, targetOrderId);
   }
 
-  onDragLeave(stage: OrderStage): void {
+  onDragLeave(stage: OrderStage, event?: DragEvent): void {
+    const currentTarget = event?.currentTarget as HTMLElement | null;
+    const related = event?.relatedTarget as Node | null;
+    if (currentTarget && related && currentTarget.contains(related)) {
+      return;
+    }
+
     if (this.dragOverStage() === stage) {
       this.dragOverStage.set(null);
+      this.dragOverOrderId.set(null);
     }
   }
 
-  onDrop(targetStage: OrderStage, event: DragEvent): void {
+  onDrop(targetStage: OrderStage, event: DragEvent, beforeOrderId?: string): void {
     event.preventDefault();
-    const orderId = this.draggedOrderId() || event.dataTransfer?.getData('text/plain');
-    this.dragOverStage.set(null);
-    this.draggedOrderId.set(null);
-
-    if (orderId) {
-      this.moveOrder(orderId, targetStage);
-    }
+    const fallbackOrderId =
+      !this.draggedOrderId() && typeof event.dataTransfer?.getData === 'function'
+        ? event.dataTransfer.getData('text/plain')
+        : null;
+    this.commitDragDrop(targetStage, beforeOrderId, fallbackOrderId);
   }
 
   onDragEnd(): void {
     this.draggedOrderId.set(null);
     this.dragOverStage.set(null);
+    this.dragOverOrderId.set(null);
   }
 
-  createOrder(orderData: Partial<KanbanOrder>): void {
-    const id = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+  createOrder(orderData: CreateOrderDto | Partial<KanbanOrder>): KanbanOrder {
+    const seq = this.nextOrderSequence++;
+    const id = `ORD-${seq}`;
+    const category: OrderCategory = orderData.category || 'kitchen';
+    const rawItems: readonly (CreateOrderItemDto | OrderItem)[] = orderData.items?.length
+      ? orderData.items
+      : DEFAULT_CATEGORY_ITEMS[category].map(preset => ({
+          name: preset.name,
+          quantity: 1,
+          category,
+          price: preset.price
+        }));
+
+    const items: OrderItem[] = rawItems.map((item, idx) => {
+      const existingId = 'id' in item && typeof item.id === 'string' && item.id ? item.id : null;
+      return {
+        id: existingId ?? `item-${seq}-${idx + 1}`,
+        name: item.name.trim() || 'Plato Especial del Chef',
+        quantity: Math.max(1, Math.round(item.quantity || 1)),
+        category: item.category || category,
+        price: Math.max(0, Number(item.price) || 0),
+        notes: item.notes?.trim() || undefined
+      };
+    });
+
+    const computedTotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100;
+
     const newOrder: KanbanOrder = {
       id,
-      ticketNumber: `#${id.split('-')[1]}`,
-      tableOrClient: orderData.tableOrClient || 'Mesa 1 · General',
-      channel: orderData.channel || 'dine_in',
-      category: orderData.category || 'kitchen',
+      ticketNumber: `#${seq}`,
+      tableOrClient: orderData.tableOrClient?.trim() || 'Mesa 1 · General',
+      channel: orderData.channel || (category === 'express' ? 'delivery' : 'dine_in'),
+      category,
       priority: orderData.priority || 'medium',
       stage: 'queue',
-      items: orderData.items || [
-        { id: 'new-1', name: 'Plato Especial del Chef', quantity: 1, category: 'kitchen', price: 45.00 }
-      ],
-      totalAmount: orderData.totalAmount || 45.00,
+      items,
+      totalAmount: orderData.totalAmount ?? computedTotal,
       prepTimeTargetMin: orderData.prepTimeTargetMin || 15,
       elapsedMinutes: 0,
-      assignedStaff: 'Asignación pendiente',
-      specialInstructions: orderData.specialInstructions || '',
+      assignedStaff: orderData.assignedStaff?.trim() || 'Asignación pendiente',
+      specialInstructions: orderData.specialInstructions?.trim() || '',
       createdAt: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
     };
 
-    this.playKdsChime('created');
-    this.runViewTransition(() => {
-      this.orders.update(list => [newOrder, ...list]);
-    });
-  }
+    const notice = `Comanda ${newOrder.ticketNumber} (${newOrder.tableOrClient}) ingresada a Cola de Entrada.`;
 
-  private runViewTransition(update: () => void, cleanup?: () => void): void {
-    const doc = typeof document !== 'undefined' ? (document as any) : null;
-    if (doc && typeof doc.startViewTransition === 'function') {
-      const transition = doc.startViewTransition(() => {
-        update();
-        this.appRef.tick();
-      });
-      transition.finished.finally(() => {
-        cleanup?.();
-        this.appRef.tick();
-      });
-    } else {
-      update();
-      cleanup?.();
-    }
+    this.isBoardFlipActive.set(true);
+    this.activeTransitionOrderId.set(newOrder.id);
+    this.playKdsChime('created');
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.orders.update(list => [newOrder, ...list]);
+        this.liveAnnouncement.set(notice);
+        this.toastMessage.set(notice);
+      },
+      () => {
+        this.activeTransitionOrderId.set(null);
+        this.isBoardFlipActive.set(false);
+      },
+      { rootClass: 'vt-board-flip' }
+    );
+
+    return newOrder;
   }
 
   private startLiveSimulation(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
-    // Simulate realistic minute tick every 30 seconds with a realistic ceiling
     this.ngZone.runOutsideAngular(() => {
-      setInterval(() => {
+      const timerId = setInterval(() => {
+        if (!this.isLiveSimulationActive()) return;
+
         this.ngZone.run(() => {
           this.orders.update(list =>
             list.map(order => {
@@ -495,7 +855,9 @@ export class KanbanService {
             })
           );
         });
-      }, 30000);
+      }, KANBAN_LIVE_TICK_MS);
+
+      this.destroyRef.onDestroy(() => clearInterval(timerId));
     });
   }
 }

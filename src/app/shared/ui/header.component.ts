@@ -1,7 +1,16 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
+import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
 import { ThemeService } from '../../core/theme/theme.service';
-import { AppSection, NavStyle, TriggerMode } from '../models/ui.models';
+import { AppSection, NavChromeMode, TriggerMode } from '../models/ui.models';
 import { M3ButtonComponent } from '../components/button/button.component';
+
+const CHROME_LABELS: Record<NavChromeMode, string> = {
+  bar: 'Bar Compact',
+  'rail-collapsed': 'Rail 80dp',
+  'rail-expanded': 'Rail Expandido',
+  dock: 'Dock',
+  tunnel: 'Focus Bar'
+};
 
 @Component({
   selector: 'app-header',
@@ -13,68 +22,43 @@ import { M3ButtonComponent } from '../components/button/button.component';
   template: `
     <header class="flex flex-wrap items-center justify-between gap-4 pb-2">
       <div>
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
-          @if (sectionTitle()) {
-            {{ sectionTitle() }}
-          } @else if (currentSection() === 'overview') {
-            Fundamentos M3
-          } @else if (currentSection() === 'agenda') {
-            Agenda de Tareas
-          } @else if (currentSection() === 'pos') {
-            Punto de Venta Expressivo
-          } @else {
-            Design System & Workshop
-          }
-        </h1>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">{{ heading().title }}</h1>
         <p class="text-muted text-sm mt-0.5">
-          @if (sectionSubtitle()) {
-            {{ sectionSubtitle() }} • Vista {{ navStyle().toUpperCase() }}
-          } @else if (currentSection() === 'overview') {
-            Arquitectura adaptativa en Modo {{ themeService.isDarkMode() ? 'Oscuro' : 'Claro' }} • Vista {{ navStyle().toUpperCase() }}
-          } @else if (currentSection() === 'agenda') {
-            Productividad y gestión visual bajo principios M3 • Vista {{ navStyle().toUpperCase() }}
-          } @else if (currentSection() === 'pos') {
-            Terminal comercial táctil con cálculo fiscal IGV, Yape/Efectivo y tickets térmicos • Vista {{ navStyle().toUpperCase() }}
-          } @else {
-            Catálogo maestro de tokens OKLCH, elevación y componentes 80/20 • Vista {{ navStyle().toUpperCase() }}
-          }
+          {{ heading().subtitle }}
+          <span class="opacity-75"> • {{ layoutBadge() }}</span>
         </p>
       </div>
 
       @if (currentSection() !== 'pos') {
-        <div class="flex items-center gap-3">
-          <!-- Switch Claro / Oscuro con Circular Reveal -->
-          <m3-button 
+        <div class="flex items-center gap-2.5">
+          <button
+            type="button"
+            (click)="openCommandPalette.emit()"
+            aria-label="Abrir paleta de comandos (Ctrl+K)"
+            class="btn-m3 h-10 px-3 sm:px-3.5 rounded-full bg-surface-box hover:bg-surface-high text-muted hover:text-main flex items-center gap-2 text-xs font-medium shadow-xs cursor-pointer">
+            <span class="material-symbols-rounded text-lg text-primary" aria-hidden="true">search</span>
+            <span class="hidden sm:inline">Buscar</span>
+            <kbd class="hidden md:inline px-1.5 py-0.5 rounded-m3-xs bg-surface-high text-[10px] font-mono text-muted">
+              ⌘K
+            </kbd>
+          </button>
+
+          <m3-button
             [iconOnly]="true"
-            variant="outlined"
+            variant="tonal"
             [icon]="themeService.isDarkMode() ? 'light_mode' : 'dark_mode'"
             ariaLabel="Alternar Modo Claro / Oscuro"
             (action)="themeService.toggleThemeMode($event)" />
 
-          <!-- Swatches con Shape Morphing -->
-          <div class="flex items-center gap-2 bg-surface-box px-3 py-2 rounded-full border border-outline-sub shadow-xs">
-            @for (t of themeService.themes; track t.hue) {
-              <button 
-                (click)="themeService.setThemeHue(t.hue)" 
-                [title]="t.name" 
-                [class.ring-2]="themeService.currentHue() === t.hue"
-                [class.rounded-m3-md]="themeService.currentHue() === t.hue" 
-                [class.rounded-full]="themeService.currentHue() !== t.hue"
-                class="btn-m3 w-6 h-6 ring-offset-2 ring-offset-surface ring-primary cursor-pointer"
-                [style.background-color]="'oklch(65% 0.16 ' + t.hue + ')'">
-              </button>
-            }
-          </div>
-
-          <!-- BOTÓN FAB ORIGEN SUPERIOR DERECHO -->
-          <button 
-            id="trigger-fab-header" 
+          <button
+            id="trigger-fab-header"
+            type="button"
             (click)="openCreate.emit('fab-header')"
             [class.invisible]="isDialogOpen() && activeTrigger() === 'fab-header'"
             [style.view-transition-name]="!isDialogOpen() && activeTrigger() === 'fab-header' ? 'dialog-transform' : null"
-            title="Crear nueva tarea"
-            class="btn-m3 w-11 h-11 bg-primary text-on-primary rounded-full grid place-items-center shadow-md ml-2 cursor-pointer">
-            <span class="material-symbols-rounded text-2xl">add</span>
+            aria-label="Crear nueva tarea"
+            class="btn-m3 w-11 h-11 bg-primary text-on-primary rounded-full grid place-items-center shadow-sm ml-0.5 cursor-pointer">
+            <span class="material-symbols-rounded text-2xl" aria-hidden="true">add</span>
           </button>
         </div>
       }
@@ -83,13 +67,48 @@ import { M3ButtonComponent } from '../components/button/button.component';
 })
 export class HeaderComponent {
   readonly themeService = inject(ThemeService);
+  private readonly adaptiveLayout = inject(AdaptiveLayoutService);
 
   readonly currentSection = input.required<AppSection>();
-  readonly navStyle = input.required<NavStyle>();
+  readonly chromeMode = input<NavChromeMode | null>(null);
   readonly sectionTitle = input<string | undefined>(undefined);
   readonly sectionSubtitle = input<string | undefined>(undefined);
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);
 
   readonly openCreate = output<TriggerMode>();
+  readonly openCommandPalette = output<void>();
+
+  readonly heading = computed(() => {
+    const fallbackBySection: Partial<Record<AppSection, { title: string; subtitle: string }>> = {
+      overview: {
+        title: 'Centro de Comando',
+        subtitle: `Pulso operativo unificado en Modo ${this.themeService.isDarkMode() ? 'Oscuro' : 'Claro'}`
+      },
+      agenda: {
+        title: 'Agenda de Tareas',
+        subtitle: 'Productividad y gestión visual bajo principios M3'
+      },
+      pos: {
+        title: 'Punto de Venta Expressivo',
+        subtitle: 'Terminal comercial táctil con cálculo fiscal IGV, Yape/Efectivo y tickets térmicos'
+      }
+    };
+
+    const base = fallbackBySection[this.currentSection()] ?? {
+      title: 'Design System & Workshop',
+      subtitle: 'Catálogo maestro de tokens OKLCH, elevación y componentes 80/20'
+    };
+
+    return {
+      title: this.sectionTitle() || base.title,
+      subtitle: this.sectionSubtitle() || base.subtitle
+    };
+  });
+
+  readonly layoutBadge = computed(() => {
+    const sizeClass = this.adaptiveLayout.windowSizeClass().toUpperCase();
+    const chrome = this.chromeMode();
+    return chrome ? `${CHROME_LABELS[chrome]} • ${sizeClass}` : `M3 ${sizeClass}`;
+  });
 }

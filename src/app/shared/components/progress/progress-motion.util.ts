@@ -17,6 +17,16 @@ export const DEFAULT_AMPLITUDE_SETTLE_MS = 200;
 export const WAVE_ENVELOPE_RAMP_IN = 0.1;
 export const WAVE_ENVELOPE_RAMP_OUT = 0.95;
 
+/** Canonical M3 Expressive LoadingIndicator spring & rotation choreography (LoadingIndicatorDefaults). */
+export const DEFAULT_LOADING_MORPH_INTERVAL_MS = 650;
+export const DEFAULT_LOADING_GLOBAL_ROTATION_MS = 4666;
+export const DEFAULT_LOADING_SPRING_DAMPING = 0.6;
+export const DEFAULT_LOADING_SPRING_STIFFNESS = 200;
+export const DEFAULT_LOADING_DIAMETER_DP = 48;
+export const MIN_LOADING_DIAMETER_DP = 24;
+export const MAX_LOADING_DIAMETER_DP = 240;
+export const LOADING_ACTIVE_SHAPE_RATIO = 38 / 48;
+
 export type WaveAmplitudeZone =
   | 'extreme-zero'
   | 'ramp-in'
@@ -363,4 +373,56 @@ export function buildCircularArcPath(startAngle: number, endAngle: number, r: nu
   const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
 
   return `M ${x1.toFixed(2)},${y1.toFixed(2)} A ${r},${r} 0 ${largeArcFlag} 1 ${x2.toFixed(2)},${y2.toFixed(2)}`;
+}
+
+/**
+ * Analytical unit step response x(t) for a spring-damper ODE starting at rest x(0)=0, v(0)=0
+ * toward target x=1 with normalized dampingRatio (zeta) and stiffness (k = omega_n^2).
+ * At zeta = 0.6, stiffness = 200, x peaks near ~1.095 (~9.5% expressive overshoot) around 278ms.
+ */
+export function evaluateSpringStep(
+  elapsedSec: number,
+  dampingRatio = DEFAULT_LOADING_SPRING_DAMPING,
+  stiffness = DEFAULT_LOADING_SPRING_STIFFNESS
+): number {
+  const t = Math.max(0, elapsedSec);
+  if (t <= 0) return 0;
+
+  const omegaN = Math.sqrt(Math.max(1e-6, stiffness));
+  const zeta = Math.max(0, dampingRatio);
+
+  if (zeta < 1) {
+    const under = Math.sqrt(1 - zeta * zeta);
+    const omegaD = omegaN * under;
+    const decay = Math.exp(-zeta * omegaN * t);
+    return 1 - decay * (Math.cos(omegaD * t) + (zeta / under) * Math.sin(omegaD * t));
+  }
+
+  if (Math.abs(zeta - 1) < 1e-4) {
+    const decay = Math.exp(-omegaN * t);
+    return 1 - decay * (1 + omegaN * t);
+  }
+
+  const root = Math.sqrt(zeta * zeta - 1);
+  const r1 = -omegaN * (zeta - root);
+  const r2 = -omegaN * (zeta + root);
+  return 1 - (r2 * Math.exp(r1 * t) - r1 * Math.exp(r2 * t)) / (r2 - r1);
+}
+
+/**
+ * Evaluates normalized spring morph progress within a 650ms M3 LoadingIndicator interval,
+ * preserving full underdamped overshoot while landing on exact 1.0 at step completion.
+ */
+export function evaluateLoadingStepSpring(
+  elapsedSec: number,
+  intervalSec = DEFAULT_LOADING_MORPH_INTERVAL_MS / 1000
+): number {
+  const safeInterval = Math.max(1e-3, intervalSec);
+  const u = Math.min(1, Math.max(0, elapsedSec / safeInterval));
+  if (u <= 0) return 0;
+  if (u >= 1) return 1;
+
+  const endValue = evaluateSpringStep(safeInterval);
+  const scale = endValue > 1e-4 ? 1 / endValue : 1;
+  return evaluateSpringStep(u * safeInterval) * scale;
 }

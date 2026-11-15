@@ -1,0 +1,96 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: NATIVE MODAL DIALOG (<dialog>.showModal())
+   m3.material.io/components/dialogs/specs
+   ========================================================= */
+
+dialog.m3-dialog {
+  margin: auto;
+  padding: 24px;
+  min-width: min(280px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-extra-large, 28px);
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-sys-elevation-level-3);
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--md-sys-motion-duration-short4, 200ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-accelerate, cubic-bezier(0.3, 0, 0.8, 0.15));
+  transition-behavior: allow-discrete;
+}
+
+dialog.m3-dialog[open]:where(:not([data-closing])) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-duration: var(--md-sys-motion-duration-medium4, 400ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1));
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+}
+
+dialog.m3-dialog::backdrop {
+  background-color: oklch(0% 0 0 / 0);
+  backdrop-filter: blur(0px);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: var(--md-sys-motion-duration-short4, 200ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
+  transition-behavior: allow-discrete;
+}
+
+dialog.m3-dialog[open]:where(:not([data-closing]))::backdrop {
+  background-color: oklch(0% 0 0 / 0.56);
+  backdrop-filter: blur(6px);
+  transition-duration: var(--md-sys-motion-duration-medium4, 400ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
+
+  @starting-style {
+    background-color: oklch(0% 0 0 / 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+dialog.m3-dialog.m3-command-dialog {
+  padding: 0;
+  width: min(580px, calc(100vw - 24px));
+  max-width: min(580px, calc(100vw - 24px));
+  max-height: min(560px, calc(100dvh - 48px));
+  border: none;
+  background-color: var(--md-sys-color-surface-container-low);
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.m3-dialog,
+  dialog.m3-dialog[open] {
+    transform: none;
+    transition-property: opacity, display, overlay;
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
+
+    @starting-style {
+      transform: none;
+    }
+  }
+
+  dialog.m3-dialog::backdrop,
+  dialog.m3-dialog[open]::backdrop {
+    transition-property: background-color, backdrop-filter, display, overlay;
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
+  }
+}
+
+@media (forced-colors: active) {
+  dialog.m3-dialog {
+    border: 2px solid ButtonText;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+}

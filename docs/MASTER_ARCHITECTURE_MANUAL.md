@@ -45,8 +45,8 @@ Material 3 Expressive rejects visual jump-cuts in favor of **strict spatial cont
 ### 0.3 Shape Morphing: Geometry as an Energy State
 * **The Problem**: Static corner radii treat borders as meaningless decoration.
 * **The M3 Law**: Corner radii communicate physical tension and user readiness via two mechanisms:
-  * **Corner Radius Morphing (Web/Desktop & Mobile)**: Elements interpolate smoothly between a resting bounded pill radius (`h/2`, e.g. `24px`/`20px` on Buttons via `--md-comp-button-shape-pill` or `16px` on Filter Chips via `--md-comp-chip-shape-pill`) and a squircle (`12px`/`10px` or `8px`) using `--md-sys-motion-spring-expressive-fast-spatial`. Never animate from `9999px` (`rounded-full`)—CSS interpolates `9999 → h/2` invisibly (~1s lag) before visible corners appear.
-  * **Organic Polygon Spline Morphing (`<m3-loading-indicator>`)**: Continuously morphs across Rounded Pentagon $\leftrightarrow$ Squircle $\leftrightarrow$ 4-Petal Clover $\leftrightarrow$ Circle using uniform `SEGMENT_COUNT = 40` cubic Bézier `C` segments centered at `(24, 24)`.
+  * **Corner Radius Morphing (Web/Desktop & Mobile)**: Elements interpolate smoothly between a resting bounded pill radius (`h/2`, e.g. `24px`/`20px` on Buttons via `--md-comp-button-shape-pill` or `16px` on Filter Chips via `--md-comp-chip-shape-pill`) and a squircle (`12px`/`10px` or `8px`) using the scheme-aware semantic alias `--md-sys-motion-spring-fast-spatial` (so `[data-motion-scheme="standard"]` cascades across all components without editing component CSS). Never animate from `9999px` (`rounded-full`)—CSS interpolates `9999 → h/2` invisibly (~1s lag) before visible corners appear.
+  * **Organic Polygon Spline Morphing (`<m3-loading-indicator>`)**: Continuously morphs across the 7 canonical M3 shapes (`SoftBurst` $\to$ `Cookie9` $\to$ `Pentagon` $\to$ `Pill` $\to$ `Sunny` $\to$ `Cookie4` $\to$ `Oval`) using uniform `M3_LOADING_SEGMENT_COUNT = 180` cubic Bézier `C` segments centered at `(24, 24)` driven by M3 spring physics (`0.6 / 200`, `650ms` steps).
 
 ### 0.4 OKLCH Color Science: Perceptual Uniformity
 * **The Problem**: Standard RGB and HSL color models are physically flawed. The human eye is vastly more sensitive to green and yellow wavelengths than blue. In HSL, an identical Lightness value of `50%` creates a blinding yellow but an illegible, murky blue, destroying automated WCAG accessibility.
@@ -110,20 +110,24 @@ Before writing any transition or animation in a feature module, apply this 3-fil
    * **Destroyed & replaced** (e.g., Route change `/inventory` &rarr; `/inventory/42`, or global Overlay Dialog): Use the **View Transitions API** (`dialog-transform`, `hero-transform`) so the GPU morphs snapshots across disjoint DOM trees.
 2. **Filter 2 — Physics Family (Geometry vs. Optics in `src/styles/_motion.css`)**:
    * **Spatial (Size / Position / Shape)**:
-     * *Begins & Ends On-Screen / Recoverable* (`hero-transform`, inline expand): Use `--md-sys-motion-easing-emphasized` (10-stop `linear(...)` curve) with asymmetric timing — longer expansion (`--md-sys-motion-duration-long2`, `500ms`) and crisp return (`--md-sys-motion-duration-medium1`, `250ms`), or Expressive Spatial springs ($\zeta = 0.9$). **Never** use `emphasized-accelerate` when returning to an on-screen slot; its slow start + hard terminal velocity slams visibly into place.
+     * *Begins & Ends On-Screen / Recoverable* (`hero-transform`, inline expand): Use `--md-sys-motion-easing-emphasized` (10-stop `linear(...)` curve) with asymmetric timing — longer expansion (`--md-sys-motion-duration-long2`, `500ms`) and crisp return (`--md-sys-motion-duration-medium1`, `250ms`), or Spatial springs (Expressive $\zeta = 0.6\text{–}0.8$, $k = 200\text{–}800$; Standard $\zeta = 0.9$, $k = 300\text{–}1400$). **Never** use `emphasized-accelerate` when returning to an on-screen slot; its slow start + hard terminal velocity slams visibly into place.
      * *Enters vs. Permanent Exit* (`dialog-transform`, snackbars, dismissed overlays): Pair `--md-sys-motion-easing-emphasized-decelerate` (`medium4`, `400ms`) on enter with `--md-sys-motion-easing-emphasized-accelerate` (`short4`, `200ms`) on permanent discard.
    * **Effects (Color / Opacity / Border)**: Use `--md-sys-motion-spring-*-effects-curve` ($\zeta = 1.0$, zero bounce) or `--md-sys-motion-easing-standard`.
    * *Note (GM3 Expressive)*: Google's Expressive update moves interactive physics toward Springs (`md.sys.motion.spring.*` in `_motion.css`), while Duration + Easing pairs remain first-class for View Transitions & CSS state transforms.
-3. **Filter 3 — Zero Magic Numbers**:
-   * Always reference `var(--md-sys-motion-*)`. Never hardcode `300ms` or `ease-in-out`, so `@media (prefers-reduced-motion: reduce)` works globally without extra code.
+3. **Filter 3 — Zero Magic Numbers & Calm Reduced Motion**:
+   * Always reference `var(--md-sys-motion-*)`. Never hardcode `300ms` or `ease-in-out`.
+   * Never apply a blanket `*, *::before, *::after { animation-duration: 1ms !important }` reset (turns fades into jarring snaps and overrides overlay dissolves). Under `@media (prefers-reduced-motion: reduce)`, replace spatial travel and springs with calm `150ms` opacity fades, freeze `.m3-aurora-orb` (`animation: none`), and skip sweeping radial/hero view transitions (`ThemeService` / `StageOverlayService`).
+   * Animate strictly **GPU compositor** properties (`transform`, `opacity` — including individual transforms or `scaleX`/`calc(100cqw - 100%)`); never animate layout (`width`/`left`) or write `transition: all` on multi-property cards.
 
-#### ⚠️ Critical CSS Layout Traps (Never Repeat)
+#### ⚠️ Critical CSS Layout Traps & Modern Web Top-Layer Primitives
 * **The `max-width: none` Explosion Trap**: NEVER toggle `w-full max-w-md` in the expanded state against `w-72` (which has `max-width: none`) in the collapsed state. At $t = 0\text{ms}$ on collapse, the browser snaps `max-width` to `none` while `width` still interpolates from `100%`, causing the card to **explode horizontally across the parent container** before shrinking.
   * **Fix**: Keep `max-w-full` invariant in static `class`, and interpolate pure explicit numeric widths (`w-72` &harr; `w-[448px]`) and heights (`h-16` &harr; `h-48`) — or use CSS Grid `grid-rows-[0fr]` &harr; `grid-rows-[1fr]` with `[attr.inert]` for intrinsic-height accordion/detail drawers.
-* **The `height: auto` Snap & Blank Void Trap**: CSS `transition: all` cannot interpolate `height: auto`. Removing inner DOM nodes via `@if` at $t = 0\text{ms}$ while shrinking a tall container over `500ms` leaves an empty hollow void collapsing on screen.
-  * **Fix**: Keep inner content mounted inside `overflow-hidden` and fade it out asynchronously using `--md-sys-motion-duration-short2` (`100ms`, `0ms` delay) on collapse while fading in over `medium2` (`300ms`, slight delay) on expansion.
+* **The `height: auto` Snap & Blank Void Trap**: CSS transitions cannot interpolate `height: auto`. Removing inner DOM nodes via `@if` at $t = 0\text{ms}$ while shrinking a container over `400–500ms` leaves an empty hollow void collapsing on screen.
+  * **Fix**: Keep inner content mounted inside `overflow-hidden` with `[attr.inert]` and fade it out asynchronously using `--md-sys-motion-duration-short2` (`100ms`, `0ms` delay) on collapse while fading in over `medium1`/`medium2` (slight delay) on expansion.
+* **Discrete Entry/Exit (`@starting-style` + `allow-discrete`)**: For native `<dialog>` or `[popover="auto"]` Top-Layer surfaces transitioning from/to `display: none`, place `@starting-style` at the end of the active open selector (`[open]`, `:popover-open`) and transition both `display` and `overlay` with `allow-discrete`.
 
 #### View Transitions + Stage Recess Production Checklist
+* **Directional vs. Top-Level Route Transitions (`app.config.ts`)**: `withViewTransitions({ onViewTransitionCreated })` classifies sequential steps (`vt-nav-forward` / `vt-nav-backward` Shared-Axis X + native `transition.types`) separately from top-level hub swaps (`vt-nav-top-level` Clean Fade-Through: outgoing exits in `short3` `150ms`, incoming enters delayed by `short2` `100ms`).
 * **Keep the origin Bento card mounted**: Hide the source card with `[class.invisible]` + `[attr.aria-hidden]` instead of `@if`, preserving grid layout stability and preventing entrance-animation replays on return.
 * **Freeze stage transitions during snapshot**: Apply `html.vt-running #app-stage { transition: none !important; }` (and pause ambient loops via `html.vt-running .m3-aurora-orb { animation-play-state: paused !important; }`) so the browser never snapshots intermediate Stage Recess blur or running keyframe drift.
 * **Scope root return timing cleanly**: Gate Hero close duration (`250ms` `emphasized`) with `html.vt-hero.vt-exiting:not(.theme-transition)` so dark-mode circular reveal transitions (`html.theme-transition`) remain untouched.
@@ -219,7 +223,7 @@ Never use arbitrary gray or hex values. Semantic container surfaces follow HCT-t
 All services are `@Injectable({ providedIn: 'root' })` and expose Angular **Signals** (`computed`, `signal`, `model`).
 
 ### 3.1 `ThemeService` (`src/app/core/theme/theme.service.ts`)
-Controls dynamic OKLCH color science, active theme hue, contrast level, and dark mode toggles.
+Controls dynamic OKLCH color science (`--seed-hue`, `--seed-chroma`), contrast level, global motion scheme (`expressive` vs. `standard` for *Minimalismo Zen*), and dark mode toggles.
 
 ```typescript
 import { inject } from '@angular/core';
@@ -229,14 +233,18 @@ const theme = inject(ThemeService);
 
 // Signals & State
 theme.isDarkMode();        // boolean (true = dark, false = light)
-theme.currentHue();         // number (e.g. 275)
-theme.contrastLevel();      // 'standard' | 'medium' | 'high'
-theme.themes;               // Array of preset themes ({ name: 'Iris', hue: 275 }, etc.)
+theme.currentHue();        // number (e.g. 275)
+theme.seedChroma();        // number (default 0.16; e.g. 0.08 for Minimalismo Zen)
+theme.contrastLevel();     // 'standard' | 'medium' | 'high'
+theme.motionScheme();      // 'expressive' | 'standard'
+theme.themes;              // Array of preset themes ({ name: 'Iris', hue: 275 }, etc.)
 
 // Methods
-theme.setThemeHue(235);           // Switches dynamic seed color to Blue
-theme.setContrastLevel('high');   // Switches contrast tier ('standard' | 'medium' | 'high')
-theme.toggleThemeMode(event);     // Smooth circular clip-path reveal (60/120 FPS)
+theme.setThemeHue(235);             // Switches dynamic seed hue to Blue
+theme.setSeedChroma(0.08);          // Clamps 0..0.22 and tunes OKLCH chroma saturation
+theme.setContrastLevel('high');     // Switches contrast tier ('standard' | 'medium' | 'high')
+theme.setMotionScheme('standard');  // Sets [data-motion-scheme="standard"] across components
+theme.toggleThemeMode(event);       // Smooth circular clip-path reveal (60/120 FPS)
 ```
 
 ### 3.2 `TaskService` (`src/app/core/tasks/task.service.ts`)
@@ -423,6 +431,82 @@ import { M3TextFieldComponent } from '../../shared/components/text-field/text-fi
   [maxlength]="250"
   [(value)]="saleNotes"
   supportingText="Información interna para despacho" />
+```
+
+### 4.5 `<m3-linear-progress>` & `<m3-circular-progress>` (Long Waits `> 5s`)
+* **When to use**: Operations exceeding `5 seconds` or exposing real quantifiable completion (`0..100%`), streaming buffers, batch uploads, and multi-step exports.
+* **Motion & Optics**: Progress fill interpolates via `Emphasized Decelerate` (`400ms`), wave amplitude `A(p)` attenuates symmetrically at `[0, 0.10]` / `[0.95, 1.0]` and settles smoothly in `200ms` (`short4`). Circular gauges `<= 24dp` or inside buttons MUST stay flat (`[wavy]="false"`, `color="inherit"`, `[showTrack]="false"`). Larger circular wavy gauges (`40dp–240dp`) quantize integer wave cycles $N$ around the perimeter so waveforms wrap cleanly with zero seam.
+
+```html
+<!-- Linear wavy determinate progress with buffer & canonical 4dp Stop Dot -->
+<m3-linear-progress
+  [value]="uploadPercent()"
+  [buffer]="bufferPercent()"
+  [wavy]="true"
+  [showStopIndicator]="true"
+  color="primary"
+  ariaLabel="Subiendo factura electrónica" />
+
+<!-- Circular wavy indeterminate gauge (48dp canonical) -->
+<m3-circular-progress
+  [value]="null"
+  [diameter]="48"
+  [wavy]="true"
+  color="four-color"
+  ariaLabel="Sincronizando inventario" />
+```
+
+### 4.6 `<m3-loading-indicator>` (Short Waits `200ms–5s` & Pull-to-Refresh)
+* **Why 7+1 canonical shapes instead of all 35 Shape Library forms (YAGNI)**: While Google's decorative Shape Library lists 35 polygons, production web/enterprise apps only need Corner Radius Morphing (`10-step scale`) for buttons/cards/chips and the **7+1 canonical convex shapes** (`SoftBurst`, `Cookie9`, `Pentagon`, `Pill`, `Sunny`, `Cookie4`, `Oval`, plus `Circle` at `+18°`) for `<m3-loading-indicator>`. Carrying 27 unused shapes adds dead geometry bundle weight without UI value.
+* **Optics & Inputs**: `48dp` default box (`38dp` active polygon, exact `38/48` optical ratio) scaling cleanly via `[diameter]` (`24–240dp`), `[progress]` (`0..1` determinate pull-to-refresh `Circle +18° -> SoftBurst`), `[contained]="true"` over imagery/lists, `[elevated]="true"` floating badge, and `[paused]`. Runs outside `NgZone` mutating `<path d>` + compositor `transform: rotate()`.
+
+```html
+<!-- Pull-to-refresh or quick handshake loader (< 5s) -->
+<m3-loading-indicator
+  [diameter]="48"
+  [contained]="true"
+  [elevated]="true"
+  [progress]="pullProgressOrNull()"
+  color="primary"
+  ariaLabel="Actualizando catálogo..." />
+```
+
+### 4.7 Quick Architecture Decision Guide (Cómo, Dónde, Por qué y Para qué)
+
+Use this executive lookup before wiring any loading state, surface, shape, or transition in client systems:
+
+| Scenario / Tool | Cómo usar (How) | Dónde usar & NO usar (Where) | Por qué (Why) | Para qué (Purpose) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Wait `< 200ms`** | Render result directly without spinner or progressbar. | Memory queries, client-side filtering, instant toggles. | Avoids cognitive flashes that make fast actions feel slower. | Instant Zero-Flash responsiveness. |
+| **Loading Indicator (`200ms–5s`)** | `[diameter]="24..240"` (`38/48` shape ratio), `[contained]` over busy photos, `[progress]` (`0..1`) on drag. | **Yes**: Pull-to-refresh, API/POS handshakes. **No**: `<200ms`, `>5s`, or inline inside buttons. | Real spring morphing (`0.6 / 200`, `650ms` + `+90°`) reduces wait fatigue outside `NgZone`. | Communicate brief activity cleanly without faking percentages. |
+| **Progress Indicator (`> 5s`)** | Linear (`≥40dp`, Stop Dot `4dp`), Circular (`24–240dp`, flat when small, `[wavy]` from `40dp+`). | **Yes**: Downloads, uploads, batch jobs, streaming. **No**: sub-5s indeterminate polls without `%`. | `400ms` Emphasized Decelerate + `200ms` final amplitude settle + seamless $N$ wave cycles. | Report truthful quantitative progress (`aria-valuenow`). |
+| **Color, Shape & Motion** | `bg-surface*` + OKLCH `--seed-hue`, bounded `h/2 ↔ squircle` corners, `var(--md-sys-motion-*)`. | All buttons, cards, chips, modals (`dialog-transform`), routes (`Stage Recess`). | Bounded `h/2` eliminates `9999px` lag; Spatial (`0.9`) vs Effects (`1.0`) stops shimmer fatigue. | Copy-pasteable themeable enterprise systems with zero visual drift. |
+
+### 4.8 Essential Selection, Tabs & Native Top-Layer Kit (Step 5: `/design-system/playbook`)
+
+For full interactive starter checklists, "for-a-5-year-old" mental models, and a searchable Decision Oracle separating **Google M3 Official**, **Web Standards / WCAG**, and **M3E Web Architecture** rules, open `/design-system/playbook` (**5. Biblia M3**).
+
+| Component | Key Spec & Primitive | Use When | Avoid When | Source File |
+| :--- | :--- | :--- | :--- | :--- |
+| **`<m3-switch>`** | `52×32dp` track, `40dp` circular handle halo, `16dp` thumb icon (`'none' \| 'selected' \| 'both'`), `48dp` target, separate `aria-describedby`. | Binary ON/OFF settings applied **immediately** without a Save button. | Multi-item lists or forms requiring explicit Save confirmation. | `src/app/shared/components/switch/switch.component.ts` |
+| **`<m3-checkbox>`** | `18×18dp` visual box, `40dp` halo, `48×48dp` native `<input type="checkbox">` target, tri-state `[indeterminate]`. | Selecting 0..N options before submitting, parent/child trees, legal acceptance. | Immediate system preference toggles (use Switch). | `src/app/shared/components/checkbox/checkbox.component.ts` |
+| **`<m3-radio-group>`** | Native `<fieldset>` + `<legend>` + `<input type="radio">` arrow-key navigation. | `2–5` mutually exclusive choices that benefit from side-by-side comparison. | `6+` choices (use `.m3-select-field` in `_text-field.css`). | `src/app/shared/components/radio/radio.component.ts` |
+| **`<m3-slider>`** | Native `<input type="range">`, `xs` (`16dp`) / `sm` (`24dp`) / `md` (`40dp`) tracks, disjoint bar handle, `[showStops]` (`4dp`), inverse value pill. | Continuous or stepped numeric ranges (volume, discount %, zoom). | Exact multi-digit invoice inputs (use `<m3-text-field>`). | `src/app/shared/components/slider/slider.component.ts` |
+| **`<m3-tabs>`** | WAI-ARIA `role="tablist"`, roving `tabindex`, RTL-aware arrows + `Home`/`End`; Primary (`3dp` bar) & Secondary (`2dp`). | Switching peer views (`Primary`) or sub-views inside a card/panel (`Secondary`). | Global top-level app navigation (use Navigation Bar/Rail). | `src/app/shared/components/tabs/tabs.component.ts` |
+| **`<m3-dialog>`** | Native `<dialog>.showModal()` with automatic Top Layer, `inert` background, `Esc` dismissal, `closedby`, and `28dp` corner surface container high. | Destructive confirmations or focused modal forms requiring explicit user action. | Brief non-blocking feedback (use `<m3-snackbar popover="manual">`). | `src/app/shared/components/dialog/dialog.component.ts` |
+
+```html
+<m3-switch label="Real-time alerts" iconMode="selected" [(checked)]="alerts" />
+<m3-checkbox label="Select all" [indeterminate]="partial()" [(checked)]="allSelected" />
+<m3-radio-group legend="Billing cycle" [options]="cycles" [(value)]="cycle" />
+<m3-slider label="Threshold" unit="%" size="sm" [step]="10" [showStops]="true" [(value)]="threshold" />
+<m3-tabs variant="primary" [tabs]="viewTabs" [(value)]="activeTab" />
+<m3-dialog #confirmDlg headline="Confirm deletion" [(open)]="confirmOpen">
+  <div dialog-actions>
+    <m3-button variant="text" (action)="confirmDlg.dismiss('cancel')">Cancel</m3-button>
+    <m3-button variant="filled" (action)="confirmDlg.dismiss('confirm')">Delete</m3-button>
+  </div>
+</m3-dialog>
 ```
 
 ---

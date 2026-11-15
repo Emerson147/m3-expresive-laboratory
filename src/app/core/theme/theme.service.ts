@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
 
 export type ContrastLevel = 'standard' | 'medium' | 'high';
+export type MotionScheme = 'expressive' | 'standard';
 
 export interface ThemeOption {
   readonly name: string;
@@ -24,12 +25,21 @@ export class ThemeService {
 
   readonly isDarkMode = signal<boolean>(false);
   readonly currentHue = signal<number>(275);
+  readonly seedChroma = signal<number>(0.16);
   readonly contrastLevel = signal<ContrastLevel>('standard');
+  readonly motionScheme = signal<MotionScheme>('expressive');
   readonly themes = THEME_OPTIONS;
 
   setThemeHue(hue: number): void {
     this.currentHue.set(hue);
     this.document.documentElement.style.setProperty('--seed-hue', hue.toString());
+  }
+
+  setSeedChroma(chroma: number): void {
+    if (!Number.isFinite(chroma)) return;
+    const clamped = Math.min(0.22, Math.max(0, Number(chroma.toFixed(3))));
+    this.seedChroma.set(clamped);
+    this.document.documentElement.style.setProperty('--seed-chroma', clamped.toString());
   }
 
   setContrastLevel(level: ContrastLevel): void {
@@ -41,17 +51,30 @@ export class ThemeService {
     }
   }
 
+  setMotionScheme(scheme: MotionScheme): void {
+    this.motionScheme.set(scheme);
+    if (scheme === 'standard') {
+      this.document.documentElement.setAttribute('data-motion-scheme', 'standard');
+    } else {
+      this.document.documentElement.removeAttribute('data-motion-scheme');
+    }
+  }
+
   toggleThemeMode(event?: MouseEvent): void {
     const nextDark = !this.isDarkMode();
-    if (this.hasViewTransitions() && event) {
+    if (this.prefersReducedMotion() || !event) {
+      this.applyThemeState(nextDark);
+      return;
+    }
+    if (this.hasViewTransitions()) {
       this.runNativeThemeTransition(nextDark, event);
       return;
     }
-    if (event) {
-      this.runRippleThemeTransition(nextDark, event);
-      return;
-    }
-    this.applyThemeState(nextDark);
+    this.runRippleThemeTransition(nextDark, event);
+  }
+
+  private prefersReducedMotion(): boolean {
+    return !!this.document.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   }
 
   private applyThemeState(isDark: boolean): void {
@@ -85,9 +108,11 @@ export class ThemeService {
       this.applyThemeState(nextDark);
     });
 
-    transition?.finished?.finally(() => {
-      docEl.classList.remove('theme-transition');
-    });
+    transition?.finished
+      ?.finally(() => {
+        docEl.classList.remove('theme-transition');
+      })
+      .catch(() => {});
   }
 
   private runRippleThemeTransition(nextDark: boolean, event: MouseEvent): void {

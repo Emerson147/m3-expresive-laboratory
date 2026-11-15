@@ -1,7 +1,11 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { StageOverlayService } from '../dialog/stage-overlay.service';
 import {
+  AdmitPatientDto,
   BedStatus,
   ClinicKpiSummary,
+  DischargeDisposition,
+  EMERGENCY_CODE_PRESETS,
   EmergencyBed,
   EmergencyCode,
   News2Assessment,
@@ -9,13 +13,15 @@ import {
   PatientTriageRecord,
   PatientVitals,
   TriageFilter,
-  TriageLevel
+  TriageLevel,
+  UrgentBedCandidate
 } from './clinic.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClinicService {
+  private readonly stageOverlay = inject(StageOverlayService);
   /**
    * Computes the National Early Warning Score 2 (NEWS2) standard algorithm.
    */
@@ -406,16 +412,63 @@ export class ClinicService {
   readonly beds = signal<EmergencyBed[]>(this.initialBeds);
   readonly activeFilter = signal<TriageFilter>('all');
   readonly searchQuery = signal<string>('');
-  readonly selectedPatient = signal<PatientTriageRecord | null>(this.initialPatients[0]);
+  private readonly _selectedPatientId = signal<string | null>(this.initialPatients[0].id);
+
+  // Portaled Overlay Dialog State (dialog-transform via StageOverlayService)
+  readonly isAdmissionDialogOpen = signal<boolean>(false);
+  readonly dischargeModalPatientId = signal<string | null>(null);
+  readonly isDischargeDialogOpen = computed<boolean>(() => this.dischargeModalPatientId() !== null);
+  readonly activeDialogTrigger = signal<string | null>(null);
+  readonly isDialogTransitioning = signal<boolean>(false);
+
+  // Operational Toast & Polite Screen-Reader Announcer
+  readonly toastMessage = signal<string | null>(null);
+  readonly liveAnnouncement = signal<string>('');
+
+  // Derived active patients & reactive selected record
+  readonly activePatients = computed<PatientTriageRecord[]>(() =>
+    this.patients().filter(p => p.status !== 'discharged' && p.status !== 'transferred_icu')
+  );
+
+  readonly dischargeDialogPatient = computed<PatientTriageRecord | null>(() => {
+    const id = this.dischargeModalPatientId();
+    return id ? this.activePatients().find(p => p.id === id) ?? null : null;
+  });
+
+  readonly selectedPatient = computed<PatientTriageRecord | null>(() => {
+    const id = this._selectedPatientId();
+    if (!id) return null;
+    return this.activePatients().find(p => p.id === id) ?? null;
+  });
+
+  readonly inBedCount = computed<number>(
+    () => this.activePatients().filter(p => !!p.bedAssignedId).length
+  );
+
+  readonly waitingCount = computed<number>(
+    () => this.activePatients().filter(p => !p.bedAssignedId).length
+  );
+
+  readonly nextUrgentAvailableBed = computed<UrgentBedCandidate | null>(() => {
+    const stAvailable = this.beds().find(b => b.area === 'shock_trauma' && b.status === 'available');
+    if (stAvailable) {
+      return { bed: stAvailable, isPrimaryShockTrauma: true };
+    }
+    const fallbackAvailable = this.beds().find(b => b.status === 'available');
+    if (fallbackAvailable) {
+      return { bed: fallbackAvailable, isPrimaryShockTrauma: false };
+    }
+    return null;
+  });
 
   // Computed: KPI Summary with Clinical Decision Support metrics
   readonly kpiSummary = computed<ClinicKpiSummary>(() => {
-    const list = this.patients().filter(p => p.status !== 'discharged');
+    const list = this.activePatients();
     const totalActive = list.length;
     const critical = list.filter(p => p.triageLevel === 'resuscitation' || p.triageLevel === 'emergency').length;
     const urgent = list.filter(p => p.triageLevel === 'urgent').length;
     const highRiskNews2 = list.filter(p => p.news2.riskLevel === 'high').length;
-    
+
     const waitSum = list.reduce((acc, p) => acc + p.waitingMinutes, 0);
     const avgWait = totalActive > 0 ? Math.round(waitSum / totalActive) : 0;
 
@@ -445,7 +498,7 @@ export class ClinicService {
 
   // Computed: Filtered Patients
   readonly filteredPatients = computed<PatientTriageRecord[]>(() => {
-    const list = this.patients().filter(p => p.status !== 'discharged');
+    const list = this.activePatients();
     const filter = this.activeFilter();
     const query = this.searchQuery().trim().toLowerCase();
 
@@ -481,31 +534,67 @@ export class ClinicService {
     this.runWithTransition(() => {
       this.activeFilter.set(filter);
     });
+    this.announce(`Filtro clínico actualizado: ${filter}. ${this.filteredPatients().length} pacientes visibles.`);
   }
 
   setSearchQuery(q: string): void {
     this.searchQuery.set(q);
   }
 
-  selectPatient(patient: PatientTriageRecord | null): void {
-    this.selectedPatient.set(patient);
+  selectPatient(patientOrId: PatientTriageRecord | string | null): void {
+    if (!patientOrId) {
+      this._selectedPatientId.set(null);
+      return;
+    }
+    const id = typeof patientOrId === 'string' ? patientOrId : patientOrId.id;
+    this._selectedPatientId.set(id);
   }
 
-  admitPatient(payload: {
-    fullName: string;
-    age: number;
-    gender: 'M' | 'F' | 'Other';
-    triageLevel: TriageLevel;
-    chiefComplaint: string;
-    vitals: PatientVitals;
-    allergies?: string[];
-    notes?: string;
-  }): PatientTriageRecord {
+  openAdmissionDialog(triggerId = 'clinic-header-admit-btn'): void {
+    this.runDialogTransition(true, triggerId, () => {
+      this.dischargeModalPatientId.set(null);
+      this.isAdmissionDialogOpen.set(true);
+    });
+  }
+
+  closeAdmissionDialog(): void {
+    if (!this.isAdmissionDialogOpen()) return;
+    this.runDialogTransition(false, null, () => {
+      this.isAdmissionDialogOpen.set(false);
+    });
+  }
+
+  openDischargeDialog(patientId: string, triggerId = 'clinic-detail-discharge-btn'): void {
+    const exists = this.activePatients().some(p => p.id === patientId);
+    if (!exists) return;
+    this.runDialogTransition(true, triggerId, () => {
+      this.isAdmissionDialogOpen.set(false);
+      this.dischargeModalPatientId.set(patientId);
+    });
+  }
+
+  closeDischargeDialog(): void {
+    if (!this.dischargeModalPatientId()) return;
+    this.runDialogTransition(false, null, () => {
+      this.dischargeModalPatientId.set(null);
+    });
+  }
+
+  admitPatient(payload: AdmitPatientDto): PatientTriageRecord {
     const nextTicketNum = 106 + this.patients().length - this.initialPatients.length;
     const ticketCode = `TR-${nextTicketNum.toString().padStart(3, '0')}`;
     const now = new Date();
     const admissionTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const news2 = ClinicService.computeNews2(payload.vitals);
+    let activeCode: EmergencyCode | undefined;
+    if (payload.activeCodeType) {
+      const preset = EMERGENCY_CODE_PRESETS[payload.activeCodeType];
+      activeCode = {
+        ...preset,
+        elapsedMinutes: 0,
+        remainingMinutes: preset.targetMinutes
+      };
+    }
 
     const newRecord: PatientTriageRecord = {
       id: `pt-${Date.now()}`,
@@ -519,38 +608,75 @@ export class ClinicService {
       waitingMinutes: 1,
       vitals: payload.vitals,
       news2,
+      ...(activeCode ? { activeCode } : {}),
       status: 'waiting_bed',
       allergies: payload.allergies ?? [],
       notes: payload.notes ?? ''
     };
 
-    this.runWithTransition(() => {
-      this.patients.update(prev => [newRecord, ...prev]);
-      this.selectedPatient.set(newRecord);
-    });
+    const wasDialogOpen = this.isAdmissionDialogOpen();
+    if (wasDialogOpen) {
+      this.isDialogTransitioning.set(this.stageOverlay.hasViewTransitions());
+    }
 
+    this.runWithTransition(
+      () => {
+        this.patients.update(prev => [newRecord, ...prev]);
+        this._selectedPatientId.set(newRecord.id);
+        if (wasDialogOpen) {
+          this.isAdmissionDialogOpen.set(false);
+          this.stageOverlay.setOverlayOpen(this.isDischargeDialogOpen());
+        }
+      },
+      () => {
+        if (wasDialogOpen) {
+          this.isDialogTransitioning.set(false);
+          this.activeDialogTrigger.set(null);
+        }
+      },
+      wasDialogOpen ? { isExiting: true } : {}
+    );
+
+    this.notify(`Paciente ${newRecord.fullName} ingresado (${ticketCode} · NEWS2 ${news2.score}).`);
     return newRecord;
   }
 
+  updatePatientVitals(patientId: string, vitals: PatientVitals): void {
+    const target = this.patients().find(p => p.id === patientId);
+    if (!target) return;
+
+    const updatedNews2 = ClinicService.computeNews2(vitals);
+    this.runWithTransition(() => {
+      this.patients.update(prev =>
+        prev.map(p => (p.id === patientId ? { ...p, vitals, news2: updatedNews2 } : p))
+      );
+    });
+
+    const riskSuffix = updatedNews2.riskLevel === 'high' ? ' · Alerta riesgo crítico' : '';
+    this.notify(`Signos actualizados para ${target.fullName} (NEWS2 ${updatedNews2.score}${riskSuffix}).`);
+  }
+
   updateTriageLevel(patientId: string, level: TriageLevel): void {
+    const target = this.patients().find(p => p.id === patientId);
     this.runWithTransition(() => {
       this.patients.update(prev =>
         prev.map(p => (p.id === patientId ? { ...p, triageLevel: level } : p))
       );
-      if (this.selectedPatient()?.id === patientId) {
-        this.selectedPatient.update(p => (p ? { ...p, triageLevel: level } : null));
-      }
     });
+    if (target) {
+      this.notify(`Prioridad actualizada para ${target.fullName}.`);
+    }
   }
 
   assignBed(patientId: string, bedId: string): void {
     const targetPatient = this.patients().find(p => p.id === patientId);
-    if (!targetPatient) return;
+    const targetBed = this.beds().find(b => b.id === bedId);
+    if (!targetPatient || !targetBed) return;
 
     this.runWithTransition(() => {
       // 1. Release previous bed if held
       const prevBedId = targetPatient.bedAssignedId;
-      if (prevBedId) {
+      if (prevBedId && prevBedId !== bedId) {
         this.beds.update(beds =>
           beds.map(b => (b.id === prevBedId ? { ...b, status: 'cleaning', patientId: null, patientName: undefined } : b))
         );
@@ -576,77 +702,165 @@ export class ClinicService {
           p.id === patientId ? { ...p, bedAssignedId: bedId, status: 'in_observation' } : p
         )
       );
-
-      if (this.selectedPatient()?.id === patientId) {
-        this.selectedPatient.update(p => (p ? { ...p, bedAssignedId: bedId, status: 'in_observation' } : null));
-      }
     });
+
+    this.notify(`${targetPatient.fullName} asignado a box ${bedId}.`);
   }
 
   /**
    * 1-Click Clinical Emergency Action:
-   * Finds the first available bed in Shock Trauma (or Observation if ST is full) and assigns it immediately.
+   * Finds the first available bed in Shock Trauma (or Observation/Procedure if ST is full) and assigns it immediately.
    */
   assignImmediateShockTrauma(patientId: string): boolean {
-    const stAvailable = this.beds().find(b => b.area === 'shock_trauma' && b.status === 'available');
-    const fallbackAvailable = stAvailable ?? this.beds().find(b => b.status === 'available');
-
-    if (!fallbackAvailable) {
-      return false; // No available beds
+    const candidate = this.nextUrgentAvailableBed();
+    if (!candidate) {
+      this.notify('No hay camas libres en este momento. Habilita o libera un box primero.');
+      return false;
     }
 
-    this.assignBed(patientId, fallbackAvailable.id);
+    this.assignBed(patientId, candidate.bed.id);
     return true;
   }
 
-  dischargePatient(patientId: string): void {
+  dischargePatient(
+    patientId: string,
+    disposition: DischargeDisposition = 'home',
+    notes?: string
+  ): void {
     const targetPatient = this.patients().find(p => p.id === patientId);
     if (!targetPatient) return;
 
-    this.runWithTransition(() => {
-      if (targetPatient.bedAssignedId) {
-        const bedId = targetPatient.bedAssignedId;
-        this.beds.update(beds =>
-          beds.map(b => (b.id === bedId ? { ...b, status: 'cleaning', patientId: null, patientName: undefined } : b))
+    const nextStatus = disposition === 'icu' ? 'transferred_icu' : 'discharged';
+    const cleanNote = notes?.trim();
+    const wasDischargeModalOpen = this.dischargeModalPatientId() === patientId;
+
+    if (wasDischargeModalOpen) {
+      this.isDialogTransitioning.set(this.stageOverlay.hasViewTransitions());
+    }
+
+    this.runWithTransition(
+      () => {
+        if (targetPatient.bedAssignedId) {
+          const bedId = targetPatient.bedAssignedId;
+          this.beds.update(beds =>
+            beds.map(b =>
+              b.id === bedId ? { ...b, status: 'cleaning', patientId: null, patientName: undefined } : b
+            )
+          );
+        }
+
+        this.patients.update(prev =>
+          prev.map(p =>
+            p.id === patientId
+              ? {
+                  ...p,
+                  status: nextStatus,
+                  bedAssignedId: undefined,
+                  ...(cleanNote ? { notes: p.notes ? `${p.notes}\nEgreso: ${cleanNote}` : cleanNote } : {})
+                }
+              : p
+          )
         );
-      }
 
-      this.patients.update(prev =>
-        prev.map(p =>
-          p.id === patientId ? { ...p, status: 'discharged', bedAssignedId: undefined } : p
-        )
-      );
+        if (this._selectedPatientId() === patientId) {
+          const remaining = this.activePatients();
+          this._selectedPatientId.set(remaining.length > 0 ? remaining[0].id : null);
+        }
 
-      if (this.selectedPatient()?.id === patientId) {
-        const remaining = this.patients().filter(p => p.status !== 'discharged' && p.id !== patientId);
-        this.selectedPatient.set(remaining.length > 0 ? remaining[0] : null);
-      }
-    });
+        if (wasDischargeModalOpen) {
+          this.dischargeModalPatientId.set(null);
+          this.stageOverlay.setOverlayOpen(this.isAdmissionDialogOpen());
+        }
+      },
+      () => {
+        if (wasDischargeModalOpen) {
+          this.isDialogTransitioning.set(false);
+          this.activeDialogTrigger.set(null);
+        }
+      },
+      wasDischargeModalOpen ? { isExiting: true } : {}
+    );
+
+    const actionLabel =
+      disposition === 'icu'
+        ? 'Traslado a UCI registrado'
+        : disposition === 'ward'
+          ? 'Pase a hospitalización registrado'
+          : 'Alta médica registrada';
+    this.notify(`${actionLabel} para ${targetPatient.fullName}.`);
   }
 
   setBedStatus(bedId: string, status: BedStatus): void {
+    const targetBed = this.beds().find(b => b.id === bedId);
+    if (!targetBed) return;
+
     this.runWithTransition(() => {
+      if (status !== 'occupied' && targetBed.patientId) {
+        const patientId = targetBed.patientId;
+        this.patients.update(prev =>
+          prev.map(p =>
+            p.id === patientId && p.bedAssignedId === bedId
+              ? { ...p, bedAssignedId: undefined, status: 'waiting_bed' }
+              : p
+          )
+        );
+      }
+
       this.beds.update(beds =>
-        beds.map(b => {
-          if (b.id === bedId) {
-            return {
-              ...b,
-              status,
-              ...(status !== 'occupied' ? { patientId: null, patientName: undefined } : {})
-            };
-          }
-          return b;
-        })
+        beds.map(b =>
+          b.id === bedId
+            ? {
+                ...b,
+                status,
+                ...(status !== 'occupied' ? { patientId: null, patientName: undefined } : {})
+              }
+            : b
+        )
       );
     });
+
+    const label = status === 'available' ? 'habilitado' : status === 'cleaning' ? 'en desinfección' : 'ocupado';
+    this.notify(`Box ${bedId} marcado como ${label}.`);
   }
 
-  private runWithTransition(fn: () => void): void {
-    const doc = document as unknown as { startViewTransition?: (callback: () => void) => void };
-    if (typeof doc.startViewTransition === 'function') {
-      doc.startViewTransition(fn);
-    } else {
-      fn();
+  notify(message: string): void {
+    this.toastMessage.set(message);
+    this.announce(message);
+  }
+
+  dismissToast(): void {
+    this.toastMessage.set(null);
+  }
+
+  private announce(message: string): void {
+    this.liveAnnouncement.set(message);
+  }
+
+  private runDialogTransition(open: boolean, triggerId: string | null, mutate: () => void): void {
+    if (open) {
+      this.activeDialogTrigger.set(triggerId);
     }
+    this.isDialogTransitioning.set(this.stageOverlay.hasViewTransitions());
+    this.stageOverlay.runViewTransition(
+      () => {
+        mutate();
+        this.stageOverlay.setOverlayOpen(open || this.isAdmissionDialogOpen() || this.isDischargeDialogOpen());
+      },
+      () => {
+        this.isDialogTransitioning.set(false);
+        if (!open) {
+          this.activeDialogTrigger.set(null);
+        }
+      },
+      open ? {} : { isExiting: true }
+    );
+  }
+
+  private runWithTransition(
+    update: () => void,
+    cleanup?: () => void,
+    options: { isExiting?: boolean; rootClass?: string } = {}
+  ): void {
+    this.stageOverlay.runViewTransition(update, cleanup, options);
   }
 }

@@ -1,626 +1,618 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  Injector,
+  TemplateRef,
+  ViewEncapsulation,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+  viewChildren
+} from '@angular/core';
+import {
+  AttendanceStatus,
+  CampusRole,
+  ClassScheduleItem,
+  CreateAnnouncementDto,
+  StudentAssignment,
+  SubmitAssignmentDto,
+  SubmitGradeDto,
+  TeacherGradingItem
+} from '../../core/campus/campus.models';
 import { CampusService } from '../../core/campus/campus.service';
-import { ThemeService } from '../../core/theme/theme.service';
+import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
+import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
 import { M3ButtonComponent } from '../../shared/components/button/button.component';
-import { M3LinearProgressComponent } from '../../shared/components/progress/linear-progress.component';
-import { SubjectCategory } from '../../core/campus/campus.models';
+import { M3FabComponent } from '../../shared/components/button/fab.component';
+import { CampusAnnouncementsCardComponent } from './components/campus-announcements-card.component';
+import { CampusAnnouncementModalComponent } from './components/campus-announcement-modal.component';
+import { CampusAssignmentModalComponent } from './components/campus-assignment-modal.component';
+import { CampusAssignmentsCardComponent } from './components/campus-assignments-card.component';
+import { CampusAttendanceRosterComponent } from './components/campus-attendance-roster.component';
+import { CampusClassroomModalComponent } from './components/campus-classroom-modal.component';
+import { CAMPUS_EXPRESSIVE_CSS } from './components/campus-expressive.styles';
+import { CampusGradingModalComponent } from './components/campus-grading-modal.component';
+import { CampusGradingQueueComponent } from './components/campus-grading-queue.component';
+import { CampusHeaderComponent } from './components/campus-header.component';
+import { CampusMetricsCardComponent } from './components/campus-metrics-card.component';
+import { CampusQuickActionsComponent } from './components/campus-quick-actions.component';
+import { CampusScheduleCardComponent } from './components/campus-schedule-card.component';
+import { CampusStudentHeroComponent } from './components/campus-student-hero.component';
+import { CampusTeacherHeroComponent } from './components/campus-teacher-hero.component';
+import { CampusTeacherKpiRibbonComponent } from './components/campus-teacher-kpi-ribbon.component';
+
+type CampusMobileTabId = 'overview' | 'agenda' | 'board';
+
+interface MobileTabOption {
+  id: CampusMobileTabId;
+  label: string;
+  icon: string;
+  count: number | null;
+}
 
 @Component({
-  selector: 'app-campus-page',
-  standalone: true,
+  selector: 'app-campus',
   imports: [
-    CommonModule, 
-    M3ButtonComponent, 
-    M3LinearProgressComponent
+    NgTemplateOutlet,
+    M3ButtonComponent,
+    M3FabComponent,
+    CampusHeaderComponent,
+    CampusMetricsCardComponent,
+    CampusStudentHeroComponent,
+    CampusScheduleCardComponent,
+    CampusAssignmentsCardComponent,
+    CampusAnnouncementsCardComponent,
+    CampusTeacherHeroComponent,
+    CampusTeacherKpiRibbonComponent,
+    CampusAttendanceRosterComponent,
+    CampusGradingQueueComponent,
+    CampusQuickActionsComponent,
+    CampusClassroomModalComponent,
+    CampusAssignmentModalComponent,
+    CampusGradingModalComponent,
+    CampusAnnouncementModalComponent
   ],
+  encapsulation: ViewEncapsulation.None,
+  styles: [CAMPUS_EXPRESSIVE_CSS],
+  host: {
+    class: 'flex-1 h-full min-h-0 flex flex-col overflow-hidden bg-surface text-main'
+  },
   template: `
-    <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none">
-      
-      <!-- =====================================================================
-           1. TOP HEADER & M3 EXPRESSIVE SEGMENTED ROLE SWITCHER
-           ===================================================================== -->
-      <header class="shrink-0 p-3 sm:p-3.5 rounded-3xl bg-surface-box border border-outline-sub shadow-xs flex items-center justify-between flex-wrap gap-2.5">
-        
-        <!-- Left: Branding & Period Tag -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-2xl bg-primary text-on-primary grid place-items-center shadow-xs shrink-0">
-            <span class="material-symbols-rounded text-xl">school</span>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <h1 class="text-base sm:text-lg font-black tracking-tight text-main truncate">Campus Académico</h1>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-box text-on-primary-box uppercase tracking-wider font-mono">
-                2026-II
+    <div
+      [class]="adaptiveLayout.isCompact()
+        ? 'campus-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 gap-5 m3-scrollbar'
+        : 'campus-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-20 gap-5 lg:gap-6 m3-scrollbar'"
+    >
+      <app-campus-header
+        [termLabel]="campus.academicTermLabel"
+        [todayLabel]="campus.formattedTodayLabel()"
+        [currentRole]="campus.currentRole()"
+        [pendingAssignments]="campus.pendingAssignmentsCount()"
+        [presentStudents]="campus.rosterSummary().present"
+        [enrolledStudents]="campus.teacherClass().enrolledCount"
+        [activeCourse]="campus.activeClass()"
+        [activeDialogTrigger]="campus.activeDialogTrigger()"
+        [isDialogOpen]="campus.isAnyDialogOpen()"
+        (roleChange)="onSwitchRole($event)"
+        (openClassroom)="onOpenClassroom($event)"
+        (openAnnouncement)="onOpenAnnouncement($event)"
+      />
+
+      <!-- Unified Role KPI Ribbon -->
+      @if (campus.currentRole() === 'student') {
+        <app-campus-metrics-card
+          [metrics]="campus.studentMetrics()"
+          [creditProgress]="campus.creditProgress().percent"
+          [pendingAssignments]="campus.pendingAssignmentsCount()"
+          [unreadAnnouncements]="campus.unreadAnnouncementsCount()"
+        />
+      } @else {
+        <app-campus-teacher-kpi-ribbon
+          [summary]="campus.rosterSummary()"
+          [activeFilter]="campus.rosterFilter()"
+          (filterChange)="campus.setRosterFilter($event)"
+        />
+      }
+
+      <!-- Mobile WAI-ARIA Tab Switcher (< lg) -->
+      <nav aria-label="Navegación de secciones" class="lg:hidden flex justify-center">
+        <div
+          role="tablist"
+          aria-label="Vistas móviles de campus"
+          class="inline-flex items-center gap-1 p-1.5 rounded-m3-full bg-surface-low shadow-m3-level1 max-w-full overflow-x-auto"
+        >
+          @for (tab of mobileTabs(); track tab.id; let idx = $index) {
+            @let selected = mobileTab() === tab.id;
+
+            <button
+              #mobileTabBtn
+              type="button"
+              role="tab"
+              [id]="'campus-mobile-tab-' + tab.id"
+              [attr.aria-selected]="selected"
+              [attr.aria-controls]="'campus-panel-' + tab.id"
+              [attr.tabindex]="selected ? 0 : -1"
+              (click)="mobileTab.set(tab.id)"
+              (keydown)="onMobileTabKeydown($event, idx)"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-m3-full text-label-md-emphasized whitespace-nowrap cursor-pointer transition-colors"
+              [class]="
+                selected
+                  ? 'bg-primary-box text-on-primary-box'
+                  : 'text-muted hover:bg-surface'
+              "
+            >
+              <span class="material-symbols-rounded text-[16px]" aria-hidden="true">
+                {{ tab.icon }}
               </span>
-            </div>
-            <p class="text-xs text-muted truncate">Gestión Curricular y Aprendizaje Multimodal M3</p>
-          </div>
-        </div>
-
-        <!-- Center / Right: Role Switcher & Live Controls -->
-        <div class="flex items-center gap-2">
-          
-          <!-- Segmented Pill Switcher (Estudiante / Docente) -->
-          <div class="p-1 rounded-full bg-surface-low border border-outline-sub flex items-center gap-1 shadow-2xs">
-            <button
-              type="button"
-              (click)="campusService.switchRole('student')"
-              [class.bg-primary]="campusService.currentRole() === 'student'"
-              [class.text-on-primary]="campusService.currentRole() === 'student'"
-              [class.shadow-xs]="campusService.currentRole() === 'student'"
-              [class.font-bold]="campusService.currentRole() === 'student'"
-              [class.text-muted]="campusService.currentRole() !== 'student'"
-              class="px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-all duration-200 cursor-pointer hover:text-main">
-              <span class="material-symbols-rounded text-sm">school</span>
-              <span>Estudiante</span>
-            </button>
-
-            <button
-              type="button"
-              (click)="campusService.switchRole('teacher')"
-              [class.bg-primary]="campusService.currentRole() === 'teacher'"
-              [class.text-on-primary]="campusService.currentRole() === 'teacher'"
-              [class.shadow-xs]="campusService.currentRole() === 'teacher'"
-              [class.font-bold]="campusService.currentRole() === 'teacher'"
-              [class.text-muted]="campusService.currentRole() !== 'teacher'"
-              class="px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1.5 transition-all duration-200 cursor-pointer hover:text-main">
-              <span class="material-symbols-rounded text-sm">co_present</span>
-              <span>Docente</span>
-            </button>
-          </div>
-
-          <!-- Campus Connection State -->
-          <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-low border border-outline-sub text-xs font-mono font-medium text-muted">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>Sincronizado</span>
-          </div>
-
-          <!-- Theme Dark/Light Mode Toggle -->
-          <button
-            type="button"
-            (click)="themeService.toggleThemeMode($event)"
-            title="Alternar Modo Oscuro / Claro"
-            class="w-8 h-8 rounded-full bg-surface-low hover:bg-surface-high border border-outline-sub grid place-items-center text-main transition-colors cursor-pointer">
-            <span class="material-symbols-rounded text-base">
-              {{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      <!-- =====================================================================
-           2. VISTA ESTUDIANTE (MINIMALISMO ZEN M3 EXPRESSIVE)
-           ===================================================================== -->
-      @if (campusService.currentRole() === 'student') {
-        <main class="flex-1 min-h-0 overflow-y-auto m3-scrollbar flex flex-col gap-3 pr-1">
-          
-          <!-- 2.1 HERO CARD: CLASE EN CURSO AHORA (ÚNICO PUNTO FOCAL) -->
-          @if (campusService.activeClass(); as activeCls) {
-            <section class="p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub relative overflow-hidden group shadow-xs hover:border-primary/40 transition-all">
-              
-              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
-                <div class="space-y-1.5 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      Sesión en curso
-                    </span>
-                    <span class="text-[11px] font-mono font-bold text-muted bg-surface-low px-2 py-0.5 rounded-full border border-outline-sub">
-                      {{ activeCls.code }}
-                    </span>
-                  </div>
-
-                  <h2 class="text-xl sm:text-2xl font-black text-main tracking-tight truncate">
-                    {{ activeCls.subject }}
-                  </h2>
-
-                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span class="flex items-center gap-1 font-medium text-main">
-                      <span class="material-symbols-rounded text-base text-primary">meeting_room</span>
-                      {{ activeCls.room }}
-                    </span>
-                    <span class="flex items-center gap-1">
-                      <span class="material-symbols-rounded text-base text-primary">person</span>
-                      {{ activeCls.teacherName }}
-                    </span>
-                    <span class="flex items-center gap-1 font-mono font-semibold">
-                      <span class="material-symbols-rounded text-base text-primary">schedule</span>
-                      {{ activeCls.timeRange }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Session Progress & Direct Entrance -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 shrink-0">
-                  <div class="w-full sm:w-40 space-y-1">
-                    <div class="flex justify-between text-[11px] font-mono text-muted">
-                      <span>Progreso sesión</span>
-                      <span class="font-bold text-main">{{ activeCls.progressPercent }}%</span>
-                    </div>
-                    <m3-linear-progress [value]="activeCls.progressPercent" [wavy]="true" size="md" color="primary" />
-                    <span class="text-[10px] text-muted block text-right font-mono">35m restantes</span>
-                  </div>
-
-                  <m3-button variant="filled" size="sm" icon="video_call">
-                    Ingresar a Clase
-                  </m3-button>
-                </div>
-              </div>
-            </section>
-          }
-
-          <!-- 2.2 ASYMMETRIC BENTO GRID -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-            
-            <!-- Bento Col 1: Horario de la Jornada (7 Cols) -->
-            <section class="lg:col-span-7 p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-rounded text-lg text-primary">calendar_month</span>
-                  <h3 class="text-xs font-bold uppercase tracking-wider text-main">Horario de Hoy</h3>
-                </div>
-                <span class="text-[11px] font-mono text-muted bg-surface-low px-2 py-0.5 rounded-full border border-outline-sub">
-                  Martes 27 Octubre
+              <span>{{ tab.label }}</span>
+              @if (tab.count !== null && tab.count > 0) {
+                <span
+                  class="px-1.5 py-0.5 rounded-m3-full text-[10px] leading-none font-bold tabular-nums"
+                  [class]="
+                    selected
+                      ? 'bg-surface/40 text-current'
+                      : 'bg-surface text-main'
+                  "
+                >
+                  {{ tab.count }}
                 </span>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                @for (cls of campusService.schedule(); track cls.id) {
-                  <article 
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub hover:border-outline hover:-translate-y-0.5 transition-all flex items-center justify-between gap-3"
-                    [class.ring-2]="cls.isActiveNow"
-                    [class.ring-primary/40]="cls.isActiveNow"
-                    [class.bg-primary/[0.03]]="cls.isActiveNow">
-                    
-                    <div class="flex items-center gap-3 min-w-0">
-                      <div 
-                        class="w-9 h-9 rounded-xl grid place-items-center shrink-0 shadow-2xs"
-                        [ngClass]="getCategoryBadgeClass(cls.category)">
-                        <span class="material-symbols-rounded text-lg">{{ getCategoryIcon(cls.category) }}</span>
-                      </div>
-
-                      <div class="min-w-0 space-y-0.5">
-                        <div class="flex items-center gap-2">
-                          <span class="text-xs sm:text-sm font-bold text-main truncate">{{ cls.subject }}</span>
-                          <span class="text-[10px] font-mono text-muted px-1.5 py-0.2 rounded bg-surface-box border border-outline-sub">
-                            {{ cls.code }}
-                          </span>
-                        </div>
-                        <p class="text-xs text-muted truncate">{{ cls.room }} · {{ cls.teacherName }}</p>
-                      </div>
-                    </div>
-
-                    <div class="text-right shrink-0">
-                      <span class="text-xs font-mono font-bold text-main block">{{ cls.timeRange }}</span>
-                      @if (cls.isActiveNow) {
-                        <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wide flex items-center justify-end gap-1">
-                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                          En curso
-                        </span>
-                      } @else {
-                        <span class="text-[10px] text-muted">Próxima</span>
-                      }
-                    </div>
-                  </article>
-                }
-              </div>
-            </section>
-
-            <!-- Bento Col 2: Rendimiento Curricular & Standing (5 Cols) -->
-            @if (campusService.studentMetrics(); as metric) {
-              <section class="lg:col-span-5 p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col justify-between gap-3 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="material-symbols-rounded text-lg text-primary">workspace_premium</span>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-main">Rendimiento Académico</h3>
-                  </div>
-                  <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                    <span class="material-symbols-rounded text-xs">star</span>
-                    {{ metric.classStanding }}
-                  </span>
-                </div>
-
-                <!-- High-Impact Clean Metric Cards -->
-                <div class="grid grid-cols-2 gap-2.5">
-                  <div class="p-3.5 rounded-2xl bg-surface-low border border-outline-sub flex flex-col justify-between space-y-1">
-                    <span class="text-xs font-medium text-muted">Promedio Ponderado</span>
-                    <div class="flex items-baseline gap-1">
-                      <span class="text-2xl sm:text-3xl font-black font-mono text-main">{{ metric.currentGpa }}</span>
-                      <span class="text-xs text-muted font-mono">/ 20</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-emerald-500 font-mono">Excelente</span>
-                  </div>
-
-                  <div class="p-3.5 rounded-2xl bg-surface-low border border-outline-sub flex flex-col justify-between space-y-1">
-                    <span class="text-xs font-medium text-muted">Asistencia Global</span>
-                    <div class="flex items-baseline gap-0.5">
-                      <span class="text-2xl sm:text-3xl font-black font-mono text-emerald-500">{{ metric.attendanceRate }}</span>
-                      <span class="text-xs font-bold text-emerald-500 font-mono">%</span>
-                    </div>
-                    <span class="text-[10px] text-muted font-mono">Sin inasistencias críticas</span>
-                  </div>
-                </div>
-
-                <!-- Career Credits Progression -->
-                <div class="p-3 rounded-2xl bg-surface-low border border-outline-sub space-y-1.5">
-                  <div class="flex justify-between text-xs">
-                    <span class="text-muted font-medium">Créditos de Carrera</span>
-                    <span class="font-mono font-bold text-main">{{ metric.approvedCredits }} / {{ metric.totalCredits }} (88.7%)</span>
-                  </div>
-                  <m3-linear-progress [value]="(metric.approvedCredits / metric.totalCredits) * 100" [wavy]="true" size="md" color="primary" />
-                </div>
-              </section>
-            }
-
-            <!-- Bento Col 3: Entregas y Rúbricas (7 Cols) -->
-            <section class="lg:col-span-7 p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-rounded text-lg text-primary">assignment_turned_in</span>
-                  <h3 class="text-xs font-bold uppercase tracking-wider text-main">Entregas & Tareas</h3>
-                </div>
-                <span class="text-xs font-mono font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary-box text-on-primary-box">
-                  {{ campusService.pendingAssignmentsCount() }} pendientes
-                </span>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                @for (asg of campusService.assignments(); track asg.id) {
-                  <article 
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub flex items-center justify-between gap-3 transition-all"
-                    [class.border-rose-500/40]="asg.urgency === 'urgent' && asg.submissionStatus === 'pending'"
-                    [class.bg-rose-500/[0.02]]="asg.urgency === 'urgent' && asg.submissionStatus === 'pending'">
-                    
-                    <div class="min-w-0 space-y-0.5">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span 
-                          class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0"
-                          [ngClass]="asg.urgency === 'urgent' && asg.submissionStatus === 'pending' ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30' : asg.urgency === 'graded' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-surface-box text-muted border border-outline-sub'">
-                          {{ asg.dueDate }}
-                        </span>
-                        <span class="text-xs sm:text-sm font-bold text-main truncate">{{ asg.title }}</span>
-                      </div>
-                      <p class="text-xs text-muted">{{ asg.subject }}</p>
-                    </div>
-
-                    <div class="shrink-0">
-                      @if (asg.submissionStatus === 'pending') {
-                        <button
-                          type="button"
-                          (click)="campusService.submitAssignment(asg.id)"
-                          class="btn-m3 px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-semibold cursor-pointer shadow-xs hover:opacity-90 flex items-center gap-1 active:scale-[0.98]">
-                          <span class="material-symbols-rounded text-sm">upload_file</span>
-                          <span>Entregar</span>
-                        </button>
-                      } @else if (asg.submissionStatus === 'submitted') {
-                        <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
-                          <span class="material-symbols-rounded text-sm">check_circle</span>
-                          Enviado
-                        </span>
-                      } @else {
-                        <span class="text-xs font-mono font-black text-primary px-2.5 py-1 rounded-full bg-primary-box text-on-primary-box shadow-2xs">
-                          {{ asg.score }}
-                        </span>
-                      }
-                    </div>
-                  </article>
-                }
-              </div>
-            </section>
-
-            <!-- Bento Col 4: Avisos Oficiales del Campus (5 Cols) -->
-            <section class="lg:col-span-5 p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-rounded text-lg text-primary">campaign</span>
-                  <h3 class="text-xs font-bold uppercase tracking-wider text-main">Avisos del Decanato</h3>
-                </div>
-                <span class="material-symbols-rounded text-base text-muted">notifications_active</span>
-              </div>
-
-              <div class="flex flex-col gap-2">
-                @for (ann of campusService.announcements(); track ann.id) {
-                  <article class="p-3 rounded-2xl bg-surface-low border border-outline-sub space-y-1">
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.2 rounded-full bg-primary-box text-on-primary-box font-mono">
-                        {{ ann.tag }}
-                      </span>
-                      <span class="text-[10px] text-muted font-mono">{{ ann.date }}</span>
-                    </div>
-                    <h4 class="text-xs font-bold text-main leading-snug">{{ ann.title }}</h4>
-                    <p class="text-[11px] text-muted leading-relaxed line-clamp-2">{{ ann.summary }}</p>
-                    <span class="text-[10px] font-medium text-muted/70 block pt-0.5">Por: {{ ann.publisher }}</span>
-                  </article>
-                }
-              </div>
-            </section>
-
-          </div>
-
-        </main>
-      }
-
-      <!-- =====================================================================
-           3. VISTA DOCENTE (CONTROL DE CÁTEDRA & ASISTENCIA EN 2D COMPACTO)
-           ===================================================================== -->
-      @if (campusService.currentRole() === 'teacher') {
-        <main class="flex-1 min-h-0 overflow-y-auto m3-scrollbar flex flex-col gap-3 pr-1">
-          
-          <!-- 3.1 HERO CARD: SESIÓN DOCENTE ACTIVA CON 4 MODULAR KPIS -->
-          @if (campusService.teacherClass(); as tCls) {
-            <section class="p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub shadow-xs space-y-3.5">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="space-y-1 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary text-on-primary shadow-2xs">
-                      Cátedra Activa
-                    </span>
-                    <span class="text-xs font-mono font-semibold text-muted bg-surface-low px-2 py-0.5 rounded-full border border-outline-sub">
-                      {{ tCls.timeRange }}
-                    </span>
-                  </div>
-                  <h2 class="text-lg sm:text-xl font-black text-main tracking-tight truncate">{{ tCls.subject }}</h2>
-                  <p class="text-xs text-muted">{{ tCls.room }}</p>
-                </div>
-
-                <!-- Bulk Action -->
-                <div class="shrink-0">
-                  <m3-button 
-                    variant="tonal" 
-                    size="sm" 
-                    icon="done_all" 
-                    (action)="campusService.markAllPresent()">
-                    Marcar Todos Presentes
-                  </m3-button>
-                </div>
-              </div>
-
-              <!-- 4 Modular KPI Cards Ribbon (Contraste Alto) -->
-              @if (campusService.rosterSummary(); as summary) {
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  <div 
-                    (click)="campusService.setRosterFilter('all')"
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub hover:border-outline cursor-pointer transition-all flex flex-col justify-between"
-                    [class.ring-2]="campusService.rosterFilter() === 'all'"
-                    [class.ring-primary]="campusService.rosterFilter() === 'all'">
-                    <span class="text-[11px] font-bold text-muted uppercase tracking-wider">Matriculados</span>
-                    <span class="text-2xl font-black font-mono text-main mt-1">{{ summary.total }}</span>
-                  </div>
-
-                  <div 
-                    (click)="campusService.setRosterFilter('present')"
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub hover:border-emerald-500/40 cursor-pointer transition-all flex flex-col justify-between"
-                    [class.ring-2]="campusService.rosterFilter() === 'present'"
-                    [class.ring-emerald-500]="campusService.rosterFilter() === 'present'">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Presentes</span>
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    </div>
-                    <span class="text-2xl font-black font-mono text-emerald-500 mt-1">{{ summary.present }}</span>
-                  </div>
-
-                  <div 
-                    (click)="campusService.setRosterFilter('late')"
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub hover:border-amber-500/40 cursor-pointer transition-all flex flex-col justify-between"
-                    [class.ring-2]="campusService.rosterFilter() === 'late'"
-                    [class.ring-amber-500]="campusService.rosterFilter() === 'late'">
-                    <span class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Tardanzas</span>
-                    <span class="text-2xl font-black font-mono text-amber-500 mt-1">{{ summary.late }}</span>
-                  </div>
-
-                  <div 
-                    (click)="campusService.setRosterFilter('atRisk')"
-                    class="p-3 rounded-2xl bg-rose-500/[0.06] border border-rose-500/30 hover:border-rose-500 cursor-pointer transition-all flex flex-col justify-between"
-                    [class.ring-2]="campusService.rosterFilter() === 'atRisk'"
-                    [class.ring-rose-500]="campusService.rosterFilter() === 'atRisk'">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider">En Riesgo</span>
-                      <span class="material-symbols-rounded text-sm text-rose-500">warning</span>
-                    </div>
-                    <span class="text-2xl font-black font-mono text-rose-500 mt-1">{{ summary.atRisk }}</span>
-                  </div>
-                </div>
               }
-            </section>
+            </button>
           }
+        </div>
+      </nav>
 
-          <!-- 3.2 BENTO DOCENTE -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-            
-            <!-- Bento Col 1: Roster de Asistencia en Grilla 2D Compacta (7 Cols) -->
-            <section class="lg:col-span-7 p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-              <div class="flex items-center justify-between flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-rounded text-lg text-primary">fact_check</span>
-                  <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-main">Lista de Asistencia en Vivo</h3>
-                    <p class="text-[11px] text-muted">Pasa lista en 1 toque por estudiante</p>
-                  </div>
-                </div>
+      <!-- Responsive 8/4 Mission Control Bento Grid -->
+      <div
+        class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start"
+        [class.vt-role-stage]="campus.isRoleTransitioning()"
+      >
+        @if (campus.currentRole() === 'student') {
+          <!-- Left 8 columns: Session Focus + Schedule + Deliverables -->
+          <div class="lg:col-span-8 flex flex-col gap-5 lg:gap-6 min-w-0">
+            <div
+              id="campus-panel-overview"
+              [class]="(mobileTab() === 'overview' ? 'flex' : 'hidden') + ' lg:flex flex-col gap-5 lg:gap-6 min-w-0'"
+            >
+              <app-campus-student-hero
+                [course]="campus.selectedClass()"
+                [activeDialogTrigger]="campus.activeDialogTrigger()"
+                [isDialogOpen]="campus.isAnyDialogOpen()"
+                (enterClassroom)="onOpenClassroom($event)"
+              />
 
-                <!-- Filter indicator -->
-                <span class="text-xs font-mono font-medium text-muted bg-surface-low px-2 py-0.5 rounded-full border border-outline-sub">
-                  Mostrando: {{ campusService.filteredRoster().length }} alumnos
-                </span>
-              </div>
-
-              <!-- 2-COLUMN COMPACT STUDENT GRID (CERO ESPACIO MUERTO) -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                @for (student of campusService.filteredRoster(); track student.id) {
-                  <article 
-                    class="p-3 rounded-2xl bg-surface-low border border-outline-sub hover:border-outline transition-all flex items-center justify-between gap-2.5"
-                    [class.border-rose-500/40]="student.atRisk"
-                    [class.bg-rose-500/[0.02]]="student.atRisk">
-                    
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <div class="w-8 h-8 rounded-xl bg-primary-box text-on-primary-box font-bold text-xs grid place-items-center shrink-0 shadow-2xs">
-                        {{ student.studentName.charAt(0) }}
-                      </div>
-                      <div class="min-w-0 space-y-0.5">
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-xs font-bold text-main truncate">{{ student.studentName }}</span>
-                          @if (student.atRisk) {
-                            <span class="material-symbols-rounded text-sm text-rose-500 shrink-0" title="Asistencia crítica (<80%)">warning</span>
-                          }
-                        </div>
-                        <span class="text-[10px] font-mono text-muted block">{{ student.studentCode }} · {{ student.overallAttendance }}%</span>
-                      </div>
-                    </div>
-
-                    <!-- 3-Way Segmented Tactile Status Toggles -->
-                    <div class="flex items-center gap-0.5 shrink-0 p-0.5 rounded-xl bg-surface-box border border-outline-sub">
-                      <button
-                        type="button"
-                        (click)="campusService.setAttendance(student.id, 'present')"
-                        [class.bg-emerald-500]="student.status === 'present'"
-                        [class.text-white]="student.status === 'present'"
-                        [class.font-bold]="student.status === 'present'"
-                        [class.shadow-2xs]="student.status === 'present'"
-                        [class.text-muted]="student.status !== 'present'"
-                        class="w-7 h-7 rounded-lg text-xs grid place-items-center transition-all duration-150 cursor-pointer hover:bg-emerald-500/20 active:scale-95"
-                        title="Presente">
-                        P
-                      </button>
-
-                      <button
-                        type="button"
-                        (click)="campusService.setAttendance(student.id, 'late')"
-                        [class.bg-amber-500]="student.status === 'late'"
-                        [class.text-white]="student.status === 'late'"
-                        [class.font-bold]="student.status === 'late'"
-                        [class.shadow-2xs]="student.status === 'late'"
-                        [class.text-muted]="student.status !== 'late'"
-                        class="w-7 h-7 rounded-lg text-xs grid place-items-center transition-all duration-150 cursor-pointer hover:bg-amber-500/20 active:scale-95"
-                        title="Tardanza">
-                        T
-                      </button>
-
-                      <button
-                        type="button"
-                        (click)="campusService.setAttendance(student.id, 'absent')"
-                        [class.bg-rose-500]="student.status === 'absent'"
-                        [class.text-white]="student.status === 'absent'"
-                        [class.font-bold]="student.status === 'absent'"
-                        [class.shadow-2xs]="student.status === 'absent'"
-                        [class.text-muted]="student.status !== 'absent'"
-                        class="w-7 h-7 rounded-lg text-xs grid place-items-center transition-all duration-150 cursor-pointer hover:bg-rose-500/20 active:scale-95"
-                        title="Falta">
-                        F
-                      </button>
-                    </div>
-                  </article>
-                }
-              </div>
-            </section>
-
-            <!-- Bento Col 2: Cola de Calificación & Herramientas de Cátedra (5 Cols) -->
-            <div class="lg:col-span-5 flex flex-col gap-3">
-              
-              <!-- Cola de Calificación -->
-              <section class="p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="material-symbols-rounded text-lg text-primary">rate_review</span>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-main">Por Calificar</h3>
-                  </div>
-                  <span class="text-xs font-mono font-bold text-primary px-2 py-0.5 rounded-full bg-primary-box text-on-primary-box">
-                    {{ campusService.pendingGradingCount() }} pendientes
-                  </span>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                  @for (grd of campusService.gradingQueue(); track grd.id) {
-                    <article class="p-3 rounded-2xl bg-surface-low border border-outline-sub flex items-center justify-between gap-3">
-                      <div class="min-w-0 space-y-0.5">
-                        <span class="text-xs sm:text-sm font-bold text-main truncate block">{{ grd.studentName }}</span>
-                        <p class="text-xs text-muted truncate">{{ grd.assignmentTitle }}</p>
-                        <span class="text-[10px] text-muted font-mono">{{ grd.submittedAt }}</span>
-                      </div>
-
-                      <div class="shrink-0">
-                        @if (grd.status === 'pending') {
-                          <button
-                            type="button"
-                            (click)="campusService.markGradingReviewed(grd.id)"
-                            class="btn-m3 px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-semibold cursor-pointer shadow-xs hover:opacity-90 active:scale-[0.98]">
-                            Calificar
-                          </button>
-                        } @else {
-                          <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
-                            <span class="material-symbols-rounded text-sm">done_all</span>
-                            Revisado
-                          </span>
-                        }
-                      </div>
-                    </article>
-                  }
-                </div>
-              </section>
-
-              <!-- Herramientas Rápidas de Cátedra -->
-              <section class="p-4 sm:p-5 rounded-3xl bg-surface-box border border-outline-sub flex flex-col gap-3 shadow-xs">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-rounded text-lg text-primary">hub</span>
-                  <h3 class="text-xs font-bold uppercase tracking-wider text-main">Acciones de Aula</h3>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                  <button 
-                    type="button"
-                    class="btn-m3 p-3 rounded-2xl bg-surface-low border border-outline-sub text-left hover:border-primary/50 hover:-translate-y-0.5 transition-all cursor-pointer space-y-1 active:scale-[0.98]">
-                    <div class="w-7 h-7 rounded-xl bg-primary-box text-on-primary-box grid place-items-center">
-                      <span class="material-symbols-rounded text-base">send</span>
-                    </div>
-                    <span class="text-xs font-bold text-main block">Aviso a Clase</span>
-                    <span class="text-[10px] text-muted block leading-tight">Push a los 32 alumnos</span>
-                  </button>
-
-                  <button 
-                    type="button"
-                    class="btn-m3 p-3 rounded-2xl bg-surface-low border border-outline-sub text-left hover:border-primary/50 hover:-translate-y-0.5 transition-all cursor-pointer space-y-1 active:scale-[0.98]">
-                    <div class="w-7 h-7 rounded-xl bg-primary-box text-on-primary-box grid place-items-center">
-                      <span class="material-symbols-rounded text-base">download</span>
-                    </div>
-                    <span class="text-xs font-bold text-main block">Descargar Acta</span>
-                    <span class="text-[10px] text-muted block leading-tight">Exportar PDF / Excel</span>
-                  </button>
-                </div>
-              </section>
-
+              <app-campus-schedule-card
+                [schedule]="campus.schedule()"
+                [selectedClassId]="campus.selectedClass().id"
+                (selectClass)="campus.selectScheduleClass($event)"
+              />
             </div>
 
+            <div
+              id="campus-panel-agenda"
+              [class]="(mobileTab() === 'agenda' ? 'flex' : 'hidden') + ' lg:flex flex-col min-w-0'"
+            >
+              <app-campus-assignments-card
+                [assignments]="campus.filteredAssignments()"
+                [filter]="campus.assignmentsFilter()"
+                [pendingCount]="campus.pendingAssignmentsCount()"
+                [totalCount]="campus.assignments().length"
+                [isFilterTransitioning]="campus.isAssignmentsTransitioning()"
+                [activeDialogTrigger]="campus.activeDialogTrigger()"
+                [isDialogOpen]="campus.isAnyDialogOpen()"
+                (filterChange)="campus.setAssignmentsFilter($event)"
+                (submitAssignment)="campus.submitAssignment($event)"
+                (inspectAssignment)="onOpenAssignment($event)"
+              />
+            </div>
           </div>
 
-        </main>
+          <!-- Right 4 columns: Official Board -->
+          <aside
+            id="campus-panel-board"
+            aria-label="Comunicados oficiales"
+            [class]="(mobileTab() === 'board' ? 'flex' : 'hidden') + ' lg:flex flex-col gap-5 lg:gap-6 lg:col-span-4 min-w-0'"
+          >
+            <app-campus-announcements-card
+              [announcements]="campus.announcements()"
+              [unreadCount]="campus.unreadAnnouncementsCount()"
+              (toggleAck)="campus.toggleAnnouncementAck($event)"
+            />
+          </aside>
+        } @else {
+          <!-- Teacher Left 8 columns: Cátedra Activa + Live Attendance Roster -->
+          <div
+            id="campus-panel-overview"
+            [class]="(mobileTab() === 'overview' ? 'flex' : 'hidden') + ' lg:flex flex-col gap-5 lg:gap-6 lg:col-span-8 min-w-0'"
+          >
+            <app-campus-teacher-hero
+              [teacherClass]="campus.teacherClass()"
+              [rosterSummary]="campus.rosterSummary()"
+              (markAllPresent)="campus.markAllPresent()"
+            />
+
+            <app-campus-attendance-roster
+              [roster]="campus.filteredRoster()"
+              [activeFilter]="campus.rosterFilter()"
+              [searchQuery]="campus.rosterSearchQuery()"
+              [isTransitioning]="campus.isRosterTransitioning()"
+              (searchChange)="campus.setRosterSearch($event)"
+              (resetFilters)="onResetTeacherFilters()"
+              (statusChange)="onRosterStatusChange($event)"
+            />
+          </div>
+
+          <!-- Teacher Right 4 columns: Grading Queue + Classroom Quick Actions -->
+          <aside
+            aria-label="Revisión y acciones de aula"
+            class="lg:col-span-4 flex flex-col gap-5 lg:gap-6 min-w-0"
+          >
+            <div
+              id="campus-panel-agenda"
+              [class]="(mobileTab() === 'agenda' ? 'flex' : 'hidden') + ' lg:flex flex-col min-w-0'"
+            >
+              <app-campus-grading-queue
+                [items]="campus.gradingQueue()"
+                [pendingCount]="campus.pendingGradingCount()"
+                [activeDialogTrigger]="campus.activeDialogTrigger()"
+                [isDialogOpen]="campus.isAnyDialogOpen()"
+                (openGrade)="onOpenGrading($event)"
+              />
+            </div>
+
+            <div
+              id="campus-panel-board"
+              [class]="(mobileTab() === 'board' ? 'flex' : 'hidden') + ' lg:flex flex-col min-w-0'"
+            >
+              <app-campus-quick-actions
+                [activeDialogTrigger]="campus.activeDialogTrigger()"
+                [isDialogOpen]="campus.isAnyDialogOpen()"
+                (openAnnouncement)="onOpenAnnouncement($event)"
+                (downloadCsv)="onDownloadAttendanceCsv()"
+              />
+            </div>
+          </aside>
+        }
+      </div>
+
+      <div
+        class="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {{ campus.liveAnnouncement() }}
+      </div>
+    </div>
+
+    <!-- Mobile Floating Action Button (< lg) -->
+    @if (campus.currentRole() === 'teacher') {
+      <div
+        id="campus-mobile-fab-announcement"
+        class="lg:hidden fixed bottom-6 right-5 z-30"
+        [style.visibility]="
+          campus.isAnyDialogOpen() &&
+          campus.activeDialogTrigger() === 'campus-mobile-fab-announcement'
+            ? 'hidden'
+            : 'visible'
+        "
+        [style.view-transition-name]="
+          !campus.isAnyDialogOpen() &&
+          campus.activeDialogTrigger() === 'campus-mobile-fab-announcement'
+            ? 'dialog-transform'
+            : null
+        "
+      >
+        <m3-fab
+          icon="campaign"
+          label="Aviso"
+          size="md"
+          variant="primary"
+          ariaLabel="Publicar nuevo aviso a la clase"
+          (action)="onOpenAnnouncement('campus-mobile-fab-announcement')"
+        />
+      </div>
+    } @else {
+      <div
+        id="campus-mobile-fab-classroom"
+        class="lg:hidden fixed bottom-6 right-5 z-30"
+        [style.visibility]="
+          campus.isAnyDialogOpen() &&
+          campus.activeDialogTrigger() === 'campus-mobile-fab-classroom'
+            ? 'hidden'
+            : 'visible'
+        "
+        [style.view-transition-name]="
+          !campus.isAnyDialogOpen() &&
+          campus.activeDialogTrigger() === 'campus-mobile-fab-classroom'
+            ? 'dialog-transform'
+            : null
+        "
+      >
+        <m3-fab
+          icon="videocam"
+          label="Aula"
+          size="md"
+          variant="primary"
+          ariaLabel="Abrir portal de clase virtual"
+          (action)="onOpenClassroom('campus-mobile-fab-classroom')"
+        />
+      </div>
+    }
+
+    <!-- Non-blocking Floating Confirmation Toast -->
+    @if (campus.toastMessage(); as message) {
+      <div
+        role="status"
+        class="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-2rem)] bg-surface-highest text-main shadow-m3-level3 rounded-m3-full pl-4 pr-2 py-2 flex items-center gap-2.5"
+      >
+        <span class="material-symbols-rounded text-[18px] text-primary shrink-0" aria-hidden="true">
+          notifications_active
+        </span>
+        <span class="text-xs sm:text-sm font-semibold truncate">{{ message }}</span>
+        <m3-button
+          variant="text"
+          size="xs"
+          icon="close"
+          [iconOnly]="true"
+          ariaLabel="Cerrar notificación"
+          (action)="campus.dismissToast()"
+        />
+      </div>
+    }
+
+    <!-- StageOverlay Modal Portal Template -->
+    <ng-template #campusModalsTemplate>
+      @if (campus.isClassroomDialogOpen()) {
+        <app-campus-classroom-modal
+          [course]="campus.selectedClass()"
+          [isTransitioning]="campus.isDialogTransitioning()"
+          (close)="campus.closeClassroomDialog()"
+          (copyLink)="onCopyClassroomLink($event)"
+          (enterRoom)="onEnterClassroom($event)"
+        />
       }
 
-    </div>
-  `
+      @if (campus.selectedAssignment(); as assignment) {
+        <app-campus-assignment-modal
+          [assignment]="assignment"
+          [isTransitioning]="campus.isDialogTransitioning()"
+          (close)="campus.closeAssignmentDialog()"
+          (submitDelivery)="onSubmitAssignmentFromModal($event)"
+        />
+      }
+
+      @if (campus.selectedGradingItem(); as gradingItem) {
+        <app-campus-grading-modal
+          [item]="gradingItem"
+          [isTransitioning]="campus.isDialogTransitioning()"
+          (close)="campus.closeGradingDialog()"
+          (submitGrade)="onSubmitGrade($event)"
+        />
+      }
+
+      @if (campus.isAnnouncementDialogOpen()) {
+        <app-campus-announcement-modal
+          [enrolledCount]="campus.teacherClass().enrolledCount"
+          [isTransitioning]="campus.isDialogTransitioning()"
+          (close)="campus.closeAnnouncementDialog()"
+          (publish)="onPublishAnnouncement($event)"
+        />
+      }
+    </ng-template>
+
+    @if (!stageOverlay.hasExternalHost()) {
+      <ng-container [ngTemplateOutlet]="campusModalsTemplate" />
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CampusComponent {
-  readonly campusService = inject(CampusService);
-  readonly themeService = inject(ThemeService);
+  readonly campus = inject(CampusService);
+  protected readonly adaptiveLayout = inject(AdaptiveLayoutService);
+  protected readonly stageOverlay = inject(StageOverlayService);
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
 
-  getCategoryIcon(category: SubjectCategory): string {
-    switch (category) {
-      case 'stem': return 'science';
-      case 'humanities': return 'menu_book';
-      case 'arts': return 'palette';
-      case 'sports': return 'fitness_center';
+  private readonly modalsTemplate =
+    viewChild.required<TemplateRef<unknown>>('campusModalsTemplate');
+  private readonly mobileTabButtons =
+    viewChildren<ElementRef<HTMLButtonElement>>('mobileTabBtn');
+
+  readonly mobileTab = signal<CampusMobileTabId>('overview');
+
+  private returnFocusElement: HTMLElement | null = null;
+  private wasOverlayOpen = false;
+  private toastTimerId: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly mobileTabs = computed<MobileTabOption[]>(() => {
+    if (this.campus.currentRole() === 'student') {
+      return [
+        { id: 'overview', label: 'Sesión', icon: 'school', count: null },
+        {
+          id: 'agenda',
+          label: 'Entregas',
+          icon: 'assignment',
+          count: this.campus.pendingAssignmentsCount()
+        },
+        {
+          id: 'board',
+          label: 'Tablero',
+          icon: 'campaign',
+          count: this.campus.unreadAnnouncementsCount()
+        }
+      ];
     }
+    return [
+      {
+        id: 'overview',
+        label: 'Asistencia',
+        icon: 'fact_check',
+        count: this.campus.filteredRoster().length
+      },
+      {
+        id: 'agenda',
+        label: 'Revisión',
+        icon: 'grading',
+        count: this.campus.pendingGradingCount()
+      },
+      { id: 'board', label: 'Acciones', icon: 'bolt', count: null }
+    ];
+  });
+
+  constructor() {
+    afterNextRender(() => {
+      const tpl = this.modalsTemplate();
+      this.stageOverlay.mountOverlayTemplate(tpl, this.injector);
+      this.destroyRef.onDestroy(() => {
+        this.stageOverlay.unmountOverlayTemplate(tpl);
+      });
+    });
+
+    effect(() => {
+      const isOpen = this.campus.isAnyDialogOpen();
+      if (this.wasOverlayOpen && !isOpen) {
+        queueMicrotask(() => {
+          this.returnFocusElement?.focus();
+          this.returnFocusElement = null;
+        });
+      }
+      this.wasOverlayOpen = isOpen;
+    });
+
+    effect(() => {
+      const msg = this.campus.toastMessage();
+      if (this.toastTimerId) {
+        clearTimeout(this.toastTimerId);
+        this.toastTimerId = null;
+      }
+      if (msg) {
+        this.toastTimerId = setTimeout(() => {
+          this.campus.dismissToast();
+        }, 4200);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.toastTimerId) {
+        clearTimeout(this.toastTimerId);
+      }
+    });
   }
 
-  getCategoryBadgeClass(category: SubjectCategory): string {
-    switch (category) {
-      case 'stem':
-        return 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30';
-      case 'humanities':
-        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30';
-      case 'arts':
-        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30';
-      case 'sports':
-        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30';
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: Event): void {
+    if (!this.campus.isAnyDialogOpen()) return;
+    event.preventDefault();
+    this.campus.closeActiveDialog();
+  }
+
+  protected onSwitchRole(role: CampusRole): void {
+    this.mobileTab.set('overview');
+    this.campus.switchRole(role);
+  }
+
+  protected onMobileTabKeydown(event: KeyboardEvent, currentIndex: number): void {
+    const tabs = this.mobileTabs();
+    const total = tabs.length;
+    if (total === 0) return;
+
+    let targetIndex: number | null = null;
+    if (event.key === 'ArrowRight') {
+      targetIndex = (currentIndex + 1) % total;
+    } else if (event.key === 'ArrowLeft') {
+      targetIndex = (currentIndex - 1 + total) % total;
+    } else if (event.key === 'Home') {
+      targetIndex = 0;
+    } else if (event.key === 'End') {
+      targetIndex = total - 1;
+    }
+
+    if (targetIndex === null) return;
+    event.preventDefault();
+
+    this.mobileTab.set(tabs[targetIndex].id);
+    queueMicrotask(() => {
+      this.mobileTabButtons()[targetIndex]?.nativeElement.focus();
+    });
+  }
+
+  protected onOpenClassroom(triggerId: string): void {
+    this.captureReturnFocus();
+    this.campus.openClassroomDialog(triggerId);
+  }
+
+  protected onOpenAnnouncement(triggerId: string): void {
+    this.captureReturnFocus();
+    this.campus.openAnnouncementDialog(triggerId);
+  }
+
+  protected onOpenGrading(payload: { item: TeacherGradingItem; triggerId: string }): void {
+    this.captureReturnFocus();
+    this.campus.openGradingDialog(payload.item, payload.triggerId);
+  }
+
+  protected onOpenAssignment(payload: { item: StudentAssignment; triggerId: string }): void {
+    this.captureReturnFocus();
+    this.campus.openAssignmentDialog(payload.item, payload.triggerId);
+  }
+
+  protected onCopyClassroomLink(course: ClassScheduleItem): void {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(course.classroomLink);
+    }
+    this.campus.notify(`Enlace de ${course.code} copiado al portapapeles.`);
+  }
+
+  protected onEnterClassroom(course: ClassScheduleItem): void {
+    this.campus.closeClassroomDialog();
+    this.campus.notify(`Conectando a ${course.subject} (${course.code}).`);
+  }
+
+  protected onSubmitAssignmentFromModal(dto: SubmitAssignmentDto): void {
+    this.campus.submitAssignment(dto.assignmentId, dto.note);
+  }
+
+  protected onSubmitGrade(dto: SubmitGradeDto): void {
+    this.campus.markGradingReviewed(dto.gradingId, dto.score, dto.feedback);
+  }
+
+  protected onPublishAnnouncement(dto: CreateAnnouncementDto): void {
+    this.campus.publishAnnouncement(dto);
+  }
+
+  protected onResetTeacherFilters(): void {
+    this.campus.setRosterFilter('all');
+    this.campus.setRosterSearch('');
+  }
+
+  protected onRosterStatusChange(event: { studentId: string; status: AttendanceStatus }): void {
+    this.campus.setAttendance(event.studentId, event.status);
+  }
+
+  protected onDownloadAttendanceCsv(): void {
+    const csv = this.campus.buildAttendanceCsv();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = this.document.createElement('a');
+    link.href = url;
+    link.download = 'acta-asistencia-campus.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    this.campus.notify('Acta de asistencia descargada en formato CSV.');
+  }
+
+  private captureReturnFocus(): void {
+    const active = this.document.activeElement;
+    if (active instanceof HTMLElement) {
+      this.returnFocusElement = active;
     }
   }
 }

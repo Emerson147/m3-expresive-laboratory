@@ -2,6 +2,12 @@ export type CampusRole = 'student' | 'teacher';
 
 export type SubjectCategory = 'stem' | 'humanities' | 'arts' | 'sports';
 
+export type AttendanceStatus = 'present' | 'late' | 'absent';
+
+export type RosterFilter = 'all' | AttendanceStatus | 'atRisk';
+
+export type AssignmentFilter = 'all' | 'pending';
+
 export interface ClassScheduleItem {
   id: string;
   subject: string;
@@ -12,7 +18,9 @@ export interface ClassScheduleItem {
   timeRange: string;
   isActiveNow: boolean;
   progressPercent: number;
-  colorHue: number;
+  remainingMinutes: number;
+  classroomLink: string;
+  syllabusTopic: string;
 }
 
 export interface StudentAssignment {
@@ -22,6 +30,8 @@ export interface StudentAssignment {
   dueDate: string;
   urgency: 'urgent' | 'upcoming' | 'graded';
   score?: string;
+  submittedAt?: string;
+  rubricHint?: string;
   submissionStatus: 'pending' | 'submitted' | 'graded';
 }
 
@@ -41,6 +51,7 @@ export interface CampusAnnouncement {
   date: string;
   tag: string;
   important: boolean;
+  acknowledged?: boolean;
 }
 
 export interface TeacherClass {
@@ -57,7 +68,7 @@ export interface StudentAttendanceRecord {
   id: string;
   studentName: string;
   studentCode: string;
-  status: 'present' | 'late' | 'absent';
+  status: AttendanceStatus;
   overallAttendance: number;
   atRisk: boolean;
 }
@@ -69,4 +80,24 @@ export interface TeacherGradingItem {
   submittedAt: string;
   subject: string;
   status: 'pending' | 'reviewed';
+  score?: string;
+  feedback?: string;
+}
+
+export interface CreateAnnouncementDto {
+  title: string;
+  summary: string;
+  tag: string;
+  important: boolean;
+}
+
+export interface SubmitGradeDto {
+  gradingId: string;
+  score: string;
+  feedback: string;
+}
+
+export interface SubmitAssignmentDto {
+  assignmentId: string;
+  note?: string;
 }

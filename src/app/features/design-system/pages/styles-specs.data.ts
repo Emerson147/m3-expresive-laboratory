@@ -902,15 +902,15 @@ export const SHAPE_MORPH_MECHANISMS_SPECS: readonly ShapeMorphMechanismSpec[] = 
   },
   {
     id: 'polygon-morph',
-    badge: 'Showcase Expresivo • Librería de 35 Formas M3E',
+    badge: 'Secuencia Canónica M3E • 7 Polígonos + Circle',
     title: 'Mecanismo B: Polygon / Spline Path Morphing (Geometría Orgánica)',
-    platformScope: 'Loading Indicators (<m3-loading-indicator>), Avatares Expresivos y Badges Hero',
+    platformScope: 'Loading Indicators (<m3-loading-indicator>) y Pull-to-Refresh',
     howItWorks:
-      'Interpola continuamente 4 figuras canónicas (Pentágono redondeado ↔ Squircle ↔ Trébol de 4 pétalos ↔ Círculo) rotando con física subamortiguada. REGLA TOPOLÓGICA: todo path SVG debe generarse con exactamente el mismo número de segmentos Cubic Bézier C (SEGMENT_COUNT = 40 = mcm(4,5,8,10)) centrados en (24, 24) dentro de viewBox 48x48 para que SMIL <animate attributeName="d"> morfee simétricamente a 60fps.',
+      'La biblioteca M3 completa define 35 formas conceptuales, pero por YAGNI en sistemas reales cargamos únicamente las 7 figuras canónicas del Loading Indicator (SoftBurst → Cookie9 → Pentagon convexo → Pill estadio +45° → Sunny → Cookie4 ±45° → Oval +45°) más Circle (+18°) para arrastre determinado. Interpola cada 650ms con física de resorte real (0.6 / 200), +90° por paso y rotación base de 4666ms a N = 180 segmentos Cubic Bézier C fuera de NgZone.',
     cssOrSvgTech:
-      'Catmull-Rom Closed Spline de N=40 segmentos C centrados en (24,24) + SMIL animate attributeName="d" (<m3-loading-indicator>)',
+      'Catmull-Rom Closed Spline de N=180 segmentos C centrados en (24,24) + Spring Physics RAF fuera de NgZone (<m3-loading-indicator>)',
     canonicalComponents: [
-      'Loading Indicator (<m3-loading-indicator>) con M3_PENTAGON_PATH, M3_SQUIRCLE_PATH, M3_COOKIE4_PATH y M3_CIRCLE_PATH',
+      'Loading Indicator (<m3-loading-indicator>) con M3_SOFT_BURST_PATH, M3_COOKIE9_PATH, M3_PENTAGON_PATH, M3_PILL_PATH, M3_SUNNY_PATH, M3_COOKIE4_PATH y M3_OVAL_PATH',
       'Contenedores de Avatar o insignias de celebración (Hero Badges)'
     ]
   }

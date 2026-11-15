@@ -1,0 +1,11 @@
+# Clínica & Triaje (`features/clinic`)
+
+Estación de emergencias y soporte clínico diseñada bajo el patrón **Mission Control** y el sistema de tokens **Material 3 Expressive** (alineada con `telemetry`, `inventory`, `pos` y `campus`).
+
+## Arquitectura Visual y UX
+
+- **Capas tonales OKLCH sin marcos wireframe (`border` / `shadow-2xs`)**: Paneles externos en `bg-surface-low` (`rounded-m3-xl`), tarjetas clínicas en `bg-surface` / `bg-surface-high` y elementos enfocados o activos en `bg-primary-box`. Los niveles Manchester (`N1`–`N5`), riesgo `NEWS2` y estados de box utilizan exclusivamente roles semánticos OKLCH del tema (`bg-error-box`, `.clinic-mts-n2`, `bg-warning-box`, `bg-success-box`, `bg-sec-box`) con contraste dinámico en Light/Dark Mode.
+- **Morphing táctil acotado**: Las tarjetas KPI (`.clinic-kpi-btn`), filas de pacientes / boxes (`.clinic-surface-tile`) y controles de reclasificación `N1`–`N5` (`.clinic-chip-btn`) animan su `border-radius` mediante curvas `--md-sys-motion-spring-fast-spatial`, con respaldos completos para `prefers-reduced-motion` y `forced-colors`.
+- **Movimiento clínico disciplinado**: Las ventanas terapéuticas en `Campus`/`Clinic` usan `<m3-linear-progress [wavy]="false" color="error" size="md">` sin bucles `wavy`; el pulso vivo (`.clinic-live-dot`) queda reservado exclusivamente para pacientes con código de emergencia activo (`Código Infarto`, `Anfilaxia`, `Ictus`).
+- **Scroll único de workbench y navegación WAI-ARIA**: Flujo único de desplazamiento fluido sobre rejilla asimétrica `7 / 5` (`Cola de Triaje` a la izquierda, `Ficha & NEWS2` / `Boxes` a la derecha) con `role="tablist"` accesible por teclado (`ArrowLeft`, `ArrowRight`, `Home`, `End`) en escritorio y móviles (`< lg`), más `<m3-fab>` para ingreso rápido.
+- **Admisión portaleada con `dialog-transform`**: [ClinicAdmissionModalComponent](file:///home/migattedev/Documentos/Sistemas/frontend/m3-expressive/m3-expressive-ui/src/app/features/clinic/components/clinic-admission-modal.component.ts) se monta fuera de `#app-stage` mediante `StageOverlayService`, incluye cálculo previo en vivo del score `NEWS2`, todos los signos vitales y retorno automático de foco al disparador al cerrar o presionar `Escape`.

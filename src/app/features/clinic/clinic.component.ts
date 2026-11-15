@@ -1,1162 +1,558 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ClinicService } from '../../core/clinic/clinic.service';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  Injector,
+  TemplateRef,
+  ViewEncapsulation,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+  viewChildren
+} from '@angular/core';
+import {
+  AdmitPatientDto,
   BedStatus,
-  EmergencyBed,
-  News2RiskLevel,
+  DischargeDisposition,
   PatientTriageRecord,
-  TriageFilter,
+  PatientVitals,
   TriageLevel
 } from '../../core/clinic/clinic.models';
+import { ClinicService } from '../../core/clinic/clinic.service';
+import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
+import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
 import { M3ButtonComponent } from '../../shared/components/button/button.component';
-import { M3CardComponent } from '../../shared/components/card/card.component';
-import { M3ChipComponent } from '../../shared/components/chip/chip.component';
-import { M3LinearProgressComponent } from '../../shared/components/progress';
+import { M3FabComponent } from '../../shared/components/button/fab.component';
+import { ClinicAdmissionModalComponent } from './components/clinic-admission-modal.component';
+import { ClinicBedsMatrixComponent } from './components/clinic-beds-matrix.component';
+import { ClinicDischargeModalComponent } from './components/clinic-discharge-modal.component';
+import { CLINIC_EXPRESSIVE_CSS } from './components/clinic-expressive.styles';
+import { ClinicHeaderComponent } from './components/clinic-header.component';
+import { ClinicKpiRibbonComponent } from './components/clinic-kpi-ribbon.component';
+import { ClinicPatientDetailComponent } from './components/clinic-patient-detail.component';
+import { ClinicPatientQueueComponent } from './components/clinic-patient-queue.component';
 
-type ClinicRightTab = 'beds' | 'detail' | 'admit';
+export type ClinicRightTab = 'detail' | 'beds';
+export type ClinicMobileTab = 'queue' | 'detail' | 'beds';
+
+interface MobileTabItem {
+  id: ClinicMobileTab;
+  label: string;
+  icon: string;
+  count: number | null;
+}
 
 @Component({
   selector: 'app-clinic-page',
-  standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
+    NgTemplateOutlet,
     M3ButtonComponent,
-    M3CardComponent,
-    M3ChipComponent,
-    M3LinearProgressComponent
+    M3FabComponent,
+    ClinicHeaderComponent,
+    ClinicKpiRibbonComponent,
+    ClinicPatientQueueComponent,
+    ClinicPatientDetailComponent,
+    ClinicBedsMatrixComponent,
+    ClinicAdmissionModalComponent,
+    ClinicDischargeModalComponent
   ],
+  encapsulation: ViewEncapsulation.None,
+  styles: [CLINIC_EXPRESSIVE_CSS],
+  host: {
+    class: 'flex-1 h-full min-h-0 flex flex-col overflow-hidden bg-surface text-main'
+  },
   template: `
-    <div class="h-full flex flex-col gap-3 min-h-0 overflow-hidden select-none bg-surface text-main">
+    <div
+      [class]="
+        adaptiveLayout.isCompact()
+          ? 'clinic-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 gap-5 m3-scrollbar'
+          : 'clinic-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-20 gap-5 lg:gap-6 m3-scrollbar'
+      "
+    >
+      <!-- 1. Operational Clinical Header -->
+      <app-clinic-header
+        [searchQuery]="clinicService.searchQuery()"
+        [activeDialogTrigger]="clinicService.activeDialogTrigger()"
+        [isDialogOpen]="clinicService.isAdmissionDialogOpen()"
+        (searchChange)="clinicService.setSearchQuery($event)"
+        (openAdmission)="onOpenAdmissionModal($event)"
+      />
 
-      <!-- =====================================================================
-           1. TOP HEADER & OPERATIONAL BAR (Clean M3 Surface)
-           ===================================================================== -->
-      <header class="shrink-0 p-3 sm:p-4 rounded-3xl bg-surface-box shadow-2xs flex items-center justify-between flex-wrap gap-3">
-        
-        <!-- Left: Branding & Status -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-11 h-11 rounded-2xl bg-primary-box text-on-primary-box grid place-items-center shadow-2xs shrink-0">
-            <span class="material-symbols-rounded text-2xl">local_hospital</span>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <h1 class="text-base sm:text-lg font-black tracking-tight text-main truncate">
-                Estación de Emergencias & Triaje
-              </h1>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono">
-                MTS Manchester
+      <!-- 2. Interactive M3 KPI & Quick Filter Command Strip -->
+      <app-clinic-kpi-ribbon
+        [kpi]="clinicService.kpiSummary()"
+        [waitingCount]="clinicService.waitingCount()"
+        [activeFilter]="clinicService.activeFilter()"
+        (filterChange)="clinicService.setFilter($event)"
+      />
+
+      <!-- 3. Mobile WAI-ARIA Tab Switcher (< lg) -->
+      <nav aria-label="Vistas clínicas móviles" class="lg:hidden flex justify-center shrink-0">
+        <div
+          role="tablist"
+          aria-label="Secciones de clínica y triaje"
+          class="inline-flex items-center gap-1 p-1.5 rounded-m3-full bg-surface-low shadow-m3-level1 max-w-full overflow-x-auto"
+        >
+          @for (tab of mobileTabs(); track tab.id; let idx = $index) {
+            @let active = mobileTab() === tab.id;
+            <button
+              #mobileTabBtn
+              type="button"
+              role="tab"
+              [id]="'clinic-mobile-tab-' + tab.id"
+              [attr.aria-selected]="active"
+              [attr.aria-controls]="
+                tab.id === 'queue' ? 'clinic-queue-section' : 'clinic-workspace-section'
+              "
+              [tabindex]="active ? 0 : -1"
+              (click)="onSelectMobileTab(tab.id)"
+              (keydown)="onMobileTabKeydown($event, idx)"
+              [class]="
+                'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-m3-full text-label-md-emphasized whitespace-nowrap cursor-pointer transition-colors ' +
+                (active
+                  ? 'bg-primary-box text-on-primary-box'
+                  : 'text-muted hover:bg-surface-high hover:text-main')
+              "
+            >
+              <span class="material-symbols-rounded text-[17px]" aria-hidden="true">
+                {{ tab.icon }}
               </span>
-              <span class="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-highest text-muted uppercase tracking-wider font-mono">
-                NEWS2 Activo
-              </span>
-            </div>
-            <p class="text-xs text-muted truncate">
-              Soporte a la Decisión Clínica • Monitoreo Hemodinámico en Tiempo Real
-            </p>
-          </div>
-        </div>
-
-        <!-- Center/Right: Quick Search & New Admission CTA -->
-        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-          <div class="relative w-48 sm:w-60">
-            <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted text-base pointer-events-none">search</span>
-            <input
-              type="text"
-              placeholder="Buscar paciente, código o cama..."
-              [ngModel]="clinicService.searchQuery()"
-              (ngModelChange)="clinicService.setSearchQuery($event)"
-              class="w-full pl-9 pr-3 py-2 rounded-full text-xs bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-2xs"
-            />
-          </div>
-
-          <m3-button
-            variant="filled"
-            size="sm"
-            icon="person_add"
-            (action)="activeTab.set('admit')">
-            + Nueva Admisión
-          </m3-button>
-        </div>
-      </header>
-
-      <!-- =====================================================================
-           2. TOP BENTO KPI RIBBON (M3 Canonical Elevated Cards - Bright & Crisp)
-           ===================================================================== -->
-      <section class="shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-3">
-        
-        <!-- KPI 1: Casos Críticos (N1 & N2) -->
-        <m3-card
-          variant="elevated"
-          padding="md"
-          shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
-          <div>
-            <span class="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">Casos Críticos N1/N2</span>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-2xl sm:text-3xl font-black text-rose-500 font-mono">{{ clinicService.kpiSummary().criticalCases }}</span>
-              <span class="text-xs text-muted">pacientes</span>
-            </div>
-            <span class="text-[10px] text-muted block mt-0.5">
-              {{ clinicService.kpiSummary().highRiskNews2Count }} con NEWS2 Crítico (≥ 7)
-            </span>
-          </div>
-          <div class="w-10 h-10 rounded-2xl bg-rose-500/12 text-rose-500 grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-xl">emergency</span>
-          </div>
-        </m3-card>
-
-        <!-- KPI 2: Casos Urgentes (N3) -->
-        <m3-card
-          variant="elevated"
-          padding="md"
-          shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
-          <div>
-            <span class="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">Casos Urgentes N3</span>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().urgentCases }}</span>
-              <span class="text-xs text-muted">pacientes</span>
-            </div>
-            <span class="text-[10px] text-muted block mt-0.5">Ventana de atención: ≤ 60 min</span>
-          </div>
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/12 text-amber-500 grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-xl">warning</span>
-          </div>
-        </m3-card>
-
-        <!-- KPI 3: Espera Promedio -->
-        <m3-card
-          variant="elevated"
-          padding="md"
-          shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
-          <div>
-            <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Espera Promedio</span>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().avgWaitMinutes }}</span>
-              <span class="text-xs text-muted">minutos</span>
-            </div>
-            <span class="text-[10px] text-muted block mt-0.5">Meta asistencial: &lt; 30 min</span>
-          </div>
-          <div class="w-10 h-10 rounded-2xl bg-primary-box text-on-primary-box grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-xl">timer</span>
-          </div>
-        </m3-card>
-
-        <!-- KPI 4: Ocupación de Camas -->
-        <m3-card
-          variant="elevated"
-          padding="md"
-          shape="xl"
-          customClass="flex items-center justify-between transition-all hover:bg-surface-high/40">
-          <div>
-            <span class="text-[11px] font-bold text-muted uppercase tracking-wider block">Ocupación de Camas</span>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span class="text-2xl sm:text-3xl font-black text-main font-mono">{{ clinicService.kpiSummary().occupiedBeds }}/{{ clinicService.kpiSummary().totalBeds }}</span>
-              <span class="text-xs font-bold text-muted">({{ clinicService.kpiSummary().bedOccupancyPercent }}%)</span>
-            </div>
-            <span class="text-[10px] text-muted block mt-0.5">Shock Trauma: {{ clinicService.kpiSummary().shockTraumaOccupancy }} ocupadas</span>
-          </div>
-          <div class="w-10 h-10 rounded-2xl bg-surface-highest text-muted grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-xl">bed</span>
-          </div>
-        </m3-card>
-
-      </section>
-
-      <!-- =====================================================================
-           3. MAIN ASYMMETRIC BENTO GRID (Left: 7 Cols, Right: 5 Cols)
-           ===================================================================== -->
-      <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch overflow-hidden">
-        
-        <!-- ===================================================================
-             COLUMNA IZQUIERDA: COLA ACTIVA DE TRIAJE (7 / 12)
-             =================================================================== -->
-        <section class="lg:col-span-7 flex flex-col h-full min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
-          
-          <!-- Triage Filter Bar (M3 Canonical Filter Chips) -->
-          <div class="p-3 bg-surface-low/60 shrink-0 flex items-center justify-between gap-2 overflow-x-auto scrollbar-none">
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="font-bold text-main px-1 text-xs shrink-0 flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-base text-primary">format_list_bulleted</span>
-                <span>Pacientes</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-high text-muted">
-                  {{ clinicService.filteredPatients().length }}
+              <span>{{ tab.label }}</span>
+              @if (tab.count !== null) {
+                <span
+                  [class]="
+                    active
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-high text-muted'
+                  "
+                  class="px-1.5 py-0.5 rounded-m3-full text-label-sm font-mono tabular-nums"
+                >
+                  {{ tab.count }}
                 </span>
-              </span>
+              }
+            </button>
+          }
+        </div>
+      </nav>
 
-              <!-- Filter Chips (M3 Shared Component) -->
-              <m3-chip
-                type="filter"
-                [selected]="clinicService.activeFilter() === 'all'"
-                [count]="clinicService.patients().length"
-                (action)="clinicService.setFilter('all')">
-                Todos
-              </m3-chip>
-
-              <m3-chip
-                type="filter"
-                [selected]="clinicService.activeFilter() === 'critical'"
-                [count]="clinicService.kpiSummary().criticalCases"
-                (action)="clinicService.setFilter('critical')">
-                Críticos (N1/N2)
-              </m3-chip>
-
-              <m3-chip
-                type="filter"
-                [selected]="clinicService.activeFilter() === 'urgent'"
-                [count]="clinicService.kpiSummary().urgentCases"
-                (action)="clinicService.setFilter('urgent')">
-                Urgentes (N3)
-              </m3-chip>
-
-              <m3-chip
-                type="filter"
-                [selected]="clinicService.activeFilter() === 'standard'"
-                (action)="clinicService.setFilter('standard')">
-                Menores (N4/N5)
-              </m3-chip>
-
-              <m3-chip
-                type="filter"
-                [selected]="clinicService.activeFilter() === 'waiting'"
-                [count]="waitingCount()"
-                (action)="clinicService.setFilter('waiting')">
-                En Espera
-              </m3-chip>
-            </div>
-          </div>
-
-          <!-- Patients List Scroll Area (M3 Expressive Elevated Cards Feed) -->
-          <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 m3-scrollbar">
-            @for (patient of clinicService.filteredPatients(); track patient.id) {
-              @let isCritical = patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
-
-              <m3-card
-                variant="elevated"
-                [interactive]="true"
-                padding="sm"
-                shape="xl"
-                [customClass]="getPatientCardBorderClass(patient) + ' group relative flex flex-col gap-2 cursor-pointer select-none transition-all duration-200'"
-                (action)="onSelectPatient(patient)"
-                (click)="onSelectPatient(patient)">
-
-                <!-- 1. PRIORITY HEADER ROW (Tonal Badges & Wait Info) -->
-                <div class="flex items-center justify-between gap-2">
-                  <!-- Left: Manchester Level Tonal Container + Ticket Code -->
-                  <div class="flex items-center gap-1.5 min-w-0">
-                    <span
-                      [class]="getTriageBadgeContainerClass(patient.triageLevel)"
-                      class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                      <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="getTriageDotClass(patient.triageLevel)"></span>
-                      <span>{{ getTriageBadgeLabel(patient.triageLevel) }}</span>
-                    </span>
-
-                    <span class="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-surface-highest text-muted shrink-0">
-                      {{ patient.ticketCode }}
-                    </span>
-                  </div>
-
-                  <!-- Right: Bed Status & Elapsed Wait Latency -->
-                  <div class="flex items-center gap-1.5 shrink-0 text-xs font-mono">
-                    @if (patient.bedAssignedId) {
-                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-surface-highest text-main flex items-center gap-1">
-                        <span class="material-symbols-rounded text-xs text-primary">bed</span>
-                        <span>{{ patient.bedAssignedId }}</span>
-                      </span>
-                    } @else {
-                      <span
-                        [class]="isCritical ? 'text-rose-500 bg-rose-500/15 font-black' : 'text-amber-500 bg-amber-500/15 font-bold'"
-                        class="px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1">
-                        <span class="material-symbols-rounded text-xs">error</span>
-                        <span>Sin Cama</span>
-                      </span>
-                    }
-
-                    <span class="px-2 py-0.5 rounded-full text-[11px] text-muted bg-surface-low flex items-center gap-1">
-                      <span class="material-symbols-rounded text-xs">schedule</span>
-                      <span>{{ patient.waitingMinutes }}m</span>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- 2. PATIENT IDENTITY & NEWS2 SCORE -->
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-baseline gap-2 min-w-0">
-                    <h3 class="text-sm sm:text-base font-black text-main tracking-tight truncate group-hover:text-primary transition-colors">
-                      {{ patient.fullName }}
-                    </h3>
-                    <span class="text-xs text-muted font-medium shrink-0">
-                      {{ patient.age }}a • {{ patient.gender === 'M' ? 'Masc.' : (patient.gender === 'F' ? 'Fem.' : 'Otro') }}
-                    </span>
-                  </div>
-
-                  <!-- NEWS2 Score Chip -->
-                  <span
-                    [class]="getNews2PillClass(patient.news2.riskLevel)"
-                    class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black shrink-0 flex items-center gap-1">
-                    NEWS2 {{ patient.news2.score }}
-                  </span>
-                </div>
-
-                <!-- 3. FOOTER ROW: Acute Protocol Alert OR Chief Complaint excerpt -->
-                @if (patient.activeCode) {
-                  <div class="px-3 py-1.5 rounded-2xl bg-rose-500/12 flex items-center justify-between gap-2 text-xs">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                      <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
-                      <span class="font-black text-[11px] text-rose-500 truncate tracking-tight">⚡ {{ patient.activeCode.title }}</span>
-                      <span class="text-[10px] text-muted truncate hidden sm:inline">• {{ patient.activeCode.windowLabel }}</span>
-                    </div>
-                    <span class="px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-[10px] shrink-0 shadow-2xs">
-                      {{ patient.activeCode.remainingMinutes }} min restantes
-                    </span>
-                  </div>
-                } @else {
-                  <p class="text-xs text-muted truncate leading-relaxed">
-                    <span class="font-bold text-main/80">Motivo:</span> {{ patient.chiefComplaint }}
-                  </p>
-                }
-
-              </m3-card>
-            } @empty {
-              <div class="h-48 grid place-items-center text-center p-6 text-muted">
-                <div>
-                  <span class="material-symbols-rounded text-3xl mb-1 text-muted">health_and_safety</span>
-                  <p class="text-xs font-semibold">No se encontraron pacientes con este filtro</p>
-                </div>
-              </div>
-            }
-          </div>
+      <!-- 4. Mission Control Grid (Left: 7 cols Queue, Right: 5 cols Chart & Beds) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+        <section
+          id="clinic-queue-section"
+          [class]="
+            (mobileTab() === 'queue' ? 'block' : 'hidden') +
+            ' lg:block lg:col-span-7 min-w-0'
+          "
+        >
+          <app-clinic-patient-queue
+            [patients]="clinicService.filteredPatients()"
+            [totalPatientsCount]="clinicService.activePatients().length"
+            [kpi]="clinicService.kpiSummary()"
+            [inBedCount]="clinicService.inBedCount()"
+            [waitingCount]="clinicService.waitingCount()"
+            [activeFilter]="clinicService.activeFilter()"
+            [selectedPatientId]="clinicService.selectedPatient()?.id ?? null"
+            (filterChange)="clinicService.setFilter($event)"
+            (selectPatient)="onSelectPatient($event)"
+            (resetFilters)="onResetFilters()"
+          />
         </section>
 
-        <!-- ===================================================================
-             COLUMNA DERECHA: MATRIZ DE CAMAS & FICHA CLÍNICA / ADMISIÓN (5 / 12)
-             =================================================================== -->
-        <section class="lg:col-span-5 flex flex-col h-full min-h-0 rounded-3xl bg-surface-box shadow-2xs overflow-hidden">
-          
-          <!-- Segmented Tab Header (Clean M3 Pill Switcher) -->
-          <div class="p-3 bg-surface-low/60 shrink-0">
-            <div class="p-1 rounded-full bg-surface-high flex items-center gap-1 w-full shadow-2xs">
+        <aside
+          id="clinic-workspace-section"
+          [class]="
+            (mobileTab() === 'detail' || mobileTab() === 'beds' ? 'block' : 'hidden') +
+            ' lg:block lg:col-span-5 min-w-0'
+          "
+        >
+          <div class="rounded-m3-xl bg-surface-low p-4 sm:p-5 space-y-4">
+            <!-- Desktop Panel Mode Switcher (WAI-ARIA Tablist) -->
+            <div
+              role="tablist"
+              aria-label="Panel operativo derecho"
+              class="hidden lg:grid grid-cols-2 gap-1 p-1 rounded-m3-full bg-surface"
+            >
+              @let detailActive = activeTab() === 'detail';
               <button
+                #desktopTabBtn
                 type="button"
-                (click)="activeTab.set('beds')"
-                [class.bg-primary]="activeTab() === 'beds'"
-                [class.text-on-primary]="activeTab() === 'beds'"
-                [class.font-bold]="activeTab() === 'beds'"
-                [class.shadow-xs]="activeTab() === 'beds'"
-                [class.text-muted]="activeTab() !== 'beds'"
-                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                <span class="material-symbols-rounded text-sm">bed</span>
-                <span>Camas</span>
-              </button>
-
-              <button
-                type="button"
+                role="tab"
+                id="clinic-tab-detail"
+                aria-controls="clinic-panel-detail"
+                [attr.aria-selected]="detailActive"
+                [tabindex]="detailActive ? 0 : -1"
                 (click)="activeTab.set('detail')"
-                [class.bg-primary]="activeTab() === 'detail'"
-                [class.text-on-primary]="activeTab() === 'detail'"
-                [class.font-bold]="activeTab() === 'detail'"
-                [class.shadow-xs]="activeTab() === 'detail'"
-                [class.text-muted]="activeTab() !== 'detail'"
-                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                <span class="material-symbols-rounded text-sm">clinical_notes</span>
-                <span>Ficha & NEWS2</span>
+                (keydown)="onDesktopTabKeydown($event, 0)"
+                [class]="
+                  'py-2 px-3 rounded-m3-full text-label-md-emphasized flex items-center justify-center gap-1.5 cursor-pointer transition-colors ' +
+                  (detailActive
+                    ? 'bg-primary-box text-on-primary-box'
+                    : 'text-muted hover:bg-surface-high hover:text-main')
+                "
+              >
+                <span class="material-symbols-rounded text-[18px]" aria-hidden="true">
+                  clinical_notes
+                </span>
+                <span>Ficha &amp; NEWS2</span>
               </button>
 
+              @let bedsActive = activeTab() === 'beds';
               <button
+                #desktopTabBtn
                 type="button"
-                (click)="activeTab.set('admit')"
-                [class.bg-primary]="activeTab() === 'admit'"
-                [class.text-on-primary]="activeTab() === 'admit'"
-                [class.font-bold]="activeTab() === 'admit'"
-                [class.shadow-xs]="activeTab() === 'admit'"
-                [class.text-muted]="activeTab() !== 'admit'"
-                class="flex-1 py-1.5 rounded-full text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                <span class="material-symbols-rounded text-sm">add</span>
-                <span>Admisión</span>
+                role="tab"
+                id="clinic-tab-beds"
+                aria-controls="clinic-panel-beds"
+                [attr.aria-selected]="bedsActive"
+                [tabindex]="bedsActive ? 0 : -1"
+                (click)="activeTab.set('beds')"
+                (keydown)="onDesktopTabKeydown($event, 1)"
+                [class]="
+                  'py-2 px-3 rounded-m3-full text-label-md-emphasized flex items-center justify-center gap-1.5 cursor-pointer transition-colors ' +
+                  (bedsActive
+                    ? 'bg-primary-box text-on-primary-box'
+                    : 'text-muted hover:bg-surface-high hover:text-main')
+                "
+              >
+                <span class="material-symbols-rounded text-[18px]" aria-hidden="true">bed</span>
+                <span>
+                  Boxes ({{ clinicService.kpiSummary().occupiedBeds }}/{{
+                    clinicService.kpiSummary().totalBeds
+                  }})
+                </span>
               </button>
             </div>
-          </div>
 
-          <!-- TAB 1: MATRIZ DE CAMAS CRÍTICAS (M3 Elevated Cards & Buttons) -->
-          @if (activeTab() === 'beds') {
-            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-4 m3-scrollbar">
-              
-              <!-- Shock Trauma Unit -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                    <span>Shock Trauma Bay</span>
-                  </span>
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/12 text-rose-500">
-                    Alta Complejidad
-                  </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  @for (bed of shockTraumaBeds(); track bed.id) {
-                    <m3-card
-                      variant="elevated"
-                      padding="sm"
-                      shape="xl"
-                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
-                      <div>
-                        <div class="flex items-center justify-between">
-                          <span class="font-mono font-black text-sm text-main flex items-center gap-1.5">
-                            <span class="material-symbols-rounded text-base text-primary">local_hospital</span>
-                            <span>{{ bed.id }}</span>
-                          </span>
-                          
-                          <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
-                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                            {{ getBedStatusLabel(bed.status) }}
-                          </span>
-                        </div>
-                        <p class="font-bold text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Disponible para ingreso' }}</p>
-                        <div class="flex items-center gap-1 flex-wrap mt-1">
-                          @for (eq of bed.equipment; track eq) {
-                            <span class="px-2 py-0.5 rounded-full bg-surface-box text-[9px] font-mono text-muted">
-                              {{ eq }}
-                            </span>
-                          }
-                        </div>
-                      </div>
-
-                      <div class="pt-1 flex items-center justify-between">
-                        @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <m3-button
-                            variant="filled"
-                            size="sm"
-                            customClass="w-full font-black"
-                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
-                            Asignar Paciente
-                          </m3-button>
-                        } @else if (bed.status === 'cleaning') {
-                          <m3-button
-                            variant="tonal"
-                            size="sm"
-                            customClass="w-full font-bold"
-                            (action)="clinicService.setBedStatus(bed.id, 'available')">
-                            Habilitar Cama
-                          </m3-button>
-                        } @else if (bed.status === 'occupied') {
-                          <m3-button
-                            variant="text"
-                            size="sm"
-                            customClass="w-full font-semibold text-muted hover:text-main"
-                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
-                            Liberar para Limpieza
-                          </m3-button>
-                        } @else {
-                          <span class="text-[10px] text-muted italic flex items-center gap-1">
-                            <span class="material-symbols-rounded text-xs text-emerald-500">check_circle</span>
-                            <span>Lista para ingreso crítico</span>
-                          </span>
-                        }
-                      </div>
-                    </m3-card>
-                  }
-                </div>
-              </div>
-
-              <!-- Observación Rápida -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
-                    <span>Observación Rápida</span>
-                  </span>
-                  <span class="text-[10px] text-muted font-mono font-bold">4 Camas</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2.5">
-                  @for (bed of observationBeds(); track bed.id) {
-                    <m3-card
-                      variant="elevated"
-                      padding="sm"
-                      shape="xl"
-                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
-                      <div>
-                        <div class="flex items-center justify-between">
-                          <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
-                            <span class="material-symbols-rounded text-sm text-primary">bed</span>
-                            <span>{{ bed.id }}</span>
-                          </span>
-                          <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : (bed.status === 'cleaning' ? 'bg-amber-500/15 text-amber-500' : 'bg-emerald-500/15 text-emerald-500')"
-                            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
-                            {{ getBedStatusLabel(bed.status) }}
-                          </span>
-                        </div>
-                        <p class="font-medium text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Libre' }}</p>
-                      </div>
-
-                      <div class="pt-1">
-                        @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <m3-button
-                            variant="filled"
-                            size="sm"
-                            customClass="w-full font-bold"
-                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
-                            Asignar
-                          </m3-button>
-                        } @else if (bed.status === 'occupied') {
-                          <m3-button
-                            variant="text"
-                            size="sm"
-                            customClass="w-full text-muted hover:text-main"
-                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
-                            Liberar
-                          </m3-button>
-                        } @else if (bed.status === 'cleaning') {
-                          <m3-button
-                            variant="tonal"
-                            size="sm"
-                            customClass="w-full"
-                            (action)="clinicService.setBedStatus(bed.id, 'available')">
-                            Listo
-                          </m3-button>
-                        }
-                      </div>
-                    </m3-card>
-                  }
-                </div>
-              </div>
-
-              <!-- Sala de Procedimientos -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    <span>Tópico & Procedimientos</span>
-                  </span>
-                  <span class="text-[10px] text-muted font-mono font-bold">2 Camas</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2.5">
-                  @for (bed of procedureBeds(); track bed.id) {
-                    <m3-card
-                      variant="elevated"
-                      padding="sm"
-                      shape="xl"
-                      customClass="hover:bg-surface-high/40 transition-all text-xs flex flex-col justify-between space-y-3">
-                      <div>
-                        <div class="flex items-center justify-between">
-                          <span class="font-mono font-bold text-xs text-main flex items-center gap-1">
-                            <span class="material-symbols-rounded text-sm text-primary">healing</span>
-                            <span>{{ bed.id }}</span>
-                          </span>
-                          <span
-                            [class]="bed.status === 'occupied' ? 'bg-rose-500/15 text-rose-500' : 'bg-emerald-500/15 text-emerald-500'"
-                            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase">
-                            {{ getBedStatusLabel(bed.status) }}
-                          </span>
-                        </div>
-                        <p class="font-medium text-main mt-1.5 text-xs truncate">{{ bed.patientName ?? 'Disponible' }}</p>
-                      </div>
-
-                      <div class="pt-1">
-                        @if (bed.status === 'available' && clinicService.selectedPatient() && !clinicService.selectedPatient()?.bedAssignedId) {
-                          <m3-button
-                            variant="filled"
-                            size="sm"
-                            customClass="w-full font-bold"
-                            (action)="clinicService.assignBed(clinicService.selectedPatient()!.id, bed.id)">
-                            Asignar
-                          </m3-button>
-                        } @else if (bed.status === 'occupied') {
-                          <m3-button
-                            variant="text"
-                            size="sm"
-                            customClass="w-full text-muted hover:text-main"
-                            (action)="clinicService.setBedStatus(bed.id, 'cleaning')">
-                            Liberar
-                          </m3-button>
-                        }
-                      </div>
-                    </m3-card>
-                  }
-                </div>
-              </div>
-
-            </div>
-          }
-
-          <!-- TAB 2: DETALLE DEL PACIENTE & PROTOCOLOS NEWS2 (M3 Elevated Cards) -->
-          @if (activeTab() === 'detail') {
-            @if (clinicService.selectedPatient(); as patient) {
-              <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 m3-scrollbar">
-                
-                <!-- Acute Protocol Alert Banner -->
-                @if (patient.activeCode) {
-                  <div class="p-4 rounded-3xl bg-rose-500/12 shadow-2xs text-xs space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="font-black text-main flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                        <span class="text-sm">{{ patient.activeCode.title }}</span>
-                      </span>
-                      <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-mono font-black text-xs shadow-xs">
-                        {{ patient.activeCode.remainingMinutes }} min restantes
-                      </span>
-                    </div>
-
-                    <p class="text-xs text-muted font-normal">
-                      {{ patient.activeCode.protocolAction }}
-                    </p>
-
-                    <!-- Therapeutic Window Progress Track -->
-                    <div class="space-y-1">
-                      <div class="flex justify-between text-[10px] text-muted font-mono">
-                        <span>Transcurrido: {{ patient.activeCode.elapsedMinutes }} min</span>
-                        <span>Meta: ≤ {{ patient.activeCode.targetMinutes }} min</span>
-                      </div>
-                      <m3-linear-progress
-                        [value]="(patient.activeCode.elapsedMinutes / patient.activeCode.targetMinutes) * 100"
-                        [wavy]="false"
-                        color="error"
-                        size="sm">
-                      </m3-linear-progress>
-                    </div>
-                  </div>
-                }
-
-                <!-- Patient Header Card -->
-                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-3">
-                  <div class="flex items-center justify-between">
-                    <span [class]="getTriageBadgeContainerClass(patient.triageLevel)" class="px-3 py-1 rounded-full text-xs font-black uppercase">
-                      {{ getTriageBadgeLabel(patient.triageLevel) }}
-                    </span>
-                    <span class="font-mono font-bold text-xs text-muted">Ingreso: {{ patient.admissionTime }} ({{ patient.waitingMinutes }} min)</span>
-                  </div>
-
-                  <h3 class="text-lg font-black text-main">{{ patient.fullName }}</h3>
-                  <p class="text-xs text-muted">{{ patient.ticketCode }} • {{ patient.age }} años • Sexo {{ patient.gender }}</p>
-
-                  <!-- Reclassify Priority Segment -->
-                  <div class="flex items-center justify-between p-2.5 rounded-2xl bg-surface-low text-xs">
-                    <span class="text-[11px] font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
-                      <span class="material-symbols-rounded text-sm text-primary">swap_vert</span>
-                      <span>Reclasificar:</span>
-                    </span>
-                    <div class="flex items-center gap-1">
-                      <button
-                        type="button"
-                        (click)="applyRetriage(patient.id, 'resuscitation', $event)"
-                        [class.ring-2]="patient.triageLevel === 'resuscitation'"
-                        class="px-2.5 py-1 rounded-full text-xs font-black text-rose-500 bg-rose-500/15 hover:bg-rose-500/25 transition-all">
-                        N1
-                      </button>
-                      <button
-                        type="button"
-                        (click)="applyRetriage(patient.id, 'emergency', $event)"
-                        [class.ring-2]="patient.triageLevel === 'emergency'"
-                        class="px-2.5 py-1 rounded-full text-xs font-black text-orange-500 bg-orange-500/15 hover:bg-orange-500/25 transition-all">
-                        N2
-                      </button>
-                      <button
-                        type="button"
-                        (click)="applyRetriage(patient.id, 'urgent', $event)"
-                        [class.ring-2]="patient.triageLevel === 'urgent'"
-                        class="px-2.5 py-1 rounded-full text-xs font-black text-amber-500 bg-amber-500/15 hover:bg-amber-500/25 transition-all">
-                        N3
-                      </button>
-                      <button
-                        type="button"
-                        (click)="applyRetriage(patient.id, 'standard', $event)"
-                        [class.ring-2]="patient.triageLevel === 'standard'"
-                        class="px-2.5 py-1 rounded-full text-xs font-black text-emerald-500 bg-emerald-500/15 hover:bg-emerald-500/25 transition-all">
-                        N4
-                      </button>
-                      <button
-                        type="button"
-                        (click)="applyRetriage(patient.id, 'non_urgent', $event)"
-                        [class.ring-2]="patient.triageLevel === 'non_urgent'"
-                        class="px-2.5 py-1 rounded-full text-xs font-black text-sky-500 bg-sky-500/15 hover:bg-sky-500/25 transition-all">
-                        N5
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="pt-1">
-                    <span class="text-[10px] font-bold text-muted uppercase block mb-1">Motivo de Consulta Principal:</span>
-                    <p class="text-xs text-main bg-surface-low p-3 rounded-2xl leading-relaxed">{{ patient.chiefComplaint }}</p>
-                  </div>
-                </m3-card>
-
-                <!-- National Early Warning Score 2 (NEWS2) Analysis -->
-                <m3-card variant="elevated" padding="md" shape="xl" customClass="text-xs space-y-2">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-main flex items-center gap-1.5">
-                      <span class="material-symbols-rounded text-base text-primary">analytics</span>
-                      <span class="text-xs font-black uppercase tracking-wider">Índice Clínico NEWS2</span>
-                    </span>
-                    <span class="px-3 py-1 rounded-full font-mono font-black text-xs shadow-2xs" [class]="getNews2PillClass(patient.news2.riskLevel)">
-                      Score: {{ patient.news2.score }} / 20
-                    </span>
-                  </div>
-
-                  <p class="text-xs text-muted">{{ patient.news2.recommendation }}</p>
-
-                  @if (patient.news2.triggers.length > 0) {
-                    <div class="pt-1">
-                      <span class="text-[10px] font-bold text-rose-500 uppercase block mb-1">Criterios de Alerta Detectados:</span>
-                      <ul class="space-y-1">
-                        @for (trigger of patient.news2.triggers; track trigger) {
-                          <li class="flex items-center gap-1.5 text-xs text-rose-500 font-medium bg-rose-500/10 px-2.5 py-1 rounded-xl">
-                            <span class="material-symbols-rounded text-sm">warning</span>
-                            <span>{{ trigger }}</span>
-                          </li>
-                        }
-                      </ul>
-                    </div>
-                  }
-                </m3-card>
-
-                <!-- Signos Vitales con Rangos Fisiológicos -->
-                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-3">
-                  <span class="text-xs font-black text-main uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="material-symbols-rounded text-base text-primary">vital_signs</span>
-                    <span>Signos Vitales y Rangos</span>
-                  </span>
-
-                  <div class="grid grid-cols-2 gap-2.5 text-xs">
-                    <div class="p-3 rounded-2xl bg-surface-low">
-                      <div class="flex justify-between items-center text-[10px] text-muted">
-                        <span>Frecuencia Cardíaca</span>
-                        <span>60 - 100 bpm</span>
-                      </div>
-                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.heartRate }} bpm</span>
-                    </div>
-
-                    <div class="p-3 rounded-2xl bg-surface-low">
-                      <div class="flex justify-between items-center text-[10px] text-muted">
-                        <span>Presión Arterial</span>
-                        <span>120 / 80</span>
-                      </div>
-                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.bloodPressureSys }}/{{ patient.vitals.bloodPressureDia }}</span>
-                    </div>
-
-                    <div class="p-3 rounded-2xl bg-surface-low">
-                      <div class="flex justify-between items-center text-[10px] text-muted">
-                        <span>Saturación SpO2</span>
-                        <span>≥ 95%</span>
-                      </div>
-                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.oxygenSat }}%</span>
-                    </div>
-
-                    <div class="p-3 rounded-2xl bg-surface-low">
-                      <div class="flex justify-between items-center text-[10px] text-muted">
-                        <span>Temperatura</span>
-                        <span>36.5 - 37.5°C</span>
-                      </div>
-                      <span class="text-lg font-mono font-black text-main block mt-1">{{ patient.vitals.temperature }}°C</span>
-                    </div>
-                  </div>
-
-                  <div class="p-3 rounded-2xl bg-surface-low flex items-center justify-between text-xs">
-                    <span class="text-xs text-muted font-medium">Escala de Dolor (EVA):</span>
-                    <span class="font-mono font-black text-main text-sm">{{ patient.vitals.painScale }} / 10</span>
-                  </div>
-                </m3-card>
-
-                <!-- Alergias & Notas -->
-                <m3-card variant="elevated" padding="md" shape="xl" customClass="space-y-2 text-xs">
-                  <div>
-                    <span class="text-[10px] font-bold text-muted uppercase block mb-1">Alergias Documentadas:</span>
-                    @if (patient.allergies && patient.allergies.length > 0) {
-                      <div class="flex items-center gap-1.5 flex-wrap">
-                        @for (allergy of patient.allergies; track allergy) {
-                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-highest text-main">
-                            {{ allergy }}
-                          </span>
-                        }
-                      </div>
-                    } @else {
-                      <span class="text-muted italic">Sin alergias conocidas reportadas.</span>
-                    }
-                  </div>
-
-                  @if (patient.notes) {
-                    <div class="pt-2">
-                      <span class="text-[10px] font-bold text-muted uppercase block mb-1">Evolución / Indicaciones Clínicas:</span>
-                      <p class="text-xs text-muted italic bg-surface-low p-3 rounded-2xl">{{ patient.notes }}</p>
-                    </div>
-                  }
-                </m3-card>
-
-                <!-- Patient Actions CTA -->
-                <div class="flex items-center gap-2 pt-2">
-                  @if (!patient.bedAssignedId) {
-                    <m3-button
-                      variant="filled"
-                      size="md"
-                      icon="bolt"
-                      customClass="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-black"
-                      (action)="onImmediateShockTrauma(patient.id)">
-                      ⚡ Asignar a Shock Trauma Inmediato
-                    </m3-button>
-                  } @else {
-                    <m3-button
-                      variant="filled"
-                      size="md"
-                      customClass="flex-1 font-bold"
-                      (action)="activeTab.set('beds')">
-                      Cambiar Cama
-                    </m3-button>
-                  }
-
-                  <m3-button
-                    variant="tonal"
-                    size="md"
-                    customClass="font-bold"
-                    (action)="onDischarge(patient.id)">
-                    Alta Médica
-                  </m3-button>
-                </div>
-
-              </div>
-            } @else {
-              <div class="h-48 grid place-items-center text-center p-6 text-muted">
-                <div>
-                  <span class="material-symbols-rounded text-4xl mb-1 text-muted">person_search</span>
-                  <p class="text-xs font-semibold">Selecciona un paciente para ver su ficha clínica y NEWS2</p>
-                </div>
-              </div>
-            }
-          }
-
-          <!-- TAB 3: ADMISIÓN RÁPIDA DE EMERGENCIA (Clean Inputs) -->
-          @if (activeTab() === 'admit') {
-            <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-3.5 text-xs m3-scrollbar">
-              
-              <div class="flex items-center justify-between pb-1">
-                <span class="font-black text-sm text-main">Ingreso Rápido a Triaje</span>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-surface-highest text-muted">MTS Protocol</span>
-              </div>
-
-              <!-- Full Name -->
-              <div>
-                <label class="block text-[11px] font-semibold text-muted mb-1">Nombre Completo:</label>
-                <input
-                  type="text"
-                  [(ngModel)]="newPatientName"
-                  placeholder="Ej: Marcelo Quiroga"
-                  class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
+            @if (activeTab() === 'detail') {
+              <div
+                id="clinic-panel-detail"
+                role="tabpanel"
+                aria-labelledby="clinic-tab-detail"
+              >
+                <app-clinic-patient-detail
+                  [patient]="clinicService.selectedPatient()"
+                  [nextUrgentBed]="clinicService.nextUrgentAvailableBed()"
+                  [isDischargeDialogOpen]="clinicService.isDischargeDialogOpen()"
+                  [activeDialogTrigger]="clinicService.activeDialogTrigger()"
+                  (retriage)="onQuickRetriage($event.patientId, $event.level, $event.event)"
+                  (assignUrgentBed)="onImmediateShockTrauma($event)"
+                  (openBedsMatrix)="onSwitchToBeds()"
+                  (updateVitals)="onUpdateVitals($event)"
+                  (discharge)="onDischarge($event)"
                 />
               </div>
-
-              <!-- Age & Gender -->
-              <div class="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label class="block text-[11px] font-semibold text-muted mb-1">Edad (años):</label>
-                  <input
-                    type="number"
-                    [(ngModel)]="newPatientAge"
-                    placeholder="42"
-                    class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-muted mb-1">Sexo:</label>
-                  <select
-                    [(ngModel)]="newPatientGender"
-                    class="w-full px-3 py-2 rounded-2xl bg-surface-high text-main focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs">
-                    <option value="M">Masculino</option>
-                    <option value="F">Femenino</option>
-                    <option value="Other">Otro</option>
-                  </select>
-                </div>
+            } @else {
+              <div
+                id="clinic-panel-beds"
+                role="tabpanel"
+                aria-labelledby="clinic-tab-beds"
+              >
+                <app-clinic-beds-matrix
+                  [beds]="clinicService.beds()"
+                  [selectedPatient]="clinicService.selectedPatient()"
+                  (assignSelectedToBed)="onAssignSelectedToBed($event)"
+                  (setBedStatus)="onSetBedStatus($event)"
+                />
               </div>
-
-              <!-- Manchester Triage Level -->
-              <div>
-                <label class="block text-[11px] font-semibold text-muted mb-1.5">Prioridad Manchester:</label>
-                <div class="grid grid-cols-5 gap-1.5">
-                  <button
-                    type="button"
-                    (click)="newPatientLevel = 'resuscitation'"
-                    [class.ring-2]="newPatientLevel === 'resuscitation'"
-                    class="py-2 rounded-2xl text-xs font-black text-rose-500 bg-surface-high cursor-pointer ring-rose-400 shadow-2xs">
-                    N1
-                  </button>
-                  <button
-                    type="button"
-                    (click)="newPatientLevel = 'emergency'"
-                    [class.ring-2]="newPatientLevel === 'emergency'"
-                    class="py-2 rounded-2xl text-xs font-black text-orange-500 bg-surface-high cursor-pointer ring-orange-400 shadow-2xs">
-                    N2
-                  </button>
-                  <button
-                    type="button"
-                    (click)="newPatientLevel = 'urgent'"
-                    [class.ring-2]="newPatientLevel === 'urgent'"
-                    class="py-2 rounded-2xl text-xs font-black text-amber-500 bg-surface-high cursor-pointer ring-amber-300 shadow-2xs">
-                    N3
-                  </button>
-                  <button
-                    type="button"
-                    (click)="newPatientLevel = 'standard'"
-                    [class.ring-2]="newPatientLevel === 'standard'"
-                    class="py-2 rounded-2xl text-xs font-black text-emerald-500 bg-surface-high cursor-pointer ring-emerald-400 shadow-2xs">
-                    N4
-                  </button>
-                  <button
-                    type="button"
-                    (click)="newPatientLevel = 'non_urgent'"
-                    [class.ring-2]="newPatientLevel === 'non_urgent'"
-                    class="py-2 rounded-2xl text-xs font-black text-sky-500 bg-surface-high cursor-pointer ring-sky-400 shadow-2xs">
-                    N5
-                  </button>
-                </div>
-              </div>
-
-              <!-- Chief Complaint -->
-              <div>
-                <label class="block text-[11px] font-semibold text-muted mb-1">Motivo de Consulta:</label>
-                <textarea
-                  [(ngModel)]="newPatientComplaint"
-                  rows="2"
-                  placeholder="Descripción de síntomas agudos y tiempo de evolución..."
-                  class="w-full px-3.5 py-2 rounded-2xl bg-surface-high text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none shadow-2xs">
-                </textarea>
-              </div>
-
-              <!-- Quick Vitals Inputs -->
-              <div class="grid grid-cols-3 gap-2.5">
-                <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-1">FC (bpm):</label>
-                  <input type="number" [(ngModel)]="newVitalsHR" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-1">PA Sistólica:</label>
-                  <input type="number" [(ngModel)]="newVitalsSys" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-semibold text-muted mb-1">SpO2 (%):</label>
-                  <input type="number" [(ngModel)]="newVitalsSpO2" class="w-full px-3 py-1.5 rounded-xl bg-surface-high text-main shadow-2xs focus:ring-2 focus:ring-primary" />
-                </div>
-              </div>
-
-              <div class="pt-2">
-                <m3-button
-                  variant="filled"
-                  size="md"
-                  customClass="w-full font-bold"
-                  [disabled]="!newPatientName.trim() || !newPatientComplaint.trim()"
-                  (action)="submitAdmission()">
-                  Admitir Paciente a Triaje
-                </m3-button>
-              </div>
-
-            </div>
-          }
-
-        </section>
-
+            }
+          </div>
+        </aside>
       </div>
 
+      <!-- Single Polite Screen-Reader Announcer -->
+      <div class="sr-only" aria-live="polite" aria-atomic="true">
+        {{ clinicService.liveAnnouncement() }}
+      </div>
     </div>
-  `
+
+    <!-- Mobile Quick Admission FAB (< lg) -->
+    <div
+      id="clinic-mobile-fab-admit"
+      class="lg:hidden fixed bottom-6 right-5 z-30"
+      [style.visibility]="
+        clinicService.isAdmissionDialogOpen() &&
+        clinicService.activeDialogTrigger() === 'clinic-mobile-fab-admit'
+          ? 'hidden'
+          : 'visible'
+      "
+      [style.view-transition-name]="
+        !clinicService.isAdmissionDialogOpen() &&
+        clinicService.activeDialogTrigger() === 'clinic-mobile-fab-admit'
+          ? 'dialog-transform'
+          : null
+      "
+    >
+      <m3-fab
+        icon="person_add"
+        label="Admisión"
+        size="md"
+        variant="primary"
+        ariaLabel="Abrir ingreso rápido a triaje"
+        (action)="onOpenAdmissionModal('clinic-mobile-fab-admit')"
+      />
+    </div>
+
+    <!-- Non-blocking Operational Confirmation Toast -->
+    @if (clinicService.toastMessage(); as message) {
+      <div
+        role="status"
+        class="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-2rem)] bg-surface-highest text-main shadow-m3-level3 rounded-m3-full pl-4 pr-2 py-2 flex items-center gap-2.5"
+      >
+        <span class="material-symbols-rounded text-[18px] text-primary shrink-0" aria-hidden="true">
+          local_hospital
+        </span>
+        <span class="text-body-sm font-semibold truncate">{{ message }}</span>
+        <m3-button
+          variant="text"
+          size="xs"
+          icon="close"
+          [iconOnly]="true"
+          ariaLabel="Cerrar aviso"
+          (action)="clinicService.dismissToast()"
+        />
+      </div>
+    }
+
+    <!-- StageOverlay Modal Portal Template -->
+    <ng-template #clinicModalsTemplate>
+      @if (clinicService.isAdmissionDialogOpen()) {
+        <app-clinic-admission-modal
+          [isTransitioning]="clinicService.isDialogTransitioning()"
+          (close)="clinicService.closeAdmissionDialog()"
+          (admit)="onAdmitPatient($event)"
+        />
+      }
+      @if (clinicService.dischargeDialogPatient(); as dischargePatient) {
+        <app-clinic-discharge-modal
+          [patient]="dischargePatient"
+          [isTransitioning]="clinicService.isDialogTransitioning()"
+          (close)="clinicService.closeDischargeDialog()"
+          (confirm)="onConfirmDischarge($event)"
+        />
+      }
+    </ng-template>
+
+    @if (!stageOverlay.hasExternalHost()) {
+      <ng-container [ngTemplateOutlet]="clinicModalsTemplate" />
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClinicComponent {
   readonly clinicService = inject(ClinicService);
+  protected readonly adaptiveLayout = inject(AdaptiveLayoutService);
+  protected readonly stageOverlay = inject(StageOverlayService);
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly modalsTemplate =
+    viewChild.required<TemplateRef<unknown>>('clinicModalsTemplate');
+  private readonly mobileTabButtons =
+    viewChildren<ElementRef<HTMLButtonElement>>('mobileTabBtn');
+  private readonly desktopTabButtons =
+    viewChildren<ElementRef<HTMLButtonElement>>('desktopTabBtn');
 
   readonly activeTab = signal<ClinicRightTab>('detail');
-  readonly activeRetriageId = signal<string | null>(null);
+  readonly mobileTab = signal<ClinicMobileTab>('queue');
 
-  // Bed group computed signals
-  readonly shockTraumaBeds = computed(() =>
-    this.clinicService.beds().filter(b => b.area === 'shock_trauma')
-  );
+  private returnFocusElement: HTMLElement | null = null;
+  private wasOverlayOpen = false;
+  private toastTimerId: ReturnType<typeof setTimeout> | null = null;
 
-  readonly observationBeds = computed(() =>
-    this.clinicService.beds().filter(b => b.area === 'observation')
-  );
+  protected readonly mobileTabs = computed<readonly MobileTabItem[]>(() => [
+    {
+      id: 'queue',
+      label: 'Triaje',
+      icon: 'format_list_bulleted',
+      count: this.clinicService.filteredPatients().length
+    },
+    {
+      id: 'detail',
+      label: 'Ficha & NEWS2',
+      icon: 'clinical_notes',
+      count: null
+    },
+    {
+      id: 'beds',
+      label: 'Boxes',
+      icon: 'bed',
+      count: this.clinicService.kpiSummary().occupiedBeds
+    }
+  ]);
 
-  readonly procedureBeds = computed(() =>
-    this.clinicService.beds().filter(b => b.area === 'procedure')
-  );
+  constructor() {
+    afterNextRender(() => {
+      const tpl = this.modalsTemplate();
+      this.stageOverlay.mountOverlayTemplate(tpl, this.injector);
+      this.destroyRef.onDestroy(() => {
+        this.stageOverlay.unmountOverlayTemplate(tpl);
+      });
+    });
 
-  readonly waitingCount = computed(() =>
-    this.clinicService.patients().filter(p => !p.bedAssignedId).length
-  );
+    effect(() => {
+      const isOpen =
+        this.clinicService.isAdmissionDialogOpen() ||
+        this.clinicService.isDischargeDialogOpen();
+      if (this.wasOverlayOpen && !isOpen) {
+        queueMicrotask(() => {
+          if (this.returnFocusElement?.isConnected) {
+            this.returnFocusElement.focus();
+          }
+          this.returnFocusElement = null;
+        });
+      }
+      this.wasOverlayOpen = isOpen;
+    });
 
-  // Form model for new admission
-  newPatientName = '';
-  newPatientAge = 40;
-  newPatientGender: 'M' | 'F' | 'Other' = 'M';
-  newPatientLevel: TriageLevel = 'urgent';
-  newPatientComplaint = '';
-  newVitalsHR = 80;
-  newVitalsSys = 120;
-  newVitalsDia = 80;
-  newVitalsSpO2 = 98;
-  newVitalsTemp = 36.6;
-  newVitalsPain = 3;
+    effect(() => {
+      const msg = this.clinicService.toastMessage();
+      if (this.toastTimerId) {
+        clearTimeout(this.toastTimerId);
+        this.toastTimerId = null;
+      }
+      if (msg) {
+        this.toastTimerId = setTimeout(() => {
+          this.clinicService.dismissToast();
+        }, 4200);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      if (this.toastTimerId) {
+        clearTimeout(this.toastTimerId);
+      }
+    });
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: Event): void {
+    if (this.clinicService.isDischargeDialogOpen()) {
+      event.preventDefault();
+      this.clinicService.closeDischargeDialog();
+      return;
+    }
+    if (this.clinicService.isAdmissionDialogOpen()) {
+      event.preventDefault();
+      this.clinicService.closeAdmissionDialog();
+    }
+  }
 
   onSelectPatient(patient: PatientTriageRecord): void {
     this.clinicService.selectPatient(patient);
     this.activeTab.set('detail');
+    this.mobileTab.set('detail');
   }
 
-  toggleRetriage(patientId: string, event: Event): void {
-    event.stopPropagation();
-    this.activeRetriageId.update(current => (current === patientId ? null : patientId));
-  }
-
-  applyRetriage(patientId: string, level: TriageLevel, event: Event): void {
-    event.stopPropagation();
+  onQuickRetriage(patientId: string, level: TriageLevel, event?: Event): void {
+    event?.stopPropagation();
     this.clinicService.updateTriageLevel(patientId, level);
-    this.activeRetriageId.set(null);
-  }
-
-  // Backward compatible for tests
-  onQuickRetriage(patientId: string, level: TriageLevel, event: Event): void {
-    this.applyRetriage(patientId, level, event);
-  }
-
-  openBedAssignment(patient: PatientTriageRecord, event: Event): void {
-    event.stopPropagation();
-    this.clinicService.selectPatient(patient);
-    this.activeTab.set('beds');
   }
 
   onImmediateShockTrauma(patientId: string, event?: Event): void {
-    if (event) event.stopPropagation();
+    event?.stopPropagation();
     this.clinicService.assignImmediateShockTrauma(patientId);
   }
 
   onDischarge(patientId: string, event?: Event): void {
-    if (event) event.stopPropagation();
-    this.clinicService.dischargePatient(patientId);
+    event?.stopPropagation();
+    this.captureReturnFocus();
+    this.clinicService.openDischargeDialog(patientId);
   }
 
-  submitAdmission(): void {
-    if (!this.newPatientName.trim() || !this.newPatientComplaint.trim()) return;
+  protected onConfirmDischarge(payload: {
+    patientId: string;
+    disposition: DischargeDisposition;
+    notes?: string;
+  }): void {
+    this.clinicService.dischargePatient(payload.patientId, payload.disposition, payload.notes);
+  }
 
-    this.clinicService.admitPatient({
-      fullName: this.newPatientName.trim(),
-      age: this.newPatientAge,
-      gender: this.newPatientGender,
-      triageLevel: this.newPatientLevel,
-      chiefComplaint: this.newPatientComplaint.trim(),
-      vitals: {
-        heartRate: this.newVitalsHR,
-        bloodPressureSys: this.newVitalsSys,
-        bloodPressureDia: this.newVitalsDia,
-        oxygenSat: this.newVitalsSpO2,
-        temperature: this.newVitalsTemp,
-        painScale: this.newVitalsPain
-      }
+  protected onUpdateVitals(payload: { patientId: string; vitals: PatientVitals }): void {
+    this.clinicService.updatePatientVitals(payload.patientId, payload.vitals);
+  }
+
+  protected onSwitchToBeds(): void {
+    this.activeTab.set('beds');
+    this.mobileTab.set('beds');
+  }
+
+  protected onSelectMobileTab(tab: ClinicMobileTab): void {
+    this.mobileTab.set(tab);
+    if (tab === 'detail' || tab === 'beds') {
+      this.activeTab.set(tab);
+    }
+  }
+
+  protected onMobileTabKeydown(event: KeyboardEvent, currentIndex: number): void {
+    const tabs = this.mobileTabs();
+    const targetIndex = this.resolveTabKeyIndex(event.key, currentIndex, tabs.length);
+    if (targetIndex === null) return;
+
+    event.preventDefault();
+    this.onSelectMobileTab(tabs[targetIndex].id);
+    queueMicrotask(() => {
+      this.mobileTabButtons()[targetIndex]?.nativeElement.focus();
     });
+  }
 
-    this.newPatientName = '';
-    this.newPatientComplaint = '';
+  protected onDesktopTabKeydown(event: KeyboardEvent, currentIndex: number): void {
+    const order: readonly ClinicRightTab[] = ['detail', 'beds'];
+    const targetIndex = this.resolveTabKeyIndex(event.key, currentIndex, order.length);
+    if (targetIndex === null) return;
+
+    event.preventDefault();
+    this.activeTab.set(order[targetIndex]);
+    queueMicrotask(() => {
+      this.desktopTabButtons()[targetIndex]?.nativeElement.focus();
+    });
+  }
+
+  protected onOpenAdmissionModal(triggerId: string): void {
+    this.captureReturnFocus();
+    this.clinicService.openAdmissionDialog(triggerId);
+  }
+
+  private captureReturnFocus(): void {
+    const active = this.document.activeElement;
+    if (active instanceof HTMLElement) {
+      this.returnFocusElement = active;
+    }
+  }
+
+  protected onAdmitPatient(dto: AdmitPatientDto): void {
+    this.clinicService.admitPatient(dto);
     this.activeTab.set('detail');
+    this.mobileTab.set('detail');
   }
 
-  getPatientCardBorderClass(patient: PatientTriageRecord): string {
-    const isSelected = this.clinicService.selectedPatient()?.id === patient.id;
-    if (isSelected) {
-      return 'ring-2 ring-primary/80 bg-primary-box/20 shadow-xs border-primary/30';
-    }
-    return 'hover:bg-surface-high/40 transition-colors';
+  protected onAssignSelectedToBed(bedId: string): void {
+    const patient = this.clinicService.selectedPatient();
+    if (!patient) return;
+    this.clinicService.assignBed(patient.id, bedId);
   }
 
-  getTriageBadgeContainerClass(level: TriageLevel): string {
-    switch (level) {
-      case 'resuscitation':
-        return 'bg-rose-500/15 text-rose-500';
-      case 'emergency':
-        return 'bg-orange-500/15 text-orange-500';
-      case 'urgent':
-        return 'bg-amber-500/15 text-amber-500';
-      case 'standard':
-        return 'bg-emerald-500/15 text-emerald-500';
-      case 'non_urgent':
-        return 'bg-sky-500/15 text-sky-500';
-    }
+  protected onSetBedStatus(payload: { bedId: string; status: BedStatus }): void {
+    this.clinicService.setBedStatus(payload.bedId, payload.status);
   }
 
-  getTriageDotClass(level: TriageLevel): string {
-    switch (level) {
-      case 'resuscitation':
-        return 'bg-rose-500 animate-pulse';
-      case 'emergency':
-        return 'bg-orange-500';
-      case 'urgent':
-        return 'bg-amber-500';
-      case 'standard':
-        return 'bg-emerald-500';
-      case 'non_urgent':
-        return 'bg-sky-500';
-    }
+  protected onResetFilters(): void {
+    this.clinicService.setFilter('all');
+    this.clinicService.setSearchQuery('');
   }
 
-  getTriageTextClass(level: TriageLevel): string {
-    switch (level) {
-      case 'resuscitation':
-        return 'text-rose-500';
-      case 'emergency':
-        return 'text-orange-500';
-      case 'urgent':
-        return 'text-amber-500';
-      case 'standard':
-        return 'text-emerald-500';
-      case 'non_urgent':
-        return 'text-sky-500';
-    }
-  }
-
-  getTriageBadgeLabel(level: TriageLevel): string {
-    switch (level) {
-      case 'resuscitation':
-        return 'N1 • Resucitación';
-      case 'emergency':
-        return 'N2 • Emergencia';
-      case 'urgent':
-        return 'N3 • Urgente';
-      case 'standard':
-        return 'N4 • Poco Urgente';
-      case 'non_urgent':
-        return 'N5 • No Urgente';
-    }
-  }
-
-  getNews2PillClass(risk: News2RiskLevel): string {
-    if (risk === 'high') {
-      return 'bg-rose-600 text-white font-mono font-black shadow-xs';
-    }
-    if (risk === 'medium') {
-      return 'bg-amber-500/20 text-amber-500 font-mono font-black';
-    }
-    return 'bg-surface-highest text-muted font-mono font-semibold';
-  }
-
-  getBedDotClass(status: BedStatus): string {
-    switch (status) {
-      case 'occupied':
-        return 'bg-rose-500';
-      case 'cleaning':
-        return 'bg-amber-500';
-      case 'available':
-        return 'bg-emerald-500';
-    }
-  }
-
-  getBedStatusLabel(status: BedStatus): string {
-    switch (status) {
-      case 'occupied':
-        return 'Ocupada';
-      case 'cleaning':
-        return 'Desinfección';
-      case 'available':
-        return 'Disponible';
-    }
+  private resolveTabKeyIndex(key: string, current: number, total: number): number | null {
+    if (total === 0) return null;
+    if (key === 'ArrowRight') return (current + 1) % total;
+    if (key === 'ArrowLeft') return (current - 1 + total) % total;
+    if (key === 'Home') return 0;
+    if (key === 'End') return total - 1;
+    return null;
   }
 }

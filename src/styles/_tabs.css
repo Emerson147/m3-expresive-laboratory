@@ -1,0 +1,120 @@
+/* =========================================================
+   M3 COMPONENT TOKENS: TABS (Primary 3dp & Secondary 2dp)
+   m3.material.io/components/tabs/specs
+   ========================================================= */
+
+.m3-tablist {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.m3-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+.m3-tab {
+  position: relative;
+  flex: 1 1 0%;
+  min-width: 90px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: 16px;
+  min-height: 48px;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: inherit;
+  font-size: var(--md-sys-typescale-title-small-size, 0.875rem);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.m3-tab.has-icon-stacked {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding-block: 8px;
+}
+
+.m3-tab[aria-selected='true'] {
+  color: var(--md-sys-color-primary);
+}
+
+.m3-tab:disabled {
+  cursor: not-allowed;
+  color: color-mix(in oklch, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+.m3-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  pointer-events: none;
+  background-color: var(--md-sys-color-primary);
+  transition:
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-linear);
+}
+
+/* Primary Tabs: 3dp rounded-top bar sized inside label bounds */
+.m3-tablist-primary .m3-tab-indicator {
+  height: 3px;
+  min-width: 24px;
+  width: clamp(24px, 56%, 72px);
+  border-radius: 3px 3px 0 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0.4);
+  opacity: 0;
+}
+
+.m3-tablist-primary .m3-tab[aria-selected='true'] .m3-tab-indicator {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
+}
+
+/* Secondary Tabs: 2dp full-tab flush bar */
+.m3-tablist-secondary .m3-tab-indicator {
+  height: 2px;
+  inset-inline: 0;
+  transform: scaleX(0.5);
+  opacity: 0;
+}
+
+.m3-tablist-secondary .m3-tab[aria-selected='true'] .m3-tab-indicator {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-tab,
+  .m3-tab-indicator {
+    transition-property: color, opacity;
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
+  }
+
+  .m3-tablist-primary .m3-tab-indicator {
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  .m3-tablist-secondary .m3-tab-indicator {
+    transform: scaleX(1);
+  }
+}
+
+@media (forced-colors: active) {
+  .m3-tab[aria-selected='true'] {
+    color: Highlight;
+  }
+  .m3-tab-indicator {
+    background-color: Highlight;
+  }
+}

@@ -19,8 +19,10 @@ export interface News2Assessment {
   triggers: string[];
 }
 
+export type EmergencyCodeType = 'code_stemi' | 'code_stroke' | 'code_sepsis' | 'code_trauma';
+
 export interface EmergencyCode {
-  type: 'code_stemi' | 'code_stroke' | 'code_sepsis' | 'code_trauma';
+  type: EmergencyCodeType;
   title: string;
   windowLabel: string;
   targetMinutes: number;
@@ -28,6 +30,42 @@ export interface EmergencyCode {
   remainingMinutes: number;
   protocolAction: string;
 }
+
+export const EMERGENCY_CODE_PRESETS: Record<
+  EmergencyCodeType,
+  Omit<EmergencyCode, 'elapsedMinutes' | 'remainingMinutes'>
+> = {
+  code_stemi: {
+    type: 'code_stemi',
+    title: 'Código Infarto (STEMI)',
+    windowLabel: 'Ventana Puerta-Balón',
+    targetMinutes: 90,
+    protocolAction: 'Hemodinamia notificada. Angioplastia primaria y doble antiagregación activadas.'
+  },
+  code_stroke: {
+    type: 'code_stroke',
+    title: 'Código Ictus (ACV)',
+    windowLabel: 'Ventana Trombólisis IV',
+    targetMinutes: 45,
+    protocolAction: 'TC cerebral STAT y valoración neurológica activadas.'
+  },
+  code_sepsis: {
+    type: 'code_sepsis',
+    title: 'Código Sepsis / Shock',
+    windowLabel: 'Bundle Hora-1',
+    targetMinutes: 60,
+    protocolAction: 'Cultivos, lactato, cristaloides 30 mL/kg y antimicrobiano de amplio espectro iniciados.'
+  },
+  code_trauma: {
+    type: 'code_trauma',
+    title: 'Código Trauma Mayor',
+    windowLabel: 'Hora Dorada ATLS',
+    targetMinutes: 60,
+    protocolAction: 'Equipo quirúrgico y banco de sangre en alerta para estabilización inmediata.'
+  }
+};
+
+export type DischargeDisposition = 'home' | 'ward' | 'icu';
 
 export interface PatientVitals {
   heartRate: number;        // bpm
@@ -80,4 +118,21 @@ export interface ClinicKpiSummary {
   bedOccupancyPercent: number;
   shockTraumaOccupancy: string;
   availableShockTraumaBeds: number;
+}
+
+export interface AdmitPatientDto {
+  fullName: string;
+  age: number;
+  gender: 'M' | 'F' | 'Other';
+  triageLevel: TriageLevel;
+  chiefComplaint: string;
+  vitals: PatientVitals;
+  activeCodeType?: EmergencyCodeType | null;
+  allergies?: string[];
+  notes?: string;
+}
+
+export interface UrgentBedCandidate {
+  bed: EmergencyBed;
+  isPrimaryShockTrauma: boolean;
 }

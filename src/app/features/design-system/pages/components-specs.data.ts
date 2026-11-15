@@ -7,6 +7,9 @@ export interface ComponentPillarSpec {
     | 'loading-indicator'
     | 'progress-indicators'
     | 'switch'
+    | 'selection-controls'
+    | 'slider'
+    | 'tabs'
     | 'overlays';
   readonly name: string;
   readonly category: 'Actions' | 'Containment & Selection' | 'Text Inputs' | 'Communication & Feedback';
@@ -94,9 +97,9 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'Loading Indicator (< 5s Morphing Polygons)',
     category: 'Communication & Feedback',
     docUrl: 'https://m3.material.io/components/loading-indicator/overview',
-    selectorOrCss: '<m3-loading-indicator size="sm|md|lg" [contained]="...">',
-    keyRule: 'Reservado para esperas indeterminadas cortas de 200ms a 5s (pull-to-refresh, pagos POS). Caja de 48dp con figura activa de 38dp (~79%); [contained] usa primary-container + on-primary-container.',
-    webNotes: 'Ciclo canónico de 7 polígonos M3 (SoftBurst -> Cookie8 -> Pentagon -> Pill -> Squircle -> Cookie4 -> Oval) a N=40 splines cúbicos SVG, desmontando SMIL <animate> en prefers-reduced-motion.'
+    selectorOrCss: '<m3-loading-indicator size="sm|md|lg" [diameter]="24..240" [progress]="0..1|null" [contained]="..." [elevated]="..." [paused]="...">',
+    keyRule: 'Reservado para esperas indeterminadas cortas de 200ms a 5s (pull-to-refresh, handshake de terminal POS). Escala oficial [diameter] de 24dp a 240dp (base 48dp / figura activa 38dp = ratio 38/48); [progress] 0..1 morphing Circle (+18°) → SoftBurst para arrastre táctil; role="progressbar" con aria-label acción+objeto y aria-valuenow solo en modo determinado.',
+    webNotes: 'Ciclo canónico de 7 polígonos M3 (SoftBurst -> Cookie9 -> Pentagon -> Pill -> Sunny -> Cookie4 -> Oval) a N=180 splines cúbicos SVG, conducido por física de resorte real (0.6 / 200) a 650ms por paso + 90° discretos y giro base de 4666ms fuera de NgZone (soporta [paused] y se congela bajo prefers-reduced-motion).'
   },
   {
     id: 'progress-indicators',
@@ -109,21 +112,48 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
   },
   {
     id: 'switch',
-    name: 'Switch (Web Selection Control)',
+    name: 'Switch (3 Modos + Halo 40dp)',
     category: 'Containment & Selection',
     docUrl: 'https://m3.material.io/components/switch/overview',
-    selectorOrCss: '<m3-switch [checked]="...">',
-    keyRule: 'Activa/desactiva un ajuste binario instantáneo sin botón Confirmar; thumb morfa de 16px a 24px (28px al presionar).',
-    webNotes: 'Usa button role="switch", aria-checked, blanco táctil 48x48dp, ControlValueAccessor y forced-colors.'
+    selectorOrCss: '<m3-switch [iconMode]="\'none\'|\'selected\'|\'both\'" [(checked)]="...">',
+    keyRule: 'Ajuste binario inmediato sin botón Guardar; thumb morfa 16→24→28dp con ícono 16dp y halo circular 40dp sobre el thumb (sin encoger el track).',
+    webNotes: 'button role="switch", aria-labelledby separado de aria-describedby, blanco 48dp, CVA con setDisabledState y forced-colors.'
+  },
+  {
+    id: 'selection-controls',
+    name: 'Checkbox (Tri-state) & Radio (1–5)',
+    category: 'Containment & Selection',
+    docUrl: 'https://m3.material.io/components/checkbox/overview',
+    selectorOrCss: '<m3-checkbox [indeterminate]="...">, <m3-radio-group [options]="...">',
+    keyRule: 'Checkbox (18×18dp, radio 2dp) para multi-selección o padre-hijo indeterminate; Radio (20dp) para 1–5 opciones excluyentes visibles antes de pasar a <select>.',
+    webNotes: '<input type="checkbox|radio"> nativo en target 48dp + halo 40dp, fieldset/legend y navegación por flechas nativa.'
+  },
+  {
+    id: 'slider',
+    name: 'Slider Expressive (Track Disjunto)',
+    category: 'Containment & Selection',
+    docUrl: 'https://m3.material.io/components/sliders/overview',
+    selectorOrCss: '<m3-slider size="xs|sm|md" [showStops]="true" [(value)]="...">',
+    keyRule: 'Track activo e inactivo separados por brecha 6px, handle vertical 4×44dp (2dp al arrastrar), stop dots 4dp y burbuja de valor.',
+    webNotes: 'Envuelve <input type="range"> nativo preservando teclado Arrow/Home/End/PageUp y aria-valuetext.'
+  },
+  {
+    id: 'tabs',
+    name: 'Tabs (Primary 3dp & Secondary 2dp)',
+    category: 'Containment & Selection',
+    docUrl: 'https://m3.material.io/components/tabs/overview',
+    selectorOrCss: '<m3-tabs variant="primary|secondary" [tabs]="..." [(value)]="...">',
+    keyRule: 'Primary (48/64dp, barra 3dp ajustada al texto) para vistas principales; Secondary (48dp, barra 2dp ancho total) para sub-vistas dentro de tarjetas.',
+    webNotes: 'role="tablist"/role="tab" con Roving Tabindex (0 activo / -1 inactivos) y ArrowLeft/ArrowRight sensible a RTL.'
   },
   {
     id: 'overlays',
-    name: 'Top-Layer Overlays (Menu Popover & Snackbar)',
+    name: 'Native Dialog & Top-Layer Popovers',
     category: 'Communication & Feedback',
-    docUrl: 'https://m3.material.io/components/snackbar/overview',
-    selectorOrCss: '<m3-snackbar>, [popover="auto|manual"]',
-    keyRule: 'Mensajes transitorios usan popover="manual" (no light-dismiss); menús de Split Button usan popover="auto" (light-dismiss + Esc).',
-    webNotes: 'Animados con transition-behavior: allow-discrete, overlay, @starting-style y fallback progresivo sin Polyfill obligatorio.'
+    docUrl: 'https://m3.material.io/components/dialogs/overview',
+    selectorOrCss: '<m3-dialog>, <m3-snackbar>, [popover="auto|manual"]',
+    keyRule: 'Dialog básico (28dp, 280–560dp, surface-container-high) sobre <dialog>.showModal(); Snackbar usa popover="manual" y Split Menu popover="auto".',
+    webNotes: 'Top Layer nativo del navegador con closedby="any", inert automático fuera del dialog, @starting-style y transition-behavior: allow-discrete.'
   }
 ];
 

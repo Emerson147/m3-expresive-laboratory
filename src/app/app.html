@@ -1,33 +1,46 @@
-<div class="h-screen w-screen overflow-hidden bg-black text-main select-none relative">
-  @let isStageRecessed = dialogService.isDialogOpen() || dialogService.isHeroExpanded() || stageOverlay.isOverlayOpen();
+@let isStageRecessed = dialogService.isDialogOpen() || dialogService.isHeroExpanded() || stageOverlay.isOverlayOpen();
+<div
+  [class]="isStageRecessed ? 'bg-black' : 'bg-surface'"
+  class="h-dvh w-full overflow-hidden text-main select-none relative">
 
   <!-- =========================================================================
-       STAGE PRINCIPAL (Se desenfoca y retrocede en bloque con stage-recessed)
+       STAGE PRINCIPAL (Chrome persistente + Route Stage aislado)
        ========================================================================= -->
   <div id="app-stage"
-    [class]="isStageRecessed ? 'stage-recessed' : 'stage-normal'"
-    [attr.inert]="isStageRecessed ? '' : null"
-    class="flex h-full w-full overflow-hidden bg-surface">
+    [class]="(isStageRecessed ? 'stage-recessed ' : 'stage-normal ') + stageClasses()"
+    [attr.inert]="isStageRecessed ? '' : null">
 
-    <!-- 1. NAVEGACIÓN (Rail / Tunnel / Dock) -->
-    <app-navigation [navStyle]="dialogService.navStyle()" [currentSection]="currentSection()"
-      [pendingCount]="taskService.pendingCount()" [isDialogOpen]="dialogService.isDialogOpen()"
-      [isHeroExpanded]="dialogService.isHeroExpanded()" [activeTrigger]="dialogService.activeTrigger()"
-      [activeTransition]="dialogService.activeTransition()" (openMenu)="dialogService.openFrom($event)" />
+    <!-- 1. NAVEGACIÓN ADAPTATIVA M3 (Bar Compact / Detached Rail / Top Focus Strip / Curated Dock) -->
+    <app-navigation
+      [navStyle]="dialogService.navStyle()"
+      [(manualRailExpanded)]="dialogService.isRailManuallyExpanded"
+      [currentSection]="currentSection()"
+      [pendingCount]="taskService.pendingCount()"
+      [isDialogOpen]="dialogService.isDialogOpen()"
+      [activeTrigger]="dialogService.activeTrigger()"
+      [activeTransition]="dialogService.activeTransition()"
+      (openMenu)="dialogService.openFrom($event)"
+      (openCommandPalette)="openCommandPalette()"
+      (exitTunnel)="dialogService.setNavStyle('auto')" />
 
-    <!-- 2. CONTENIDO PRINCIPAL CON ROUTER OUTLET -->
-    <main
-      [class]="currentSection() === 'pos' || currentSection() === 'inventory' || currentSection() === 'telemetry' || currentSection() === 'kanban' || currentSection() === 'campus' || currentSection() === 'clinic' ? 'flex-1 h-full overflow-hidden p-2 md:p-3 flex flex-col min-h-0' : 'flex-1 overflow-y-auto p-6 md:p-8 pb-28 space-y-6'">
+    <!-- 2. PANE DE CONTENIDO / ROUTER STAGE (Única zona animada al navegar) -->
+    <main #routeStage id="route-stage" tabindex="-1" [class]="mainClasses()">
 
-      <!-- BARRA SUPERIOR (Oculta en POS, Inventory, Telemetry, Kanban, Campus y Clinic para foco operativo) -->
-      @if (currentSection() !== 'pos' && currentSection() !== 'inventory' && currentSection() !== 'telemetry' && currentSection() !== 'kanban' && currentSection() !== 'campus' && currentSection() !== 'clinic') {
-      <app-header class="shrink-0" [currentSection]="currentSection()" [navStyle]="dialogService.navStyle()"
-        [sectionTitle]="routeMeta().title" [sectionSubtitle]="routeMeta().subtitle"
-        [isDialogOpen]="dialogService.isDialogOpen()" [activeTrigger]="dialogService.activeTrigger()"
-        (openCreate)="dialogService.openFrom($event)" />
+      <!-- BARRA SUPERIOR (Editorial / Overview / Agenda / Design System) -->
+      @if (isEditorialShell()) {
+      <app-header
+        class="shrink-0"
+        [currentSection]="currentSection()"
+        [chromeMode]="dialogService.effectiveChrome()"
+        [sectionTitle]="routeMeta().title"
+        [sectionSubtitle]="routeMeta().subtitle"
+        [isDialogOpen]="dialogService.isDialogOpen()"
+        [activeTrigger]="dialogService.activeTrigger()"
+        (openCreate)="dialogService.openFrom($event)"
+        (openCommandPalette)="openCommandPalette()" />
       }
 
-      <!-- ENTRADA DE VISTAS (Overview, Agenda, Design System, POS) -->
+      <!-- ENTRADA DE VISTAS -->
       <router-outlet />
 
     </main>
@@ -51,11 +64,19 @@
     (morphView)="dialogService.morphDialogInternalView($event.targetView, $event.moveCenter)"
     (navStyleChange)="dialogService.setNavStyle($event)" />
 
-  <!-- 5. PORTAL EXTERNO PARA MODALES DE MÓDULOS LAZY (POS, etc.) -->
+  <!-- 5. PORTAL EXTERNO PARA MODALES DE MÓDULOS LAZY (POS, Clínica, etc.) -->
   @if (stageOverlay.overlayTemplate(); as featureOverlay) {
     <ng-container
       [ngTemplateOutlet]="featureOverlay"
       [ngTemplateOutletInjector]="stageOverlay.overlayInjector()" />
   }
+
+  <!-- 6. PALETA DE COMANDOS GLOBAL (Ctrl/Cmd + K sobre Top Layer nativo) -->
+  <app-command-palette
+    [isOpen]="isCommandPaletteOpen()"
+    [currentSection]="currentSection()"
+    (closed)="isCommandPaletteOpen.set(false)"
+    (navigate)="navigateFromCommandPalette($event)"
+    (openQuickTask)="openQuickTaskFromCommandPalette()" />
 
 </div>

@@ -38,24 +38,31 @@
        - Spatial Family: Damping = 0.9 (underdamped, allows momentum overshoot).
        - Effects Family: Damping = 1.0 (critically damped, zero bounce on optical properties). */
 
-  /* 4.1 Android / Compose Physics Parameters (Damping & Stiffness) */
-  --md-sys-motion-spring-fast-spatial-damping: 0.9;
-  --md-sys-motion-spring-fast-spatial-stiffness: 1400;
+  /* 4.1 Android / Compose Physics Parameters (Damping Ratio ζ & Stiffness k) */
+  --md-sys-motion-spring-expressive-fast-spatial-damping: 0.6;
+  --md-sys-motion-spring-expressive-fast-spatial-stiffness: 800;
+  --md-sys-motion-spring-expressive-default-spatial-damping: 0.8;
+  --md-sys-motion-spring-expressive-default-spatial-stiffness: 380;
+  --md-sys-motion-spring-expressive-slow-spatial-damping: 0.8;
+  --md-sys-motion-spring-expressive-slow-spatial-stiffness: 200;
+
+  --md-sys-motion-spring-standard-fast-spatial-damping: 0.9;
+  --md-sys-motion-spring-standard-fast-spatial-stiffness: 1400;
+  --md-sys-motion-spring-standard-default-spatial-damping: 0.9;
+  --md-sys-motion-spring-standard-default-spatial-stiffness: 700;
+  --md-sys-motion-spring-standard-slow-spatial-damping: 0.9;
+  --md-sys-motion-spring-standard-slow-spatial-stiffness: 300;
+
   --md-sys-motion-spring-fast-effects-damping: 1;
   --md-sys-motion-spring-fast-effects-stiffness: 3800;
-
-  --md-sys-motion-spring-default-spatial-damping: 0.9;
-  --md-sys-motion-spring-default-spatial-stiffness: 700;
   --md-sys-motion-spring-default-effects-damping: 1;
   --md-sys-motion-spring-default-effects-stiffness: 1600;
-
-  --md-sys-motion-spring-slow-spatial-damping: 0.9;
-  --md-sys-motion-spring-slow-spatial-stiffness: 300;
   --md-sys-motion-spring-slow-effects-damping: 1;
   --md-sys-motion-spring-slow-effects-stiffness: 800;
 
   /* 4.2 Web: Convert Springs to Curves - Expressive Family */
   --md-sys-motion-spring-expressive-fast-spatial-curve: cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  --md-sys-motion-spring-expressive-fast-spatial-linear: linear(0, 0.233 6%, 0.633 12%, 0.937 18%, 1.099 26%, 1.085 34%, 1.024 43%, 0.99 54%, 0.995 68%, 1.001 84%, 1);
   --md-sys-motion-spring-expressive-fast-spatial-duration: 350ms;
   --md-sys-motion-spring-expressive-default-spatial-curve: cubic-bezier(0.38, 1.21, 0.22, 1);
   --md-sys-motion-spring-expressive-default-spatial-duration: 500ms;
@@ -85,18 +92,37 @@
   --md-sys-motion-spring-standard-slow-effects-duration: 300ms;
 
   /* 4.4 Canonical Aliases (Defaults to Expressive) */
+  --md-sys-motion-spring-expressive-fast-spatial: var(--md-sys-motion-spring-expressive-fast-spatial-curve);
+  --md-sys-motion-spring-expressive-fast-effects: var(--md-sys-motion-spring-expressive-fast-effects-curve);
+  --md-sys-motion-spring-standard-fast-spatial: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+  --md-sys-motion-spring-standard-fast-effects: var(--md-sys-motion-spring-standard-fast-effects-curve);
+
+  --md-sys-motion-spring-fast-spatial-damping: var(--md-sys-motion-spring-expressive-fast-spatial-damping);
+  --md-sys-motion-spring-fast-spatial-stiffness: var(--md-sys-motion-spring-expressive-fast-spatial-stiffness);
+  --md-sys-motion-spring-default-spatial-damping: var(--md-sys-motion-spring-expressive-default-spatial-damping);
+  --md-sys-motion-spring-default-spatial-stiffness: var(--md-sys-motion-spring-expressive-default-spatial-stiffness);
+  --md-sys-motion-spring-slow-spatial-damping: var(--md-sys-motion-spring-expressive-slow-spatial-damping);
+  --md-sys-motion-spring-slow-spatial-stiffness: var(--md-sys-motion-spring-expressive-slow-spatial-stiffness);
+
   --md-sys-motion-spring-fast-spatial: var(--md-sys-motion-spring-expressive-fast-spatial-curve);
+  --md-sys-motion-spring-fast-spatial-curve: var(--md-sys-motion-spring-expressive-fast-spatial-curve);
+  --md-sys-motion-spring-fast-spatial-linear: var(--md-sys-motion-spring-expressive-fast-spatial-linear);
   --md-sys-motion-spring-fast-spatial-duration: var(--md-sys-motion-spring-expressive-fast-spatial-duration);
   --md-sys-motion-spring-default-spatial: var(--md-sys-motion-spring-expressive-default-spatial-curve);
+  --md-sys-motion-spring-default-spatial-curve: var(--md-sys-motion-spring-expressive-default-spatial-curve);
   --md-sys-motion-spring-default-spatial-duration: var(--md-sys-motion-spring-expressive-default-spatial-duration);
   --md-sys-motion-spring-slow-spatial: var(--md-sys-motion-spring-expressive-slow-spatial-curve);
+  --md-sys-motion-spring-slow-spatial-curve: var(--md-sys-motion-spring-expressive-slow-spatial-curve);
   --md-sys-motion-spring-slow-spatial-duration: var(--md-sys-motion-spring-expressive-slow-spatial-duration);
 
   --md-sys-motion-spring-fast-effects: var(--md-sys-motion-spring-expressive-fast-effects-curve);
+  --md-sys-motion-spring-fast-effects-curve: var(--md-sys-motion-spring-expressive-fast-effects-curve);
   --md-sys-motion-spring-fast-effects-duration: var(--md-sys-motion-spring-expressive-fast-effects-duration);
   --md-sys-motion-spring-default-effects: var(--md-sys-motion-spring-expressive-default-effects-curve);
+  --md-sys-motion-spring-default-effects-curve: var(--md-sys-motion-spring-expressive-default-effects-curve);
   --md-sys-motion-spring-default-effects-duration: var(--md-sys-motion-spring-expressive-default-effects-duration);
   --md-sys-motion-spring-slow-effects: var(--md-sys-motion-spring-expressive-slow-effects-curve);
+  --md-sys-motion-spring-slow-effects-curve: var(--md-sys-motion-spring-expressive-slow-effects-curve);
   --md-sys-motion-spring-slow-effects-duration: var(--md-sys-motion-spring-expressive-slow-effects-duration);
   --md-sys-motion-spring-effects: var(--md-sys-motion-spring-default-effects);
 
@@ -128,30 +154,125 @@
   --md-sys-motion-duration-extra-long4: 1000ms;
 }
 
-/* --- 6. ACCESSIBILITY: REDUCED MOTION --- */
+/* Global or Subtree Motion Scheme Switch (M3 Expressive vs Minimalismo Zen Standard) */
+html[data-motion-scheme="standard"],
+[data-motion-scheme="standard"] {
+  --md-sys-motion-spring-fast-spatial-damping: var(--md-sys-motion-spring-standard-fast-spatial-damping);
+  --md-sys-motion-spring-fast-spatial-stiffness: var(--md-sys-motion-spring-standard-fast-spatial-stiffness);
+  --md-sys-motion-spring-default-spatial-damping: var(--md-sys-motion-spring-standard-default-spatial-damping);
+  --md-sys-motion-spring-default-spatial-stiffness: var(--md-sys-motion-spring-standard-default-spatial-stiffness);
+  --md-sys-motion-spring-slow-spatial-damping: var(--md-sys-motion-spring-standard-slow-spatial-damping);
+  --md-sys-motion-spring-slow-spatial-stiffness: var(--md-sys-motion-spring-standard-slow-spatial-stiffness);
+
+  --md-sys-motion-spring-fast-spatial: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+  --md-sys-motion-spring-fast-spatial-curve: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+  --md-sys-motion-spring-fast-spatial-linear: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+  --md-sys-motion-spring-fast-spatial-duration: var(--md-sys-motion-spring-standard-fast-spatial-duration);
+
+  --md-sys-motion-spring-default-spatial: var(--md-sys-motion-spring-standard-default-spatial-curve);
+  --md-sys-motion-spring-default-spatial-curve: var(--md-sys-motion-spring-standard-default-spatial-curve);
+  --md-sys-motion-spring-default-spatial-duration: var(--md-sys-motion-spring-standard-default-spatial-duration);
+
+  --md-sys-motion-spring-slow-spatial: var(--md-sys-motion-spring-standard-slow-spatial-curve);
+  --md-sys-motion-spring-slow-spatial-curve: var(--md-sys-motion-spring-standard-slow-spatial-curve);
+  --md-sys-motion-spring-slow-spatial-duration: var(--md-sys-motion-spring-standard-slow-spatial-duration);
+
+  --md-sys-motion-spring-fast-effects: var(--md-sys-motion-spring-standard-fast-effects-curve);
+  --md-sys-motion-spring-fast-effects-curve: var(--md-sys-motion-spring-standard-fast-effects-curve);
+  --md-sys-motion-spring-fast-effects-duration: var(--md-sys-motion-spring-standard-fast-effects-duration);
+
+  --md-sys-motion-spring-default-effects: var(--md-sys-motion-spring-standard-default-effects-curve);
+  --md-sys-motion-spring-default-effects-curve: var(--md-sys-motion-spring-standard-default-effects-curve);
+  --md-sys-motion-spring-default-effects-duration: var(--md-sys-motion-spring-standard-default-effects-duration);
+
+  --md-sys-motion-spring-slow-effects: var(--md-sys-motion-spring-standard-slow-effects-curve);
+  --md-sys-motion-spring-slow-effects-curve: var(--md-sys-motion-spring-standard-slow-effects-curve);
+  --md-sys-motion-spring-slow-effects-duration: var(--md-sys-motion-spring-standard-slow-effects-duration);
+
+  --md-sys-motion-spring-effects: var(--md-sys-motion-spring-standard-default-effects-curve);
+  --md-sys-motion-spring: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+  --md-sys-motion-easing-spring: var(--md-sys-motion-spring-standard-fast-spatial-curve);
+}
+
+/* --- 6. ACCESSIBILITY: REDUCED MOTION (Calm Dissolves, Zero Spatial Jolt) ---
+   Avoid blanket `*, *::before, *::after { animation-duration: 1ms !important }` which
+   turns gentle opacity fades into harsh visual snaps and overrides overlay dissolves. */
+@keyframes m3ReducedFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --md-sys-motion-spring-fast-spatial-duration: 1ms;
-    --md-sys-motion-spring-default-spatial-duration: 1ms;
-    --md-sys-motion-spring-slow-spatial-duration: 1ms;
-    --md-sys-motion-spring-fast-effects-duration: 1ms;
-    --md-sys-motion-spring-default-effects-duration: 1ms;
-    --md-sys-motion-spring-slow-effects-duration: 1ms;
+  :root,
+  html[data-motion-scheme="standard"],
+  [data-motion-scheme="standard"] {
+    --md-sys-motion-spring-expressive-fast-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-expressive-default-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-expressive-slow-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-expressive-fast-spatial-linear: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-standard-fast-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-standard-default-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-standard-slow-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-fast-spatial: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-default-spatial: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-slow-spatial: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-fast-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-default-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-slow-spatial-curve: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-fast-spatial-linear: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-spring-expressive-fast-spatial-duration: 150ms;
+    --md-sys-motion-spring-expressive-default-spatial-duration: 150ms;
+    --md-sys-motion-spring-expressive-slow-spatial-duration: 150ms;
+    --md-sys-motion-spring-standard-fast-spatial-duration: 150ms;
+    --md-sys-motion-spring-standard-default-spatial-duration: 150ms;
+    --md-sys-motion-spring-standard-slow-spatial-duration: 150ms;
+    --md-sys-motion-spring-fast-spatial-duration: 150ms;
+    --md-sys-motion-spring-default-spatial-duration: 150ms;
+    --md-sys-motion-spring-slow-spatial-duration: 150ms;
+    --md-sys-motion-spring-expressive-fast-effects-duration: 150ms;
+    --md-sys-motion-spring-expressive-default-effects-duration: 150ms;
+    --md-sys-motion-spring-expressive-slow-effects-duration: 150ms;
+    --md-sys-motion-spring-standard-fast-effects-duration: 150ms;
+    --md-sys-motion-spring-standard-default-effects-duration: 150ms;
+    --md-sys-motion-spring-standard-slow-effects-duration: 150ms;
+    --md-sys-motion-spring-fast-effects-duration: 150ms;
+    --md-sys-motion-spring-default-effects-duration: 150ms;
+    --md-sys-motion-spring-slow-effects-duration: 150ms;
+    --md-sys-motion-spring: var(--md-sys-motion-easing-linear);
+    --md-sys-motion-easing-spring: var(--md-sys-motion-easing-linear);
   }
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
+  html {
     scroll-behavior: auto !important;
+  }
+
+  .m3-transition-emphasized,
+  .m3-transition-spatial {
+    transition-duration: var(--md-sys-motion-duration-short3);
+    transition-timing-function: linear;
+  }
+
+  .m3-anim-spring-pop,
+  .m3-anim-item-in,
+  .m3-anim-lateral,
+  .m3-anim-fade-through {
+    animation: m3ReducedFadeIn 150ms linear both;
   }
 
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
-    animation-duration: 1ms !important;
+    animation-duration: 150ms !important;
+    animation-timing-function: linear !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    transform: none !important;
   }
 
   /* Keep continuous ambient aurora orbs static under reduced motion */
@@ -161,41 +282,7 @@
   }
 }
 
-/* --- 7. KEYFRAMES FOR TRANSITION PATTERNS & SPRINGS --- */
-@keyframes m3SpringSpatial {
-  0% {
-    transform: scale(0.7) translateY(10px);
-  }
-  60% {
-    transform: scale(1.08) translateY(-4px);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes m3SpringEffects {
-  0% {
-    opacity: 0.2;
-    filter: brightness(1.4);
-  }
-  100% {
-    opacity: 1;
-    filter: brightness(1);
-  }
-}
-
-@keyframes m3SharedAxisSlide {
-  0% {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
+/* --- 7. KEYFRAMES FOR TRANSITION PATTERNS & SPRINGS (Compositor-Only) --- */
 @keyframes m3SharedAxisX {
   0% {
     opacity: 0;
@@ -296,21 +383,19 @@
 
 @keyframes m3DurationTrack {
   0% {
-    width: 0%;
+    transform: scaleX(0);
   }
   100% {
-    width: 100%;
+    transform: scaleX(1);
   }
 }
 
 @keyframes m3PuckMove {
   0% {
-    left: 0%;
     transform: translateX(0);
   }
   100% {
-    left: 100%;
-    transform: translateX(-100%);
+    transform: translateX(calc(100cqw - 100%));
   }
 }
 
@@ -377,12 +462,10 @@
 
 @keyframes m3SpringEffects {
   0% {
-    opacity: 0.4;
-    filter: saturate(0.6) brightness(0.8);
+    opacity: 0.18;
   }
   100% {
     opacity: 1;
-    filter: saturate(1) brightness(1);
   }
 }
 
@@ -402,7 +485,7 @@
 }
 
 /* --- 8. REUSABLE SEMANTIC MOTION UTILITIES (TOKEN-BACKED) ---
-   Pair transition-* utilities with transition-all / transition-colors / transition-transform.
+   Pair transition-* utilities with explicit compositor/paint properties (transform, opacity, colors) — avoid transition: all.
    No raw ms or cubic-bezier values allowed in feature templates. */
 .m3-transition-fast {
   transition-duration: var(--md-sys-motion-duration-short3);
@@ -425,7 +508,7 @@
 }
 
 .m3-anim-spring-pop {
-  animation: m3SpringScale var(--md-sys-motion-spring-expressive-fast-spatial-duration) var(--md-sys-motion-spring-expressive-fast-spatial-curve) both;
+  animation: m3SpringScale var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) both;
 }
 
 .m3-anim-item-in {
@@ -444,46 +527,58 @@
 /* Uses dedicated .m3-aurora-layer/.m3-aurora-orb elements so M3 .state-layer/.card-interactive ::before stays untouched */
 @keyframes m3AuroraOrbOne {
   0% {
-    transform: translate3d(0%, 0%, 0) scale(1);
+    transform: translate3d(0%, 0%, 0) rotate(-6deg) scale(1);
     opacity: var(--m3-aurora-opacity-low, 0.72);
   }
-  50% {
-    transform: translate3d(-24%, 14%, 0) scale(1.14);
-    opacity: var(--m3-aurora-opacity-high, 0.94);
+  35% {
+    transform: translate3d(-22%, 14%, 0) rotate(8deg) scale(1.16);
+    opacity: var(--m3-aurora-opacity-high, 0.96);
+  }
+  70% {
+    transform: translate3d(-12%, -10%, 0) rotate(14deg) scale(1.06);
+    opacity: 0.88;
   }
   100% {
-    transform: translate3d(-10%, -8%, 0) scale(0.96);
+    transform: translate3d(4%, 4%, 0) rotate(-2deg) scale(0.98);
     opacity: var(--m3-aurora-opacity-low, 0.72);
   }
 }
 
 @keyframes m3AuroraOrbTwo {
   0% {
-    transform: translate3d(0%, 0%, 0) scale(1);
+    transform: translate3d(0%, 0%, 0) rotate(6deg) scale(1);
     opacity: var(--m3-aurora-opacity-low, 0.68);
   }
-  50% {
-    transform: translate3d(26%, -18%, 0) scale(1.16);
-    opacity: var(--m3-aurora-opacity-high, 0.92);
+  35% {
+    transform: translate3d(26%, -18%, 0) rotate(-10deg) scale(1.18);
+    opacity: var(--m3-aurora-opacity-high, 0.94);
+  }
+  70% {
+    transform: translate3d(14%, 8%, 0) rotate(-4deg) scale(0.96);
+    opacity: 0.82;
   }
   100% {
-    transform: translate3d(8%, 8%, 0) scale(0.95);
+    transform: translate3d(-4%, -6%, 0) rotate(8deg) scale(1.04);
     opacity: var(--m3-aurora-opacity-low, 0.68);
   }
 }
 
 @keyframes m3AuroraOrbThree {
   0% {
-    transform: translate3d(-12%, 8%, 0) scale(0.94);
-    opacity: var(--m3-aurora-opacity-low, 0.62);
+    transform: translate3d(-12%, 8%, 0) rotate(0deg) scale(0.94);
+    opacity: var(--m3-aurora-opacity-low, 0.66);
   }
-  50% {
-    transform: translate3d(24%, -10%, 0) scale(1.18);
-    opacity: var(--m3-aurora-opacity-high, 0.9);
+  40% {
+    transform: translate3d(22%, -14%, 0) rotate(16deg) scale(1.22);
+    opacity: var(--m3-aurora-opacity-high, 0.95);
+  }
+  75% {
+    transform: translate3d(4%, 14%, 0) rotate(-10deg) scale(1.06);
+    opacity: 0.84;
   }
   100% {
-    transform: translate3d(6%, 16%, 0) scale(1.04);
-    opacity: var(--m3-aurora-opacity-low, 0.62);
+    transform: translate3d(-8%, 4%, 0) rotate(-4deg) scale(0.96);
+    opacity: var(--m3-aurora-opacity-low, 0.66);
   }
 }
 
@@ -492,7 +587,7 @@
     position: relative;
     overflow: hidden;
     isolation: isolate;
-    --m3-aurora-opacity-low: 0.85;
+    --m3-aurora-opacity-low: 0.86;
     --m3-aurora-opacity-high: 1;
   }
 
@@ -503,7 +598,7 @@
 
   .m3-aurora-layer {
     position: absolute;
-    inset: 0;
+    inset: -6%;
     z-index: 0;
     border-radius: inherit;
     overflow: hidden;
@@ -512,52 +607,62 @@
 
   .m3-aurora-orb {
     position: absolute;
-    aspect-ratio: 1;
-    border-radius: 9999px;
+    aspect-ratio: 1.35 / 1;
+    border-radius: 62% 38% 54% 46% / 44% 58% 42% 56%;
     pointer-events: none;
     will-change: transform, opacity;
-    --m3-orb-color: var(--md-sys-hero-glow, oklch(70% 0.18 var(--seed-hue) / 0.34));
+    transition: opacity var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-standard);
+    --m3-orb-color: var(--md-sys-hero-glow, oklch(68% 0.22 var(--seed-hue) / 0.44));
     background: radial-gradient(
       closest-side,
       var(--m3-orb-color) 0%,
-      color-mix(in oklch, var(--m3-orb-color) 70%, transparent) 32%,
-      color-mix(in oklch, var(--m3-orb-color) 30%, transparent) 62%,
-      color-mix(in oklch, var(--m3-orb-color) 8%, transparent) 84%,
+      color-mix(in oklch, var(--m3-orb-color) 76%, transparent) 30%,
+      color-mix(in oklch, var(--m3-orb-color) 36%, transparent) 60%,
+      color-mix(in oklch, var(--m3-orb-color) 10%, transparent) 84%,
       transparent 100%
     );
   }
 
+  .dark .m3-aurora-orb,
+  [data-theme="dark"] .m3-aurora-orb {
+    mix-blend-mode: screen;
+  }
+
+  .card-interactive.m3-aurora-glow:hover .m3-aurora-orb {
+    --m3-aurora-opacity-low: 0.94;
+  }
+
   .m3-aurora-orb-1 {
-    top: -30%;
-    right: -14%;
-    width: 68%;
-    --m3-orb-color: var(--md-sys-hero-glow, oklch(70% 0.18 var(--seed-hue) / 0.34));
+    top: -32%;
+    right: -12%;
+    width: 82%;
+    --m3-orb-color: var(--md-sys-hero-glow, oklch(68% 0.22 var(--seed-hue) / 0.44));
   }
 
   .m3-aurora-orb-2 {
     bottom: -36%;
     left: -14%;
-    width: 66%;
-    --m3-orb-color: var(--md-sys-hero-glow-ambient, oklch(76% 0.14 calc(var(--seed-hue) - 24) / 0.28));
+    width: 78%;
+    --m3-orb-color: var(--md-sys-hero-glow-ambient, oklch(74% 0.18 calc(var(--seed-hue) - 36) / 0.34));
   }
 
   .m3-aurora-orb-3 {
-    top: 8%;
-    left: 24%;
-    width: 54%;
-    --m3-orb-color: var(--md-sys-hero-glow-secondary, oklch(74% 0.16 var(--tertiary-hue) / 0.30));
+    top: 4%;
+    left: 16%;
+    width: 68%;
+    --m3-orb-color: var(--md-sys-hero-glow-secondary, oklch(72% 0.20 var(--tertiary-hue) / 0.38));
   }
 
   .m3-aurora-glow .m3-aurora-orb-1 {
-    animation: m3AuroraOrbOne 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    animation: m3AuroraOrbOne 6.5s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
   }
 
   .m3-aurora-glow .m3-aurora-orb-2 {
-    animation: m3AuroraOrbTwo 3.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    animation: m3AuroraOrbTwo 8.2s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
   }
 
   .m3-aurora-glow .m3-aurora-orb-3 {
-    animation: m3AuroraOrbThree 3.9s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    animation: m3AuroraOrbThree 9.8s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
   }
 }
 

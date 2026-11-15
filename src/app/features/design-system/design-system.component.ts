@@ -10,9 +10,9 @@ import { DESIGN_SYSTEM_STEPS } from '../../shared/models/ui.models';
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <section class="space-y-4">
-      <!-- Fallback switcher rendered only when floating bottom Dock hides the sidebar submenu -->
-      @if (dialogService.navStyle() === 'dock') {
-        <nav aria-label="Pasos del Design System" class="flex flex-wrap items-center gap-2 pb-2 border-b border-outline-sub">
+      <!-- Fallback switcher rendered when floating Dock, compact Bar, or Top Focus Strip hides the sidebar submenu -->
+      @if (dialogService.effectiveChrome() === 'dock' || dialogService.effectiveChrome() === 'bar' || dialogService.effectiveChrome() === 'tunnel') {
+        <nav aria-label="Pasos del Design System" class="flex flex-wrap items-center gap-1.5 p-1.5 rounded-m3-full bg-surface-low w-fit max-w-full">
           @for (step of labSteps; track step.path) {
             <a
               [routerLink]="step.path"

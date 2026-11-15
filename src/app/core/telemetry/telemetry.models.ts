@@ -27,6 +27,10 @@ export interface Vehicle {
 
 export type TelemetryFilter = 'all' | 'in_transit' | 'risk_sla' | 'cold_chain';
 
+export type TelemetryFilterCounts = Record<TelemetryFilter, number>;
+
+export type TelemetryCargoProtocol = 'cold_chain' | 'dry' | 'pharma';
+
 export interface LiveTelemetryEvent {
   id: string;
   timestamp: string;
@@ -44,11 +48,52 @@ export interface CorridorWaypoint {
   activeVehicles: string[];
 }
 
+export interface CorridorVehicleMarker {
+  vehicleId: string;
+  plate: string;
+  status: VehicleStatus;
+  progressPercent: number;
+  x: number;
+  y: number;
+  isSelected: boolean;
+}
+
+export interface ActiveCorridorSummary {
+  corridorName: string;
+  origin: string;
+  destination: string;
+  vehicleId: string;
+  progressPercent: number;
+  averageSpeedKmh: number;
+  etaMinutes: number;
+}
+
 export interface TelemetryKpiSummary {
-  slaRate: number; // 78.4%
-  activeFleetCount: number; // 42
-  totalFleetCount: number; // 48
-  coldChainHealth: number; // 98.5%
-  delayedCount: number; // 2
-  averageSpeedKmh: number; // 64.8
+  slaRate: number;
+  activeFleetCount: number;
+  totalFleetCount: number;
+  idleFleetCount: number;
+  fleetUtilizationPercent: number;
+  coldChainHealth: number;
+  coldChainAvgTempC: number;
+  coldChainMonitoredCount: number;
+  delayedCount: number;
+  averageSpeedKmh: number;
+}
+
+export interface AssignRouteDto {
+  vehicleId: string;
+  corridor: string;
+  destination: string;
+  driver: string;
+  cargoType: string;
+}
+
+export interface TelemetryExportPayload {
+  exportedAt: string;
+  telemetryActive: boolean;
+  refreshIntervalMs: number;
+  vehicle: Vehicle;
+  kpiSnapshot: TelemetryKpiSummary;
+  recentEvents: LiveTelemetryEvent[];
 }

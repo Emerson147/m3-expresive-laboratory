@@ -11,6 +11,9 @@
 @import "./styles/_text-field.css";
 @import "./styles/_progress.css";
 @import "./styles/_switch.css";
+@import "./styles/_selection.css";
+@import "./styles/_tabs.css";
+@import "./styles/_dialog.css";
 @import "./styles/_overlays.css";
 
 @theme {
@@ -134,13 +137,25 @@
   --duration-m3-long: var(--md-sys-motion-duration-long2);
 }
 
+html {
+  background-color: var(--md-sys-color-surface);
+}
+
 body {
-  background-color: var(--md-sys-color-surface-dim);
+  background-color: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
   font-family: var(--md-ref-typeface-plain);
   margin: 0;
   overflow: hidden;
   letter-spacing: -0.01em;
+}
+
+.m3-editorial-pane {
+  scrollbar-gutter: stable;
+}
+
+#route-stage:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* =========================================================
@@ -188,7 +203,7 @@ html.vt-running .m3-aurora-orb {
   overflow: hidden;
   transition:
     transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring),
-    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-expressive-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
     background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
 }
 
@@ -257,13 +272,19 @@ html.vt-running .m3-aurora-orb {
 @layer components {
   .hero-mesh-m3 {
     background-color: var(--md-sys-color-surface-container);
+    background-image: linear-gradient(
+      135deg var(--in-oklab),
+      color-mix(in oklab, var(--md-sys-color-primary-container) 30%, var(--md-sys-color-surface-container)) 0%,
+      var(--md-sys-color-surface-container) 54%,
+      color-mix(in oklab, var(--md-sys-color-tertiary-container) 24%, var(--md-sys-color-surface-container)) 100%
+    );
   }
 
   .hero-mesh-m3:not(.m3-aurora-glow) {
     background:
-      radial-gradient(circle at 82% 22%, var(--md-sys-hero-glow, oklch(65% 0.15 var(--seed-hue) / 0.25)) 0%, transparent 60%),
-      radial-gradient(circle at 18% 78%, var(--md-sys-hero-glow-ambient, oklch(52% 0.14 calc(var(--seed-hue) - 24) / 0.22)) 0%, transparent 64%),
-      radial-gradient(ellipse 60% 50% at 50% 50%, var(--md-sys-hero-glow-secondary, oklch(64% 0.13 var(--tertiary-hue) / 0.16)) 0%, transparent 66%),
+      radial-gradient(circle at 82% 22%, var(--md-sys-hero-glow, oklch(68% 0.22 var(--seed-hue) / 0.44)) 0%, transparent 60%),
+      radial-gradient(circle at 18% 78%, var(--md-sys-hero-glow-ambient, oklch(74% 0.18 calc(var(--seed-hue) - 36) / 0.34)) 0%, transparent 64%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, var(--md-sys-hero-glow-secondary, oklch(72% 0.20 var(--tertiary-hue) / 0.38)) 0%, transparent 66%),
       var(--md-sys-color-surface-container);
   }
 }
@@ -271,6 +292,10 @@ html.vt-running .m3-aurora-orb {
 /* =========================================================
    3. CIRCULAR THEME REVEAL (Efecto Ripple Material You)
    ========================================================= */
+html.theme-transition #route-stage {
+  view-transition-name: none !important;
+}
+
 html.theme-transition::view-transition-old(root) {
   z-index: 1;
   animation: none;
@@ -278,7 +303,7 @@ html.theme-transition::view-transition-old(root) {
 
 html.theme-transition::view-transition-new(root) {
   z-index: 9999;
-  animation: circle-reveal 0.48s cubic-bezier(0.2, 0, 0, 1) forwards;
+  animation: circle-reveal var(--md-sys-motion-duration-long2, 500ms) var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)) forwards;
 }
 
 @keyframes circle-reveal {
@@ -292,12 +317,159 @@ html.theme-transition::view-transition-new(root) {
 }
 
 /* =========================================================
-   4. CONTAINER TRANSFORM CALIBRADO (Sin efecto "Texto Chicle")
+   4. ROUTE-STAGE ISOLATION + CONTAINER TRANSFORM CALIBRADO
    ========================================================= */
-html:not(.theme-transition)::view-transition-old(root),
-html:not(.theme-transition)::view-transition-new(root) {
-  animation-duration: var(--md-sys-motion-duration-medium4, 400ms);
+@keyframes m3FadeThroughEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes m3NavForwardOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes m3NavForwardIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes m3NavBackwardOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes m3NavBackwardIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Keep Navigation Chrome pinned & live while only #route-stage animates between routes */
+html.vt-route-nav:not(.theme-transition) {
+  view-transition-name: none;
+}
+
+html.vt-route-nav:not(.theme-transition) #route-stage {
+  view-transition-name: route-stage;
+}
+
+html.vt-route-nav:not(.theme-transition)::view-transition-old(root) {
+  display: none;
+  animation: none;
+}
+
+html.vt-route-nav:not(.theme-transition)::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(route-stage) {
+  animation: none;
+  overflow: clip;
+  background-color: var(--md-sys-color-surface);
+}
+
+/* Top-level destinations: M3 Fade Through without dark void */
+html.vt-route-nav:not(.theme-transition)::view-transition-old(route-stage) {
+  z-index: 1;
+  animation: fade-out var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+}
+
+html.vt-route-nav:not(.theme-transition)::view-transition-new(route-stage) {
+  z-index: 2;
+  animation: m3FadeThroughEnter var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+}
+
+/* Sequential steps (e.g. Design System 1 <-> 5): Shared-Axis X inside route-stage */
+html.vt-nav-forward:not(.theme-transition)::view-transition-old(route-stage),
+html.vt-route-nav:active-view-transition-type(forward):not(.theme-transition)::view-transition-old(route-stage) {
+  z-index: 1;
+  animation: m3NavForwardOut var(--md-sys-motion-duration-short2, 110ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+}
+
+html.vt-nav-forward:not(.theme-transition)::view-transition-new(route-stage),
+html.vt-route-nav:active-view-transition-type(forward):not(.theme-transition)::view-transition-new(route-stage) {
+  z-index: 2;
+  animation: m3NavForwardIn var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+}
+
+html.vt-nav-backward:not(.theme-transition)::view-transition-old(route-stage),
+html.vt-route-nav:active-view-transition-type(backward):not(.theme-transition)::view-transition-old(route-stage) {
+  z-index: 1;
+  animation: m3NavBackwardOut var(--md-sys-motion-duration-short2, 110ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+}
+
+html.vt-nav-backward:not(.theme-transition)::view-transition-new(route-stage),
+html.vt-route-nav:active-view-transition-type(backward):not(.theme-transition)::view-transition-new(route-stage) {
+  z-index: 2;
+  animation: m3NavBackwardIn var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+}
+
+/* Standard / Minimalismo Zen scheme: crisp micro-crossfade without spatial travel */
+:root[data-motion-scheme="standard"].vt-route-nav:not(.theme-transition)::view-transition-old(route-stage) {
+  animation: fade-out var(--md-sys-motion-duration-short2, 80ms) var(--md-sys-motion-easing-standard-accelerate) both;
+}
+
+:root[data-motion-scheme="standard"].vt-route-nav:not(.theme-transition)::view-transition-new(route-stage) {
+  animation: fade-in var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard-decelerate) both;
+}
+
+/* Non-route global View Transitions (Stage Recess blur modals / hero expansions) */
+html.vt-running:not(.theme-transition):not(.vt-route-nav):not(.vt-board-flip):not(.vt-campus-swap)::view-transition-old(root) {
+  animation-name: fade-out;
+  animation-fill-mode: both;
+}
+
+html.vt-running:not(.theme-transition):not(.vt-route-nav):not(.vt-board-flip):not(.vt-campus-swap)::view-transition-new(root) {
+  animation-name: fade-in;
+  animation-fill-mode: both;
+}
+
+html.vt-running:not(.theme-transition):not(.vt-route-nav):not(.vt-board-flip):not(.vt-campus-swap):not(.vt-hero):not(.vt-exiting)::view-transition-old(root) {
+  animation-duration: var(--md-sys-motion-duration-short3, 150ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
+}
+
+html.vt-running:not(.theme-transition):not(.vt-route-nav):not(.vt-board-flip):not(.vt-campus-swap):not(.vt-hero):not(.vt-exiting)::view-transition-new(root) {
+  animation-duration: var(--md-sys-motion-duration-short4, 200ms);
   animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.theme-transition)::view-transition-group(*),
+  html:not(.theme-transition)::view-transition-old(*),
+  html:not(.theme-transition)::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 html.vt-hero:not(.theme-transition)::view-transition-old(root),
@@ -355,8 +527,8 @@ html.vt-exiting::view-transition-group(hero-transform) {
 
 /* Shared Element Transition: Product List -> Hero Detail (Inventario) */
 ::view-transition-group(product-hero-image) {
-  animation-duration: 300ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  animation-duration: var(--md-sys-motion-duration-medium2, 300ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
   border-radius: var(--md-sys-shape-large);
   overflow: hidden;
 }
@@ -368,8 +540,8 @@ html.vt-exiting::view-transition-group(hero-transform) {
 }
 
 ::view-transition-group(product-hero-title) {
-  animation-duration: 250ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  animation-duration: var(--md-sys-motion-duration-medium1, 250ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
 /* FLIP Animations: Reordenamiento fluido de tarjetas de vehículos en Telemetría */
@@ -379,42 +551,9 @@ html.vt-exiting::view-transition-group(hero-transform) {
 ::view-transition-group(vehicle-card-TRK-305),
 ::view-transition-group(vehicle-card-TRK-419),
 ::view-transition-group(vehicle-card-TRK-550) {
-  animation-duration: 280ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  animation-duration: var(--md-sys-motion-duration-medium2, 300ms);
+  animation-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
   border-radius: var(--md-sys-shape-extra-large);
-}
-
-/* FLIP & Spring Animations: Reordenamiento y deslizamiento de comandas en Kanban KDS */
-::view-transition-group(kanban-card-ORD-4821),
-::view-transition-group(kanban-card-ORD-4822),
-::view-transition-group(kanban-card-ORD-4823),
-::view-transition-group(kanban-card-ORD-4824),
-::view-transition-group(kanban-card-ORD-4825),
-::view-transition-group(kanban-card-ORD-4826),
-::view-transition-group(kanban-card-ORD-4827),
-::view-transition-group(kanban-card-ORD-4828) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1.25);
-}
-
-::view-transition-old(kanban-card-ORD-4821),
-::view-transition-old(kanban-card-ORD-4822),
-::view-transition-old(kanban-card-ORD-4823),
-::view-transition-old(kanban-card-ORD-4824),
-::view-transition-old(kanban-card-ORD-4825),
-::view-transition-old(kanban-card-ORD-4826),
-::view-transition-old(kanban-card-ORD-4827),
-::view-transition-old(kanban-card-ORD-4828),
-::view-transition-new(kanban-card-ORD-4821),
-::view-transition-new(kanban-card-ORD-4822),
-::view-transition-new(kanban-card-ORD-4823),
-::view-transition-new(kanban-card-ORD-4824),
-::view-transition-new(kanban-card-ORD-4825),
-::view-transition-new(kanban-card-ORD-4826),
-::view-transition-new(kanban-card-ORD-4827),
-::view-transition-new(kanban-card-ORD-4828) {
-  animation: none;
-  mix-blend-mode: normal;
 }
 
 /* Desvanecimiento veloz del botón / card origen para evitar estiramiento */
@@ -520,7 +659,7 @@ html.vt-exiting::view-transition-new(hero-transform) {
 }
 
 .m3-dialog-surface {
-  animation: m3DialogSpring var(--md-sys-motion-spring-expressive-fast-spatial-duration) var(--md-sys-motion-spring-expressive-fast-spatial-curve) both;
+  animation: m3DialogSpring var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) both;
   transform-origin: center center;
 }
 
@@ -562,7 +701,9 @@ html.vt-exiting::view-transition-new(hero-transform) {
   border-radius: 1rem;
   border-width: 1.5px;
   border-style: solid;
-  transition: all var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-emphasized-decelerate);
+  transition-property: transform, box-shadow, background-color, border-color;
+  transition-duration: var(--md-sys-motion-duration-short4, 200ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate);
 }
 
 .m3-matrix-cell:hover {
@@ -638,26 +779,4 @@ html.vt-exiting::view-transition-new(hero-transform) {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
-}
-
-/* Kanban Card FLIP Transitions */
-::view-transition-group(kanban-card-active),
-::view-transition-group(kanban-card-KDS-401),
-::view-transition-group(kanban-card-KDS-402),
-::view-transition-group(kanban-card-KDS-403),
-::view-transition-group(kanban-card-KDS-404),
-::view-transition-group(kanban-card-KDS-405),
-::view-transition-group(kanban-card-KDS-406),
-::view-transition-group(kanban-card-KDS-407) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
-  border-radius: var(--md-sys-shape-extra-large, 16px);
-  overflow: hidden;
-}
-
-::view-transition-old(kanban-card-active),
-::view-transition-new(kanban-card-active) {
-  animation-duration: 320ms;
-  animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
-  overflow: hidden;
 }

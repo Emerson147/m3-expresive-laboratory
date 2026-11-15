@@ -373,7 +373,8 @@
   .m3-text-field-leading,
   .m3-text-field-trailing > *,
   .m3-text-field-supporting {
-    transition-duration: 0.01ms !important;
+    transition-duration: var(--md-sys-motion-duration-short3, 150ms);
+    transition-timing-function: linear;
     translate: none !important;
   }
 

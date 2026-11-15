@@ -546,8 +546,8 @@ circle.m3-linear-progress-stop {
 .m3-loading-shape-svg {
   width: 100%;
   height: 100%;
-  animation: m3LoadingMorphRotate 4.2s var(--md-sys-motion-easing-emphasized, cubic-bezier(0.2, 0, 0, 1)) infinite;
   transform-origin: center center;
+  will-change: transform;
 }
 
 .m3-loading-shape-path {
@@ -562,24 +562,6 @@ circle.m3-linear-progress-stop {
   animation: m3ProgressFourColor 5.6s ease-in-out infinite;
 }
 
-@keyframes m3LoadingMorphRotate {
-  0% {
-    transform: rotate(0deg) scale(0.97);
-  }
-  25% {
-    transform: rotate(90deg) scale(1.02);
-  }
-  50% {
-    transform: rotate(180deg) scale(0.97);
-  }
-  75% {
-    transform: rotate(270deg) scale(1.02);
-  }
-  100% {
-    transform: rotate(360deg) scale(0.97);
-  }
-}
-
 /* =========================================================
    CONTAINERS & ACCESSIBILITY SPECIFICATIONS
    ========================================================= */
@@ -592,7 +574,7 @@ circle.m3-linear-progress-stop {
   border-radius: var(--md-sys-shape-corner-full, 9999px);
   background-color: var(--m3-progress-container, var(--md-sys-color-primary-container));
   box-sizing: border-box;
-  animation: m3ContainerPop var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, var(--md-sys-motion-easing-spring)) both;
+  animation: m3ContainerPop var(--md-sys-motion-spring-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-fast-spatial, var(--md-sys-motion-easing-spring)) both;
 }
 
 .m3-loading-container-sm {
@@ -614,7 +596,7 @@ circle.m3-linear-progress-stop {
   fill: var(--m3-progress-on-container, var(--md-sys-color-on-primary-container));
 }
 
-/* Elevated container for pull-to-refresh & floating loading pills */
+/* Floating surface badge extension (pull-to-refresh surface pill; canonical Contained uses 48dp Circle + primary-container) */
 .m3-loading-container-elevated,
 .m3-loading-container.m3-loading-elevated {
   width: auto;
@@ -661,7 +643,8 @@ circle.m3-linear-progress-stop {
     transition: none !important;
   }
 
-  .m3-linear-wavy-svg {
+  .m3-linear-wavy-svg,
+  .m3-loading-shape-svg {
     transform: none !important;
   }
 
