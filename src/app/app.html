@@ -1,6 +1,6 @@
 @let isStageRecessed = dialogService.isDialogOpen() || dialogService.isHeroExpanded() || stageOverlay.isOverlayOpen();
 <div
-  [class]="isStageRecessed ? 'bg-black' : 'bg-surface'"
+  [class]="isStageRecessed ? 'bg-black' : 'bg-surface-low'"
   class="h-dvh w-full overflow-hidden text-main select-none relative">
 
   <!-- =========================================================================
@@ -34,9 +34,6 @@
         [chromeMode]="dialogService.effectiveChrome()"
         [sectionTitle]="routeMeta().title"
         [sectionSubtitle]="routeMeta().subtitle"
-        [isDialogOpen]="dialogService.isDialogOpen()"
-        [activeTrigger]="dialogService.activeTrigger()"
-        (openCreate)="dialogService.openFrom($event)"
         (openCommandPalette)="openCommandPalette()" />
       }
 

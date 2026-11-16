@@ -395,43 +395,50 @@ html.vt-route-nav:not(.theme-transition)::view-transition-new(root) {
 ::view-transition-group(route-stage) {
   animation: none;
   overflow: clip;
+  border-radius: var(--md-sys-shape-corner-extra-large, 28px);
   background-color: var(--md-sys-color-surface);
 }
 
-/* Top-level destinations: M3 Fade Through without dark void */
+@media (max-width: 767px) {
+  ::view-transition-group(route-stage) {
+    border-radius: 0;
+  }
+}
+
+/* Top-level destinations: sequential M3 Fade Through (old exits cleanly before new enters) */
 html.vt-route-nav:not(.theme-transition)::view-transition-old(route-stage) {
   z-index: 1;
-  animation: fade-out var(--md-sys-motion-duration-short2, 100ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+  animation: fade-out var(--md-sys-motion-duration-short2, 90ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
 }
 
 html.vt-route-nav:not(.theme-transition)::view-transition-new(route-stage) {
   z-index: 2;
-  animation: m3FadeThroughEnter var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+  animation: m3FadeThroughEnter var(--md-sys-motion-duration-medium1, 200ms) var(--md-sys-motion-easing-emphasized-decelerate) 95ms both;
 }
 
 /* Sequential steps (e.g. Design System 1 <-> 5): Shared-Axis X inside route-stage */
 html.vt-nav-forward:not(.theme-transition)::view-transition-old(route-stage),
 html.vt-route-nav:active-view-transition-type(forward):not(.theme-transition)::view-transition-old(route-stage) {
   z-index: 1;
-  animation: m3NavForwardOut var(--md-sys-motion-duration-short2, 110ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+  animation: m3NavForwardOut var(--md-sys-motion-duration-short2, 90ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
 }
 
 html.vt-nav-forward:not(.theme-transition)::view-transition-new(route-stage),
 html.vt-route-nav:active-view-transition-type(forward):not(.theme-transition)::view-transition-new(route-stage) {
   z-index: 2;
-  animation: m3NavForwardIn var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+  animation: m3NavForwardIn var(--md-sys-motion-duration-medium1, 200ms) var(--md-sys-motion-easing-emphasized-decelerate) 95ms both;
 }
 
 html.vt-nav-backward:not(.theme-transition)::view-transition-old(route-stage),
 html.vt-route-nav:active-view-transition-type(backward):not(.theme-transition)::view-transition-old(route-stage) {
   z-index: 1;
-  animation: m3NavBackwardOut var(--md-sys-motion-duration-short2, 110ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
+  animation: m3NavBackwardOut var(--md-sys-motion-duration-short2, 90ms) var(--md-sys-motion-easing-emphasized-accelerate) both;
 }
 
 html.vt-nav-backward:not(.theme-transition)::view-transition-new(route-stage),
 html.vt-route-nav:active-view-transition-type(backward):not(.theme-transition)::view-transition-new(route-stage) {
   z-index: 2;
-  animation: m3NavBackwardIn var(--md-sys-motion-duration-medium1, 220ms) var(--md-sys-motion-easing-emphasized-decelerate) 25ms both;
+  animation: m3NavBackwardIn var(--md-sys-motion-duration-medium1, 200ms) var(--md-sys-motion-easing-emphasized-decelerate) 95ms both;
 }
 
 /* Standard / Minimalismo Zen scheme: crisp micro-crossfade without spatial travel */

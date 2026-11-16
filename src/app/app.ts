@@ -64,7 +64,7 @@ export class App {
     const detachedSurface =
       chrome === 'bar'
         ? 'bg-surface'
-        : 'bg-surface md:rounded-m3-xl md:shadow-m3-level1';
+        : 'bg-surface md:rounded-m3-xl forced-colors:border forced-colors:border-[CanvasText]';
     const dockPadding = chrome === 'dock' ? ' pb-24' : '';
 
     if (this.shellMode() === 'workbench') {

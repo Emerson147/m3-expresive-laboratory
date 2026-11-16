@@ -9,15 +9,16 @@ import {
   TaskDueBucket,
   TaskPriority
 } from '../../core/tasks/task.service';
-import { ContrastLevel, ThemeService } from '../../core/theme/theme.service';
+import { ContrastLevel, MotionScheme, ThemeService } from '../../core/theme/theme.service';
 import { DialogView, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
 import { M3ButtonComponent } from '../components/button/button.component';
+import { M3SwitchComponent } from '../components/switch/switch.component';
 import { M3TextFieldComponent } from '../components/text-field/text-field.component';
 
 @Component({
   selector: 'app-dialog-container',
   standalone: true,
-  imports: [FormsModule, M3ButtonComponent, M3TextFieldComponent],
+  imports: [FormsModule, M3ButtonComponent, M3SwitchComponent, M3TextFieldComponent],
   host: {
     class: 'contents'
   },
@@ -36,133 +37,195 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
         [class.sm:w-[420px]]="activeTrigger() === 'fab-header'"
         [class.bottom-4]="activeTrigger() === 'menu-bottom-left'" 
         [class.left-4]="activeTrigger() === 'menu-bottom-left'"
-        [class.w-80]="activeTrigger() === 'menu-bottom-left'" 
+        [class.sm:w-[404px]]="activeTrigger() === 'menu-bottom-left'" 
         [class.inset-0]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
         [class.m-auto]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
-        [class.sm:w-[440px]]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
-        [class.w-[calc(100%-2rem)]]="activeTrigger() !== 'menu-bottom-left'"
+        [class.sm:w-[460px]]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
+        [class.w-[calc(100%-2rem)]]="true"
         [class.m3-container-enter]="!themeService.hasViewTransitions()"
-        class="fixed h-fit max-h-[calc(100vh-2rem)] bg-surface-box border border-outline-sub p-6 flex flex-col justify-between shadow-2xl z-50 rounded-m3-xl overflow-hidden">
+        class="fixed h-fit max-h-[calc(100dvh-2rem)] bg-surface-box border border-outline-sub/60 forced-colors:border-[CanvasText] p-5 sm:p-6 flex flex-col justify-between shadow-m3-level4 z-50 rounded-m3-xl overflow-hidden">
 
-        <!-- VISTA A: MENÚ DE OPCIONES -->
-        @if (dialogView() === 'menu-main') {
-          <div class="space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-outline-sub">
-              <div class="flex items-center gap-2.5">
-                <span class="material-symbols-rounded text-lg text-primary">tune</span>
-                <h3 class="font-bold text-base tracking-tight">Opciones del Sistema</h3>
-              </div>
-              <button 
-                (click)="closeDialog.emit()" 
-                class="btn-m3 p-1 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer">
-                <span class="material-symbols-rounded text-lg">close</span>
-              </button>
-            </div>
-
-            <div class="space-y-1">
-              <button 
-                (click)="morphView.emit({ targetView: 'task-form', moveCenter: true })"
-                class="btn-m3 w-full text-left px-3 py-2.5 rounded-m3-md hover:bg-surface-high flex items-center gap-3 text-sm cursor-pointer">
-                <span class="material-symbols-rounded text-lg text-primary">add_task</span>
-                Nueva tarea rápida
-              </button>
-              <button 
-                (click)="morphView.emit({ targetView: 'menu-appearance' })"
-                class="btn-m3 w-full text-left px-3 py-2.5 rounded-m3-md hover:bg-surface-high flex items-center justify-between text-sm cursor-pointer">
-                <span class="flex items-center gap-3">
-                  <span class="material-symbols-rounded text-lg text-primary">palette</span>
-                  Apariencia y navegación
+        <!-- VISTA A & B UNIFICADAS: CENTRO DE PERSONALIZACIÓN M3 EXPRESSIVE -->
+        @if (dialogView() === 'menu-main' || dialogView() === 'menu-appearance') {
+          <div class="flex flex-col min-h-0 gap-3.5 overflow-y-auto m3-scrollbar pr-0.5">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+                  <span class="material-symbols-rounded text-xl" aria-hidden="true">palette</span>
                 </span>
-                <span class="material-symbols-rounded text-sm text-muted">chevron_right</span>
+                <div class="min-w-0">
+                  <h2 class="font-bold text-base tracking-tight text-main leading-tight">
+                    Opciones del Sistema
+                  </h2>
+                  <p class="text-[11px] font-mono text-primary truncate mt-0.5">
+                    {{ adaptiveLayout.windowSizeClass() }} · {{ adaptiveLayout.windowWidth() }}dp
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Cerrar opciones del sistema"
+                (click)="closeDialog.emit()"
+                class="btn-m3 focus-ring-m3 w-9 h-9 rounded-full bg-surface hover:bg-surface-high text-muted hover:text-main grid place-items-center shrink-0 cursor-pointer">
+                <span class="material-symbols-rounded text-lg" aria-hidden="true">close</span>
               </button>
-              <button 
-                (click)="themeService.toggleThemeMode($event)"
-                class="btn-m3 w-full text-left px-3 py-2.5 rounded-m3-md hover:bg-surface-high flex items-center gap-3 text-sm cursor-pointer">
-                <span class="material-symbols-rounded text-lg">
-                  {{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}
+            </div>
+
+            <!-- Modo Oscuro / Claro con <m3-switch> y Circular Reveal -->
+            <div
+              (click)="captureThemeSwitchEvent($event)"
+              class="bg-surface rounded-m3-lg px-3.5 py-2.5 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-8 h-8 rounded-m3-md bg-sec-box text-on-sec-box grid place-items-center shrink-0">
+                  <span class="material-symbols-rounded text-base" aria-hidden="true">
+                    {{ themeService.isDarkMode() ? 'dark_mode' : 'light_mode' }}
+                  </span>
                 </span>
-                Cambiar a modo {{ themeService.isDarkMode() ? 'Claro' : 'Oscuro' }}
-              </button>
-            </div>
-          </div>
-        }
+                <div class="min-w-0">
+                  <span class="block text-sm font-semibold text-main leading-tight">
+                    Modo {{ themeService.isDarkMode() ? 'Oscuro' : 'Claro' }}
+                  </span>
+                  <span class="block text-[11px] text-muted truncate">
+                    Superficies OKLCH adaptativas
+                  </span>
+                </div>
+              </div>
 
-        <!-- VISTA B: SUB-MENÚ DE APARIENCIA -->
-        @if (dialogView() === 'menu-appearance') {
-          <div class="space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-outline-sub">
-              <button 
-                (click)="morphView.emit({ targetView: 'menu-main' })"
-                class="btn-m3 flex items-center gap-1.5 text-sm font-bold text-main cursor-pointer">
-                <span class="material-symbols-rounded text-lg">arrow_back</span>
-                Apariencia
-              </button>
-              <button 
-                (click)="closeDialog.emit()" 
-                class="btn-m3 p-1 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer">
-                <span class="material-symbols-rounded text-lg">close</span>
-              </button>
+              <m3-switch
+                [checked]="themeService.isDarkMode()"
+                ariaLabel="Alternar modo oscuro o claro"
+                (changed)="onDarkModeSwitchChanged()" />
             </div>
 
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-muted uppercase tracking-wider">Color Semilla</label>
-              <div class="flex items-center gap-2.5 pt-1" role="group" aria-label="Color semilla del tema">
-                @for (t of themeService.themes; track t.hue) {
-                  <button
-                    type="button"
-                    (click)="themeService.setThemeHue(t.hue)"
-                    [attr.aria-label]="'Color semilla ' + t.name"
-                    [attr.aria-pressed]="themeService.currentHue() === t.hue"
-                    [class.ring-2]="themeService.currentHue() === t.hue"
-                    [class.rounded-m3-md]="themeService.currentHue() === t.hue"
-                    [class.rounded-full]="themeService.currentHue() !== t.hue"
-                    class="btn-m3 w-8 h-8 ring-offset-2 ring-offset-surface-box ring-primary grid place-items-center cursor-pointer"
-                    style="forced-color-adjust: none"
-                    [style.background-color]="'oklch(65% 0.16 ' + t.hue + ')'">
-                    @if (themeService.currentHue() === t.hue) {
-                      <span class="material-symbols-rounded text-base text-white drop-shadow-xs" aria-hidden="true">check</span>
-                    }
-                  </button>
-                }
+            <!-- Color Semilla + Croma OKLCH -->
+            <div class="bg-surface rounded-m3-lg p-3.5 space-y-3">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-semibold text-muted uppercase tracking-wider">Color Semilla</span>
+                  <span class="text-[11px] font-mono text-primary font-semibold">
+                    {{ themeService.currentHue() }}°
+                  </span>
+                </div>
+                <div class="flex items-center justify-between gap-2 pt-0.5" role="group" aria-label="Color semilla del tema">
+                  @for (t of themeService.themes; track t.hue) {
+                    @let selectedHue = themeService.currentHue() === t.hue;
+                    <button
+                      type="button"
+                      (click)="themeService.setThemeHue(t.hue)"
+                      [attr.aria-label]="'Color semilla ' + t.name"
+                      [attr.aria-pressed]="selectedHue"
+                      [class.ring-2]="selectedHue"
+                      [class.rounded-m3-md]="selectedHue"
+                      [class.rounded-full]="!selectedHue"
+                      class="btn-m3 focus-ring-m3 w-9 h-9 ring-offset-2 ring-offset-surface ring-primary grid place-items-center cursor-pointer transition-all duration-200"
+                      style="forced-color-adjust: none"
+                      [style.background-color]="'oklch(65% 0.16 ' + t.hue + ')'">
+                      @if (selectedHue) {
+                        <span class="material-symbols-rounded text-base text-white drop-shadow-xs" aria-hidden="true">check</span>
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="space-y-1.5 pt-1 border-t border-outline-sub/50">
+                <span class="block text-[11px] font-semibold text-muted uppercase tracking-wider">
+                  Saturación OKLCH
+                </span>
+                <div
+                  role="group"
+                  aria-label="Intensidad cromática OKLCH"
+                  class="grid grid-cols-3 gap-1 bg-surface-high p-1 rounded-[18px]">
+                  @for (preset of chromaPresets; track preset.chroma) {
+                    @let active = themeService.seedChroma() === preset.chroma;
+                    <button
+                      type="button"
+                      (click)="themeService.setSeedChroma(preset.chroma)"
+                      [attr.aria-pressed]="active"
+                      [class]="active
+                        ? 'bg-primary text-on-primary font-semibold rounded-[12px] shadow-xs'
+                        : 'text-muted hover:text-main rounded-[14px]'"
+                      class="btn-m3 focus-ring-m3 py-1.5 px-2 text-xs cursor-pointer transition-all duration-200">
+                      {{ preset.label }}
+                    </button>
+                  }
+                </div>
               </div>
             </div>
 
-            <div class="space-y-2 pt-1">
-              <label class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
-                Contraste M3
-              </label>
-              <div
-                role="group"
-                aria-label="Nivel de contraste M3"
-                class="grid grid-cols-3 gap-1.5 bg-surface-high p-1 rounded-m3-full">
-                @for (lvl of contrastLevels; track lvl.id) {
-                  <button
-                    type="button"
-                    (click)="themeService.setContrastLevel(lvl.id)"
-                    [attr.aria-pressed]="themeService.contrastLevel() === lvl.id"
-                    [class]="themeService.contrastLevel() === lvl.id
-                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                      : 'text-muted hover:text-main'"
-                    class="btn-m3 py-1.5 px-2.5 rounded-m3-full text-xs cursor-pointer">
-                    {{ lvl.label }}
-                  </button>
-                }
+            <!-- Contraste M3 y Física Motion -->
+            <div class="bg-surface rounded-m3-lg p-3.5 space-y-3">
+              <div class="space-y-1.5">
+                <span class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
+                  Contraste M3
+                </span>
+                <div
+                  role="group"
+                  aria-label="Nivel de contraste M3"
+                  class="grid grid-cols-3 gap-1 bg-surface-high p-1 rounded-[18px]">
+                  @for (lvl of contrastLevels; track lvl.id) {
+                    @let active = themeService.contrastLevel() === lvl.id;
+                    <button
+                      type="button"
+                      (click)="themeService.setContrastLevel(lvl.id)"
+                      [attr.aria-pressed]="active"
+                      [class]="active
+                        ? 'bg-primary text-on-primary font-semibold rounded-[12px] shadow-xs'
+                        : 'text-muted hover:text-main rounded-[14px]'"
+                      class="btn-m3 focus-ring-m3 py-1.5 px-2 text-xs cursor-pointer transition-all duration-200">
+                      {{ lvl.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="space-y-1.5 pt-1 border-t border-outline-sub/50">
+                <span class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">animation</span>
+                  Física de Movimiento
+                </span>
+                <div
+                  role="group"
+                  aria-label="Esquema de movimiento"
+                  class="grid grid-cols-2 gap-1.5">
+                  @for (scheme of motionSchemes; track scheme.id) {
+                    @let active = themeService.motionScheme() === scheme.id;
+                    <button
+                      type="button"
+                      (click)="themeService.setMotionScheme(scheme.id)"
+                      [attr.aria-pressed]="active"
+                      [class]="active
+                        ? 'bg-sec-box text-on-sec-box font-semibold rounded-[12px]'
+                        : 'bg-surface-high text-muted hover:text-main rounded-[18px]'"
+                      class="btn-m3 focus-ring-m3 py-2 px-3 text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-200">
+                      <span class="material-symbols-rounded text-sm" aria-hidden="true">{{ scheme.icon }}</span>
+                      <span>{{ scheme.label }}</span>
+                    </button>
+                  }
+                </div>
               </div>
             </div>
 
-            <div class="space-y-2 pt-1">
-              <div class="flex items-center justify-between gap-2">
-                <label class="text-xs font-semibold text-muted uppercase tracking-wider">Navegación</label>
-                <span class="text-[11px] font-mono text-primary">{{ adaptiveLayout.windowSizeClass() }} ({{ adaptiveLayout.windowWidth() }}dp)</span>
-              </div>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <!-- Navegación Adaptativa -->
+            <div class="bg-surface rounded-m3-lg p-3.5 space-y-2">
+              <span class="block text-xs font-semibold text-muted uppercase tracking-wider">
+                Navegación Adaptativa
+              </span>
+              <div class="grid grid-cols-2 gap-2" role="group" aria-label="Estilo de navegación">
                 @for (opt of navStyleOptions; track opt.value) {
+                  @let active = navStyle() === opt.value;
                   <button
+                    type="button"
                     (click)="navStyleChange.emit(opt.value)"
-                    [class]="navStyle() === opt.value ? 'bg-primary text-on-primary font-semibold' : 'bg-surface-high text-muted hover:text-main'"
-                    class="btn-m3 py-2 px-2.5 rounded-m3-md text-xs cursor-pointer">
-                    {{ opt.label }}
+                    [attr.aria-pressed]="active"
+                    [class]="active
+                      ? 'bg-primary-box text-on-primary-box font-semibold rounded-[12px]'
+                      : 'bg-surface-high text-muted hover:text-main rounded-[18px]'"
+                    class="btn-m3 focus-ring-m3 py-2 px-3 text-xs flex items-center gap-2 cursor-pointer transition-all duration-200">
+                    <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">{{ opt.icon }}</span>
+                    <span class="truncate">{{ opt.label }}</span>
                   </button>
                 }
               </div>
@@ -389,11 +452,22 @@ export class DialogContainerComponent {
   readonly taskPriorities = TASK_PRIORITIES;
   readonly taskDurations = TASK_DURATIONS;
 
-  readonly navStyleOptions: readonly { value: NavStyle; label: string }[] = [
-    { value: 'auto', label: 'Auto (M3)' },
-    { value: 'rail', label: 'Rail' },
-    { value: 'dock', label: 'Dock' },
-    { value: 'tunnel', label: 'Focus Bar' }
+  readonly navStyleOptions: readonly { value: NavStyle; label: string; icon: string }[] = [
+    { value: 'auto', label: 'Auto (M3)', icon: 'auto_awesome' },
+    { value: 'rail', label: 'Rail', icon: 'view_sidebar' },
+    { value: 'dock', label: 'Dock', icon: 'dock_to_bottom' },
+    { value: 'tunnel', label: 'Focus Bar', icon: 'center_focus_strong' }
+  ];
+
+  readonly chromaPresets: readonly { chroma: number; label: string }[] = [
+    { chroma: 0.08, label: 'Suave' },
+    { chroma: 0.16, label: 'Expressive' },
+    { chroma: 0.22, label: 'Vibrante' }
+  ];
+
+  readonly motionSchemes: readonly { id: MotionScheme; label: string; icon: string }[] = [
+    { id: 'expressive', label: 'Expresivo', icon: 'animation' },
+    { id: 'standard', label: 'Estándar', icon: 'speed' }
   ];
 
   readonly contrastLevels: readonly { id: ContrastLevel; label: string }[] = [
@@ -401,6 +475,8 @@ export class DialogContainerComponent {
     { id: 'medium', label: 'Medio' },
     { id: 'high', label: 'Alto' }
   ];
+
+  private lastThemePointerEvent: MouseEvent | undefined;
 
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);
@@ -427,9 +503,17 @@ export class DialogContainerComponent {
 
   dialogAriaLabel(): string {
     const view = this.dialogView();
-    if (view === 'menu-appearance') return 'Apariencia y navegación';
-    if (view === 'menu-main') return 'Opciones del Sistema';
+    if (view === 'menu-appearance' || view === 'menu-main') return 'Opciones del Sistema';
     return this.activeTaskId() !== null ? 'Editar Tarea' : 'Nueva Tarea';
+  }
+
+  captureThemeSwitchEvent(event: MouseEvent): void {
+    this.lastThemePointerEvent = event;
+  }
+
+  onDarkModeSwitchChanged(): void {
+    this.themeService.toggleThemeMode(this.lastThemePointerEvent);
+    this.lastThemePointerEvent = undefined;
   }
 
   priorityOptionClass(prio: TaskPriority, selected: boolean): string {

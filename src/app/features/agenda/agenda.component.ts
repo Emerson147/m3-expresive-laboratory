@@ -232,7 +232,7 @@ export class AgendaComponent {
   }
 
   openNewTaskDialog(): void {
-    this.dialogService.openFrom('fab-header');
+    this.dialogService.openFrom('bento-center');
   }
 
   openTaskModal(task: TaskItem): void {
