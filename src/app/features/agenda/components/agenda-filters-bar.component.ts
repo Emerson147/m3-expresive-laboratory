@@ -1,60 +1,88 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FilterStatus, TASK_CATEGORIES } from '../../../core/tasks/task.service';
+import {
+  M3SplitButtonComponent,
+  M3SplitMenuItem
+} from '../../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
+import { M3SwitchComponent } from '../../../shared/components/switch/switch.component';
+import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
+
+export type AgendaTaskPresetId = 'deep-45' | 'review-25' | 'quick-15';
 
 @Component({
   selector: 'app-agenda-filters-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [M3ButtonComponent, M3ChipComponent],
+  imports: [
+    M3ButtonComponent,
+    M3ChipComponent,
+    M3SplitButtonComponent,
+    M3SwitchComponent,
+    M3TextFieldComponent
+  ],
+  host: {
+    class: 'block w-full min-w-0'
+  },
   template: `
-    <div class="space-y-3">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <!-- Landmark <search> nativo -->
-        <search class="flex-1 min-w-0 max-w-md">
-          <div class="relative flex items-center bg-surface-low rounded-full px-3.5 min-h-[44px] focus-within:ring-2 focus-within:ring-primary transition-shadow">
-            <span class="material-symbols-rounded text-lg text-muted shrink-0 mr-2" aria-hidden="true">
-              search
-            </span>
-            <label for="agenda-search-input" class="sr-only">Buscar actividades por título, categoría o nota</label>
-            <input
-              id="agenda-search-input"
-              type="search"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-              enterkeyhint="search"
-              [value]="searchQuery()"
-              (input)="onSearchInput($event)"
-              placeholder="Buscar tarea, módulo o nota..."
-              class="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-main placeholder:text-muted" />
-            @if (searchQuery()) {
-              <button
-                type="button"
-                aria-label="Limpiar búsqueda"
-                (click)="searchChange.emit('')"
-                class="btn-m3 p-1.5 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer shrink-0">
-                <span class="material-symbols-rounded text-base" aria-hidden="true">close</span>
-              </button>
-            }
-          </div>
+    <div class="space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <!-- Landmark <search> sobre <m3-text-field> oficial -->
+        <search class="flex-1 min-w-0 lg:max-w-lg">
+          <m3-text-field
+            [id]="'agenda-search-input'"
+            variant="filled"
+            type="search"
+            label="Buscar actividades"
+            placeholder="Título, categoría o nota..."
+            icon="search"
+            enterkeyhint="search"
+            [clearable]="true"
+            [value]="searchQuery()"
+            (valueChange)="searchChange.emit($event)" />
         </search>
 
-        <div class="flex items-center gap-2 shrink-0">
-          <m3-button
-            variant="filled"
-            size="md"
-            icon="add"
-            (action)="createTask.emit()">
-            Nueva Actividad
-          </m3-button>
+        <div class="flex flex-wrap items-center justify-between lg:justify-end gap-4 shrink-0">
+          <!-- Switch binario inmediato (Biblia M3: sin Guardar, iconMode="selected" en barras densas) -->
+          <div class="px-3.5 py-1.5 rounded-m3-lg bg-surface-low">
+            <m3-switch
+              label="Solo Hoy"
+              iconMode="selected"
+              [checked]="onlyToday()"
+              (changed)="onlyTodayChange.emit($event)" />
+          </div>
+
+          @if (completedCount() > 0) {
+            <m3-button
+              variant="text"
+              size="sm"
+              icon="cleaning_services"
+              (action)="requestClearCompleted.emit()">
+              Limpiar completadas ({{ completedCount() }})
+            </m3-button>
+          }
+
+          <!-- Único CTA primario 'filled' de la vista con plantillas vía Split Button y Container Transform -->
+          <div class="hidden md:inline-flex shrink-0">
+            <m3-split-button
+              label="Nueva Actividad"
+              icon="add"
+              variant="filled"
+              size="md"
+              menuAriaLabel="Plantillas rápidas de actividad"
+              [menuItems]="presetMenuItems"
+              [invisible]="isDialogOpen() && activeOriginKey() === 'agenda-split-create'"
+              [viewTransitionName]="isDialogTransitioning() && !isDialogOpen() && activeOriginKey() === 'agenda-split-create' ? 'dialog-transform' : null"
+              (primaryAction)="createTask.emit()"
+              (itemAction)="onPresetItemAction($event)" />
+          </div>
         </div>
       </div>
 
-      <!-- Filtros por estado y categoría -->
-      <div class="flex flex-wrap items-center justify-between gap-2.5">
-        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar por estado">
+      <!-- Chips unificados de estado y categoría con respiro horizontal y vertical -->
+      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 pt-0.5">
+        <div class="flex flex-wrap items-center gap-2.5" role="group" aria-label="Filtrar por estado">
           <m3-chip
             type="filter"
             [selected]="filterStatus() === 'all'"
@@ -80,31 +108,24 @@ import { M3ChipComponent } from '../../../shared/components/chip/chip.component'
           </m3-chip>
         </div>
 
-        <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar por categoría">
-          <button
-            type="button"
-            [attr.aria-pressed]="categoryFilter() === 'all'"
-            (click)="categoryChange.emit('all')"
-            [class]="categoryFilter() === 'all'
-              ? 'bg-sec-box text-on-sec-box font-semibold'
-              : 'bg-surface-low text-muted hover:text-main hover:bg-surface-high'"
-            class="agenda-pill-toggle focus-ring-m3 px-3 py-1 text-xs cursor-pointer">
+        <div class="flex flex-wrap items-center gap-2.5" role="group" aria-label="Filtrar por categoría">
+          <m3-chip
+            type="filter"
+            icon="apps"
+            [selected]="categoryFilter() === 'all'"
+            (action)="categoryChange.emit('all')">
             Todas las áreas
-          </button>
+          </m3-chip>
 
           @for (cat of categories; track cat.name) {
             @let active = categoryFilter() === cat.name;
-            <button
-              type="button"
-              [attr.aria-pressed]="active"
-              (click)="categoryChange.emit(active ? 'all' : cat.name)"
-              [class]="active
-                ? 'bg-sec-box text-on-sec-box font-semibold'
-                : 'bg-surface-low text-muted hover:text-main hover:bg-surface-high'"
-              class="agenda-pill-toggle focus-ring-m3 px-3 py-1 text-xs inline-flex items-center gap-1 cursor-pointer">
-              <span class="material-symbols-rounded text-sm shrink-0" aria-hidden="true">{{ cat.icon }}</span>
-              <span>{{ cat.name }}</span>
-            </button>
+            <m3-chip
+              type="filter"
+              [icon]="cat.icon"
+              [selected]="active"
+              (action)="categoryChange.emit(active ? 'all' : cat.name)">
+              {{ cat.name }}
+            </m3-chip>
           }
         </div>
       </div>
@@ -114,20 +135,32 @@ import { M3ChipComponent } from '../../../shared/components/chip/chip.component'
 export class AgendaFiltersBarComponent {
   readonly categories = TASK_CATEGORIES;
 
+  readonly presetMenuItems: M3SplitMenuItem[] = [
+    { id: 'deep-45', label: 'Deep Work (45m · Prioridad Alta)', icon: 'bolt' },
+    { id: 'review-25', label: 'Revisión técnica (25m)', icon: 'rate_review' },
+    { id: 'quick-15', label: 'Seguimiento rápido (15m)', icon: 'schedule_send' }
+  ];
+
   readonly searchQuery = input.required<string>();
   readonly filterStatus = input.required<FilterStatus>();
   readonly categoryFilter = input.required<string>();
+  readonly onlyToday = input<boolean>(false);
   readonly totalCount = input.required<number>();
   readonly pendingCount = input.required<number>();
   readonly completedCount = input.required<number>();
+  readonly isDialogOpen = input<boolean>(false);
+  readonly isDialogTransitioning = input<boolean>(false);
+  readonly activeOriginKey = input<string | null>(null);
 
   readonly searchChange = output<string>();
   readonly statusChange = output<FilterStatus>();
   readonly categoryChange = output<string>();
+  readonly onlyTodayChange = output<boolean>();
+  readonly requestClearCompleted = output<void>();
   readonly createTask = output<void>();
+  readonly createPreset = output<AgendaTaskPresetId>();
 
-  onSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement | null;
-    this.searchChange.emit(target?.value ?? '');
+  onPresetItemAction(id: string): void {
+    this.createPreset.emit(id as AgendaTaskPresetId);
   }
 }

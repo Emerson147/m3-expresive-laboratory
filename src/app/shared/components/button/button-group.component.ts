@@ -130,7 +130,10 @@ export class M3ButtonGroupComponent {
     class: 'inline-block relative'
   },
   template: `
-    <div class="m3-split-btn">
+    <div
+      class="m3-split-btn"
+      [class.invisible]="invisible()"
+      [style.view-transition-name]="viewTransitionName()">
       <button
         type="button"
         [disabled]="disabled()"
@@ -193,6 +196,8 @@ export class M3SplitButtonComponent {
   readonly menuItems = input<M3SplitMenuItem[]>([]);
   readonly disabled = input<boolean>(false);
   readonly menuAriaLabel = input<string>('Más opciones');
+  readonly invisible = input<boolean>(false);
+  readonly viewTransitionName = input<string | null>(null);
 
   readonly primaryAction = output<void>();
   readonly itemAction = output<string>();

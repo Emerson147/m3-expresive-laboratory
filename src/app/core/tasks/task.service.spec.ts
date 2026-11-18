@@ -73,5 +73,34 @@ describe('TaskService', () => {
     service.deleteTask(created.id);
     expect(service.tasks().some(t => t.id === created.id)).toBe(false);
     expect(service.selectedTaskId()).not.toBe(created.id);
+
+    const restored = service.restoreLastDeleted();
+    expect(restored?.id).toBe(created.id);
+    expect(service.tasks().some(t => t.id === created.id)).toBe(true);
+    expect(service.selectedTaskId()).toBe(created.id);
+  });
+
+  it('filters strictly by Hoy with onlyToday toggle and batch-clears completed tasks cleanly', () => {
+    service.setOnlyToday(true);
+    expect(service.onlyToday()).toBe(true);
+    expect(service.filteredTasks().length).toBeGreaterThan(0);
+    expect(service.filteredTasks().every(t => t.dueBucket === 'Hoy')).toBe(true);
+    expect(service.groupedFilteredTasks().map(g => g.bucket)).toEqual(['Hoy']);
+
+    service.resetAllFilters();
+    expect(service.onlyToday()).toBe(false);
+    expect(service.groupedFilteredTasks().map(g => g.bucket)).toContain('Mañana');
+
+    const completedTask = service.tasks().find(t => t.completed)!;
+    expect(completedTask).toBeTruthy();
+    service.selectTask(completedTask.id);
+    const prevCompletedCount = service.completedCount();
+
+    const removedCount = service.clearCompletedTasks();
+    expect(removedCount).toBe(prevCompletedCount);
+    expect(service.completedCount()).toBe(0);
+    expect(service.tasks().some(t => t.id === completedTask.id)).toBe(false);
+    expect(service.selectedTaskId()).not.toBe(completedTask.id);
+    expect(service.clearCompletedTasks()).toBe(0);
   });
 });

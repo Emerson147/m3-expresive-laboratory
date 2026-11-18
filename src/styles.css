@@ -513,7 +513,11 @@ html.vt-hero.vt-exiting:not(.theme-transition)::view-transition-new(root) {
   animation-timing-function: var(--md-sys-motion-easing-emphasized);
 }
 
-::view-transition-group(dialog-transform),
+::view-transition-group(dialog-transform) {
+  background-color: var(--md-sys-color-surface-container);
+  box-shadow: var(--md-sys-elevation-level-3);
+}
+
 ::view-transition-group(hero-transform) {
   background-color: var(--md-sys-color-surface-container);
   border: 1px solid var(--md-sys-color-outline-variant);
@@ -573,9 +577,9 @@ html.vt-exiting::view-transition-group(hero-transform) {
   height: 100%;
 }
 
-/* La vista nueva entra fluida con curva emphasized (despegue rápido, aterrizaje suave) */
+/* La vista nueva entra fluida con curva emphasized tras 60ms de expansión (patrón Motion Lab FAB -> Sheet) */
 ::view-transition-new(dialog-transform) {
-  animation: var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
+  animation: var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized-decelerate) 60ms both fade-in;
   object-fit: none;
   object-position: top left;
   width: 100%;
@@ -610,7 +614,7 @@ html.vt-exiting::view-transition-old(hero-transform) {
 html.vt-exiting::view-transition-new(dialog-transform) {
   animation: var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-emphasized-accelerate) var(--md-sys-motion-duration-short1, 50ms) both fade-in;
   object-fit: none;
-  object-position: top left;
+  object-position: center;
   width: 100%;
   height: 100%;
 }

@@ -5,16 +5,14 @@
 
 dialog.m3-dialog {
   margin: auto;
-  padding: 24px;
-  min-width: min(280px, calc(100vw - 32px));
-  max-width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 0;
+  max-height: calc(100dvh - 2rem);
+  border: 1px solid color-mix(in oklch, var(--md-sys-color-outline-variant) 75%, transparent);
   border-radius: var(--md-sys-shape-corner-extra-large, 28px);
   background-color: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface);
-  box-shadow: var(--md-sys-elevation-level-3);
-  overflow-y: auto;
+  box-shadow: var(--md-sys-elevation-level-4, var(--md-sys-elevation-level-3));
+  overflow: hidden;
   opacity: 0;
   transform: translateY(12px) scale(0.95);
   transition-property: opacity, transform, display, overlay;
@@ -23,7 +21,38 @@ dialog.m3-dialog {
   transition-behavior: allow-discrete;
 }
 
+/* Variants & Width Scale */
+dialog.m3-dialog.m3-dialog-basic {
+  min-width: min(280px, calc(100vw - 2rem));
+  max-width: min(560px, calc(100vw - 2rem));
+}
+
+dialog.m3-dialog.m3-dialog-expressive {
+  background-color: var(--md-sys-color-surface-container);
+}
+
+dialog.m3-dialog.m3-dialog-sm {
+  width: min(420px, calc(100vw - 2rem));
+}
+
+dialog.m3-dialog.m3-dialog-md {
+  width: min(560px, calc(100vw - 2rem));
+}
+
+dialog.m3-dialog.m3-dialog-lg {
+  width: min(640px, calc(100vw - 2rem));
+}
+
+dialog.m3-dialog.m3-dialog-xl {
+  width: min(760px, calc(100vw - 2rem));
+}
+
+dialog.m3-dialog:modal {
+  overscroll-behavior: contain;
+}
+
 dialog.m3-dialog[open]:where(:not([data-closing])) {
+  display: block;
   opacity: 1;
   transform: translateY(0) scale(1);
   transition-duration: var(--md-sys-motion-duration-medium4, 400ms);
@@ -35,7 +64,19 @@ dialog.m3-dialog[open]:where(:not([data-closing])) {
   }
 }
 
+/* When View Transitions API orchestrates Container Transform, avoid opacity:0 @starting-style capture */
+dialog.m3-dialog.is-vt-managed[open]:where(:not([data-closing])) {
+  transition: none;
+
+  @starting-style {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 dialog.m3-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
   background-color: oklch(0% 0 0 / 0);
   backdrop-filter: blur(0px);
   transition-property: background-color, backdrop-filter, display, overlay;
@@ -54,6 +95,10 @@ dialog.m3-dialog[open]:where(:not([data-closing]))::backdrop {
     background-color: oklch(0% 0 0 / 0);
     backdrop-filter: blur(0px);
   }
+}
+
+.m3-dialog-footer:not(:has(> .m3-dialog-actions-slot > *)) {
+  display: none;
 }
 
 dialog.m3-dialog.m3-command-dialog {
