@@ -1,18 +1,17 @@
 /**
  * Agenda Module — Scoped Material 3 Expressive Styles & Motion Tokens
  *
- * Uses `--md-sys-*` OKLCH tokens from `_token.css`, bounded pill/squircle morphing
- * (never `9999px` dead-zones), clean surface layering without wireframe chrome,
- * and full `prefers-reduced-motion` + `forced-colors` fallbacks.
+ * Strictly reserved for domain layout/tile interactions consuming global `--md-sys-*`
+ * tokens from `src/styles/`. Standard controls come from `src/app/shared/components/`.
  */
 export const AGENDA_EXPRESSIVE_CSS = /* css */ `
   .agenda-workbench {
     interpolate-size: allow-keywords;
   }
 
-  /* Interactive KPI summary tiles (bounded 24px -> 16px hover -> 12px active) */
+  /* Interactive KPI summary tiles (concentric 16px inside 32px/16px-padded container -> 12px active) */
   .agenda-kpi-btn {
-    border-radius: 24px;
+    border-radius: var(--md-sys-shape-corner-large, 16px);
     min-height: 44px;
     transition:
       border-radius 260ms var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
@@ -22,7 +21,7 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
   }
 
   .agenda-kpi-btn:hover:not(:disabled) {
-    border-radius: var(--md-sys-shape-corner-large, 16px);
+    border-radius: var(--md-sys-shape-corner-large-increased, 20px);
   }
 
   .agenda-kpi-btn[aria-pressed='true'] {
@@ -33,7 +32,7 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
     transform: scale(0.985);
   }
 
-  /* Task cards in grouped agenda list (neutral surface hierarchy + bounded corner morph) */
+  /* Task cards in grouped agenda list (neutral surface hierarchy + concentric token morph) */
   .agenda-task-tile {
     border-radius: var(--md-sys-shape-corner-large, 16px);
     transition:
@@ -48,37 +47,12 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
   }
 
   .agenda-task-tile.is-selected {
-    border-radius: 24px;
-  }
-
-  /* Bounded h/2 pill morphing for inline inspector toggles */
-  .agenda-pill-toggle {
-    border-radius: 18px;
-    min-height: 36px;
-    transition:
-      border-radius 240ms var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
-      background-color 180ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
-      color 180ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
-      transform 140ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
-  }
-
-  .agenda-pill-toggle:hover:not(:disabled) {
-    border-radius: 14px;
-  }
-
-  .agenda-pill-toggle[aria-checked='true'],
-  .agenda-pill-toggle[aria-pressed='true'] {
-    border-radius: 10px;
-  }
-
-  .agenda-pill-toggle:active:not(:disabled) {
-    transform: scale(0.96);
+    border-radius: var(--md-sys-shape-corner-large-increased, 20px);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .agenda-kpi-btn,
-    .agenda-task-tile,
-    .agenda-pill-toggle {
+    .agenda-task-tile {
       transition: background-color 1ms linear, color 1ms linear;
       transform: none !important;
     }
@@ -86,9 +60,7 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
 
   @media (forced-colors: active) {
     .agenda-kpi-btn[aria-pressed='true'],
-    .agenda-task-tile.is-selected,
-    .agenda-pill-toggle[aria-checked='true'],
-    .agenda-pill-toggle[aria-pressed='true'] {
+    .agenda-task-tile.is-selected {
       border: 2px solid Highlight;
     }
   }
