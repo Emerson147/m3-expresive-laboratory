@@ -16,6 +16,8 @@ export type M3FabVariant = 'primary' | 'secondary' | 'tertiary' | 'surface';
       [attr.aria-disabled]="disabled() ? 'true' : null"
       [attr.aria-label]="!label() ? (ariaLabel() || icon()) : null"
       [class]="computedClasses()"
+      [class.invisible]="invisible()"
+      [style.view-transition-name]="viewTransitionName()"
       (click)="onClick($event)">
       <span
         class="material-symbols-rounded shrink-0"
@@ -39,6 +41,8 @@ export class M3FabComponent {
   readonly disabled = input<boolean>(false);
   readonly ariaLabel = input<string | null>(null);
   readonly customClass = input<string>('');
+  readonly invisible = input<boolean>(false);
+  readonly viewTransitionName = input<string | null>(null);
 
   readonly action = output<MouseEvent>();
 
