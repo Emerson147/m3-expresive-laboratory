@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal, viewChild } from '@angular/core';
 import { TaskGroup, TaskItem } from '../../../core/tasks/task.service';
-import { TriggerMode } from '../../../shared/models/ui.models';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbox.component';
@@ -22,40 +21,91 @@ import {
     class: 'block w-full min-w-0'
   },
   template: `
-    <div class="space-y-6">
-      <!-- CAPTURA RÁPIDA CON <m3-text-field> + <m3-button variant="tonal"> -->
-      <form (submit)="onQuickAddSubmit($event)" class="flex items-start gap-3">
-        <div class="flex-1 min-w-0">
-          <m3-text-field
-            [id]="'agenda-quick-add'"
-            variant="filled"
-            label="Captura rápida para hoy"
-            placeholder="Escribe una actividad y presiona Enter..."
-            icon="add_task"
-            enterkeyhint="done"
-            [clearable]="true"
-            [value]="quickTitle()"
-            (valueChange)="quickTitle.set($event)"
-            (keydown.enter)="onQuickKeyEnter($event)" />
+    <div class="space-y-5">
+      <!-- MORPH IN-PLACE: PÍLDORA COMPACTA <-> CAPTURA RÁPIDA PARA HOY -->
+      <div
+        class="agenda-quick-morph border px-4 py-2.5"
+        [class]="quickAddExpanded()
+          ? 'is-expanded bg-surface-box border-primary/45 shadow-xs'
+          : 'bg-surface-low border-outline-sub/60 hover:bg-surface-container'">
+        <button
+          type="button"
+          [attr.aria-expanded]="quickAddExpanded()"
+          aria-controls="agenda-quick-add-region"
+          (click)="toggleQuickAdd()"
+          class="w-full flex items-center justify-between gap-3 py-1 text-left focus-ring-m3 rounded-m3-sm cursor-pointer">
+          <span class="flex items-center gap-2.5 min-w-0">
+            <span class="w-8 h-8 rounded-m3-md bg-sec-box text-on-sec-box grid place-items-center shrink-0">
+              <span class="material-symbols-rounded text-base" aria-hidden="true">
+                {{ quickAddExpanded() ? 'edit_note' : 'add_task' }}
+              </span>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-title-sm-emphasized text-main truncate">
+                Captura rápida para hoy
+              </span>
+              @if (!quickAddExpanded()) {
+                <span class="block text-body-sm text-muted truncate">
+                  Toca para anotar una tarea rápida en un toque...
+                </span>
+              }
+            </span>
+          </span>
+
+          <span class="px-2.5 py-1 rounded-full bg-surface-high text-muted text-label-sm font-medium shrink-0 inline-flex items-center gap-1">
+            @if (quickAddExpanded()) {
+              <span class="material-symbols-rounded text-xs" aria-hidden="true">expand_less</span>
+              <span>Contraer</span>
+            } @else {
+              <span>Hoy · 25m</span>
+              <span class="material-symbols-rounded text-xs" aria-hidden="true">expand_more</span>
+            }
+          </span>
+        </button>
+
+        <div
+          id="agenda-quick-add-region"
+          class="agenda-expand-grid"
+          [class.is-open]="quickAddExpanded()"
+          [attr.inert]="!quickAddExpanded() ? '' : null"
+          [attr.aria-hidden]="!quickAddExpanded() ? 'true' : null">
+          <div class="agenda-expand-inner">
+            <form (submit)="onQuickAddSubmit($event)" class="flex items-start gap-2.5 pt-3 pb-1">
+              <div class="flex-1 min-w-0">
+                <m3-text-field
+                  #quickField
+                  [id]="'agenda-quick-add'"
+                  variant="filled"
+                  label="Título rápido"
+                  placeholder="Escribe una actividad y presiona Enter..."
+                  icon="bolt"
+                  enterkeyhint="done"
+                  [clearable]="true"
+                  [value]="quickTitle()"
+                  (valueChange)="quickTitle.set($event)"
+                  (keydown.enter)="onQuickKeyEnter($event)" />
+              </div>
+              <m3-button
+                type="submit"
+                variant="tonal"
+                size="lg"
+                icon="arrow_upward"
+                customClass="mt-1 shrink-0"
+                [disabled]="!quickTitle().trim()">
+                Agregar
+              </m3-button>
+            </form>
+          </div>
         </div>
-        <m3-button
-          type="submit"
-          variant="tonal"
-          size="lg"
-          icon="arrow_upward"
-          customClass="mt-1 shrink-0"
-          [disabled]="!quickTitle().trim()">
-          Agregar
-        </m3-button>
-      </form>
+      </div>
 
       <!-- LISTA AGRUPADA POR BLOQUES TEMPORALES -->
       @for (group of groupedTasks(); track group.bucket) {
         @let bucketMeta = bucketHeader(group.bucket);
-        <div class="space-y-3.5">
+        <div class="space-y-3">
           <div class="flex items-center justify-between gap-3 px-1">
-            <div class="flex items-center gap-3 min-w-0">
-              <span class="w-9 h-9 rounded-m3-sm bg-sec-box text-on-sec-box grid place-items-center shrink-0">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-8 h-8 rounded-m3-sm bg-sec-box text-on-sec-box grid place-items-center shrink-0">
                 <span class="material-symbols-rounded text-base" aria-hidden="true">{{ bucketMeta.icon }}</span>
               </span>
               <div class="min-w-0">
@@ -63,12 +113,12 @@ import {
                 <p class="text-body-sm text-muted truncate">{{ bucketMeta.subtitle }}</p>
               </div>
             </div>
-            <span class="px-3 py-1 rounded-full bg-surface-high text-muted text-label-md-emphasized tabular-nums shrink-0">
+            <span class="px-2.5 py-0.5 rounded-full bg-surface-high text-muted text-label-md-emphasized tabular-nums shrink-0">
               {{ group.items.length }}
             </span>
           </div>
 
-          <ul role="list" class="list-none m-0 p-0 space-y-3.5">
+          <ul role="list" class="list-none m-0 p-0 space-y-3">
             @for (task of group.items; track task.id) {
               @let isSelected = selectedTaskId() === task.id;
               @let prioMeta = priorityMeta(task);
@@ -82,10 +132,10 @@ import {
                   [tone]="isSelected ? 'primary' : 'default'"
                   [interactive]="false"
                   shape="lg"
-                  padding="lg"
+                  padding="md"
                   [customClass]="rowCardClasses(task, isSelected)">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-start gap-2.5 flex-1 min-w-0">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                    <div class="flex items-start gap-2 flex-1 min-w-0">
                       <m3-checkbox
                         [checked]="task.completed"
                         [ariaLabel]="(task.completed ? 'Reabrir actividad ' : 'Completar actividad ') + task.title"
@@ -95,8 +145,8 @@ import {
                         type="button"
                         [attr.aria-pressed]="isSelected"
                         (click)="selectTask.emit(task.id)"
-                        class="flex-1 min-w-0 text-left py-1 px-1.5 rounded-m3-sm focus-ring-m3 cursor-pointer space-y-1.5">
-                        <div class="flex items-center gap-2.5 min-w-0">
+                        class="flex-1 min-w-0 text-left py-0.5 px-1.5 rounded-m3-sm focus-ring-m3 cursor-pointer space-y-1">
+                        <div class="flex items-center gap-2 min-w-0">
                           <h4
                             [class.line-through]="task.completed"
                             [class.opacity-70]="task.completed"
@@ -104,9 +154,9 @@ import {
                             {{ task.title }}
                           </h4>
                           @if (isFocusActive) {
-                            <span class="px-2.5 py-0.5 rounded-full bg-primary text-on-primary text-label-sm-emphasized uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
-                              <span class="material-symbols-rounded text-xs" aria-hidden="true">timer</span>
-                              Enfoque
+                            <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-label-sm-emphasized uppercase tracking-wider shrink-0 inline-flex items-center gap-1">
+                              <span class="w-1.5 h-1.5 rounded-full bg-on-primary agenda-live-dot" aria-hidden="true"></span>
+                              <span>Enfoque</span>
                             </span>
                           }
                         </div>
@@ -119,10 +169,10 @@ import {
                           </p>
                         }
 
-                        <div class="flex flex-wrap items-center gap-2.5 pt-1">
+                        <div class="flex flex-wrap items-center gap-2 pt-0.5">
                           <span
                             [class]="isSelected ? 'bg-surface-lowest/90 text-main' : 'bg-surface-high text-main'"
-                            class="px-2.5 py-1 rounded-full text-label-sm inline-flex items-center gap-1.5">
+                            class="px-2.5 py-0.5 rounded-full text-label-sm inline-flex items-center gap-1.5">
                             <span class="material-symbols-rounded text-xs text-primary" aria-hidden="true">{{ catMeta.icon }}</span>
                             <span>{{ task.category }}</span>
                           </span>
@@ -153,10 +203,10 @@ import {
                       </button>
                     </div>
 
-                    <div class="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+                    <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                       <span
                         [class]="prioMeta.badgeClass"
-                        class="px-3 py-1 rounded-full text-label-sm-emphasized inline-flex items-center gap-1 shrink-0">
+                        class="px-2.5 py-1 rounded-full text-label-sm-emphasized inline-flex items-center gap-1 shrink-0">
                         <span class="material-symbols-rounded text-xs" aria-hidden="true">{{ prioMeta.icon }}</span>
                         <span>{{ prioMeta.label }}</span>
                       </span>
@@ -165,9 +215,9 @@ import {
                         variant="tonal"
                         size="xs"
                         icon="edit"
+                        [invisible]="hiddenEditTaskId() === task.id"
+                        [viewTransitionName]="activeEditOriginTaskId() === task.id ? 'dialog-transform' : null"
                         [ariaLabel]="'Editar en modal ' + task.title"
-                        [invisible]="isDialogOpen() && activeOriginKey() === ('task-edit-' + task.id)"
-                        [viewTransitionName]="isDialogTransitioning() && !isDialogOpen() && activeOriginKey() === ('task-edit-' + task.id) ? 'dialog-transform' : null"
                         (action)="editTask.emit(task)">
                         Editar
                       </m3-button>
@@ -179,6 +229,41 @@ import {
                         icon="delete"
                         [ariaLabel]="'Eliminar actividad ' + task.title"
                         (action)="deleteTask.emit(task.id)" />
+                    </div>
+                  </div>
+
+                  <!-- MORPH IN-PLACE AL SELECCIONAR: BARRA RÁPIDA DE ENFOQUE -->
+                  <div
+                    class="agenda-expand-grid"
+                    [class.is-open]="isSelected"
+                    [attr.inert]="!isSelected ? '' : null"
+                    [attr.aria-hidden]="!isSelected ? 'true' : null">
+                    <div class="agenda-expand-inner">
+                      <div class="mt-3 pt-2.5 border-t border-outline-sub/50 flex flex-wrap items-center justify-between gap-2.5">
+                        <span class="text-label-sm text-muted tabular-nums inline-flex items-center gap-1.5">
+                          <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">
+                            {{ isFocusActive ? 'graphic_eq' : 'bolt' }}
+                          </span>
+                          <span>
+                            @if (isFocusActive) {
+                              Pomodoro activo en esta tarea
+                            } @else if (subSummary.total > 0) {
+                              {{ subSummary.percent }}% de pasos completados · {{ task.focusSessionsCompleted }} bloques hoy
+                            } @else {
+                              {{ task.focusSessionsCompleted }} bloques enfocados hoy · Listo para iniciar
+                            }
+                          </span>
+                        </span>
+
+                        <m3-button
+                          variant="outlined"
+                          size="xs"
+                          [disabled]="!isSelected"
+                          [icon]="isFocusActive ? 'pause' : 'play_arrow'"
+                          (action)="focusTask.emit(task)">
+                          {{ isFocusActive ? 'Pausar enfoque' : 'Enfocar bloque' }}
+                        </m3-button>
+                      </div>
                     </div>
                   </div>
                 </m3-card>
@@ -202,8 +287,6 @@ import {
                 variant="tonal"
                 size="sm"
                 icon="add"
-                [invisible]="isDialogOpen() && activeOriginKey() === 'agenda-empty-create'"
-                [viewTransitionName]="isDialogTransitioning() && !isDialogOpen() && activeOriginKey() === 'agenda-empty-create' ? 'dialog-transform' : null"
                 (action)="createTask.emit()">
                 Nueva Actividad
               </m3-button>
@@ -219,21 +302,29 @@ export class AgendaTaskListComponent {
   readonly selectedTaskId = input.required<number | null>();
   readonly focusActiveTaskId = input<number | null>(null);
   readonly focusRunning = input<boolean>(false);
-  readonly isDialogOpen = input.required<boolean>();
-  readonly isDialogTransitioning = input<boolean>(false);
-  readonly activeOriginKey = input<string | null>(null);
-  readonly activeTrigger = input<TriggerMode | null>(null);
-  readonly activeTaskId = input<number | null>(null);
+  readonly activeEditOriginTaskId = input<number | null>(null);
+  readonly hiddenEditTaskId = input<number | null>(null);
 
   readonly selectTask = output<number>();
   readonly toggleCompleted = output<number>();
   readonly editTask = output<TaskItem>();
   readonly deleteTask = output<number>();
+  readonly focusTask = output<TaskItem>();
   readonly quickAdd = output<string>();
   readonly resetFilters = output<void>();
   readonly createTask = output<void>();
 
+  private readonly quickField = viewChild<M3TextFieldComponent>('quickField');
+  readonly quickAddExpanded = signal<boolean>(false);
   readonly quickTitle = signal<string>('');
+
+  toggleQuickAdd(): void {
+    const next = !this.quickAddExpanded();
+    this.quickAddExpanded.set(next);
+    if (next) {
+      queueMicrotask(() => this.quickField()?.focus());
+    }
+  }
 
   bucketHeader(bucket: TaskGroup['bucket']) {
     return getBucketHeaderMeta(bucket);

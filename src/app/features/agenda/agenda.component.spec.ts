@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { DialogService } from '../../core/dialog/dialog.service';
 import { TaskService } from '../../core/tasks/task.service';
 import { AgendaFocusService } from './agenda-focus.service';
 import { AgendaComponent } from './agenda.component';
@@ -15,7 +14,7 @@ describe('AgendaComponent', () => {
     TestBed.inject(AgendaFocusService).reset(25);
   });
 
-  it('renders Biblia M3 primitives (KPI card, split primary CTA, immediate switch, cards, secondary tabs) with single filled CTA and no nested buttons', () => {
+  it('renders Biblia M3 primitives (KPI card, split primary CTA, immediate switch, Focus Dock, Inspector tabs) with single filled CTA and no nested buttons', () => {
     const fixture = TestBed.createComponent(AgendaComponent);
     fixture.detectChanges();
 
@@ -26,11 +25,11 @@ describe('AgendaComponent', () => {
     expect(el.querySelector('app-agenda-filters-bar m3-split-button')).toBeTruthy();
     expect(el.querySelector('app-agenda-filters-bar m3-switch button[role="switch"]')).toBeTruthy();
     expect(el.querySelectorAll('app-agenda-task-list li m3-card').length).toBeGreaterThan(0);
-    expect(el.querySelector('aside m3-tabs')).toBeTruthy();
-    expect(el.querySelector('aside m3-circular-progress')).toBeTruthy();
+    expect(el.querySelector('aside app-agenda-focus-dock m3-circular-progress')).toBeTruthy();
+    expect(el.querySelector('aside app-agenda-inspector-pane m3-tabs')).toBeTruthy();
     expect(el.querySelectorAll('aside m3-button-group').length).toBeGreaterThanOrEqual(4);
     expect(el.querySelector('m3-fab')).toBeTruthy();
-    expect(el.querySelector('m3-dialog dialog')).toBeTruthy();
+    expect(el.querySelector('app-agenda-task-form-dialog m3-dialog dialog')).toBeTruthy();
     expect(el.querySelector('m3-snackbar')).toBeTruthy();
     expect(el.textContent).toContain('Sesión de Enfoque');
 
@@ -45,6 +44,7 @@ describe('AgendaComponent', () => {
       'app-agenda-kpi-ribbon',
       'app-agenda-filters-bar',
       'app-agenda-task-list',
+      'app-agenda-focus-dock',
       'app-agenda-inspector-pane'
     ]) {
       expect(el.querySelector(selector)?.classList.contains('block')).toBe(true);
@@ -87,18 +87,19 @@ describe('AgendaComponent', () => {
     expect(deepTask?.priority).toBe('Alta');
     expect(taskService.selectedTask()?.id).toBe(deepTask?.id);
 
-    // 3. Switch between secondary inspector tabs ('focus' <-> 'plan')
-    const focusPanel = el.querySelector('#agenda-inspector-focus-panel') as HTMLElement;
+    // 3. Switch between secondary inspector tabs ('steps' <-> 'plan') while Pomodoro Focus Dock stays visible
+    const stepsPanel = el.querySelector('#agenda-inspector-steps-panel') as HTMLElement;
     const planPanel = el.querySelector('#agenda-inspector-plan-panel') as HTMLElement;
-    expect(focusPanel.hasAttribute('hidden')).toBe(false);
+    expect(stepsPanel.hasAttribute('hidden')).toBe(false);
     expect(planPanel.hasAttribute('hidden')).toBe(true);
 
     const planTabBtn = el.querySelector('#agenda-inspector-tab-plan') as HTMLButtonElement;
     planTabBtn.click();
     fixture.detectChanges();
-    expect(focusPanel.hasAttribute('hidden')).toBe(true);
+    expect(stepsPanel.hasAttribute('hidden')).toBe(true);
     expect(planPanel.hasAttribute('hidden')).toBe(false);
     expect(el.querySelector('#inspector-task-notes')).toBeTruthy();
+    expect(el.querySelector('app-agenda-focus-dock m3-circular-progress')).toBeTruthy();
 
     // 4. Batch clean completed tasks via confirmation <m3-dialog>
     const initialCompleted = taskService.completedCount();
@@ -124,12 +125,21 @@ describe('AgendaComponent', () => {
     expect(fixture.componentInstance.clearDialogOpen()).toBe(false);
   });
 
-  it('supports inline quick-add for Hoy, filtering, undo via m3-snackbar, and inspector subtask creation', async () => {
+  it('supports in-place quick-add pill morph, selected card focus tray, undo via m3-snackbar, and inspector subtasks', async () => {
     const fixture = TestBed.createComponent(AgendaComponent);
     const taskService = TestBed.inject(TaskService);
+    const focusService = TestBed.inject(AgendaFocusService);
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
+
+    // Expand quick-capture container in-place
+    const quickTrigger = el.querySelector('[aria-controls="agenda-quick-add-region"]') as HTMLButtonElement;
+    expect(quickTrigger.getAttribute('aria-expanded')).toBe('false');
+    quickTrigger.click();
+    fixture.detectChanges();
+    expect(quickTrigger.getAttribute('aria-expanded')).toBe('true');
+
     const quickInput = el.querySelector('#agenda-quick-add') as HTMLInputElement;
     quickInput.value = 'Auditar accesibilidad de tabs M3';
     quickInput.dispatchEvent(new Event('input'));
@@ -143,6 +153,17 @@ describe('AgendaComponent', () => {
     expect(created).toBeTruthy();
     expect(created.dueBucket).toBe('Hoy');
     expect(taskService.selectedTask()?.id).toBe(created.id);
+
+    // Selected card expands inline focus tray ("Enfocar bloque")
+    const cardFocusBtn = Array.from(
+      el.querySelectorAll('app-agenda-task-list .agenda-task-tile.is-selected button')
+    ).find(btn => btn.textContent?.includes('Enfocar bloque')) as HTMLButtonElement;
+    expect(cardFocusBtn).toBeTruthy();
+    cardFocusBtn.click();
+    fixture.detectChanges();
+    expect(focusService.status()).toBe('running');
+    expect(focusService.activeTaskId()).toBe(created.id);
+    focusService.pause();
 
     // Add subtask inside inspector using <m3-text-field>
     const subtaskInput = el.querySelector('#inspector-new-subtask') as HTMLInputElement;
@@ -182,12 +203,10 @@ describe('AgendaComponent', () => {
     expect(el.textContent).toContain('Auditar accesibilidad de tabs M3');
   });
 
-  it('tracks focus session countdown and opens DialogService with synchronized bucket and timeSlot', () => {
+  it('tracks focus session countdown and opens native m3-dialog forms cleanly', () => {
     const fixture = TestBed.createComponent(AgendaComponent);
     const taskService = TestBed.inject(TaskService);
     const focusService = TestBed.inject(AgendaFocusService);
-    const dialogService = TestBed.inject(DialogService);
-    const openSpy = vi.spyOn(dialogService, 'openTaskCard');
     fixture.detectChanges();
 
     const selected = taskService.selectedTask()!;
@@ -206,64 +225,160 @@ describe('AgendaComponent', () => {
       prevSessions + 1
     );
 
-    const modalBtn = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('aside button')).find(btn =>
+    const el = fixture.nativeElement as HTMLElement;
+    const modalBtn = Array.from(el.querySelectorAll('app-agenda-inspector-pane button')).find(btn =>
       btn.textContent?.includes('Modal')
     ) as HTMLButtonElement;
     modalBtn.click();
     fixture.detectChanges();
 
-    expect(openSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: selected.id }),
-      `inspector-modal-${selected.id}`
-    );
-    expect(dialogService.draftDate()).toBe(selected.dueBucket);
-    expect(dialogService.draftTimeSlot()).toBe(selected.timeSlot);
-    expect(dialogService.draftDuration()).toBe(selected.durationMinutes);
-    dialogService.closeDialog();
+    expect(fixture.componentInstance.taskFormOpen()).toBe(true);
+    expect(fixture.componentInstance.editingTask()?.id).toBe(selected.id);
+    expect(el.querySelector('app-agenda-task-form-dialog dialog.m3-dialog-expressive')?.hasAttribute('open')).toBe(true);
+
+    fixture.componentInstance.taskFormOpen.set(false);
+    fixture.detectChanges();
+
+    const splitLeadingBtn = el.querySelector('app-agenda-filters-bar m3-split-button .m3-split-btn-leading') as HTMLButtonElement;
+    splitLeadingBtn.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.taskFormOpen()).toBe(true);
+    expect(fixture.componentInstance.editingTask()).toBeNull();
   });
 
-  it('binds exclusive dialog-transform origins per trigger button (Nueva Actividad split button, row Editar, and mobile FAB)', () => {
+  it('orchestrates single-owner hero-transform (Focus Dock Card -> Hero Card) and dialog-transform (Buttons -> Form Modal) keeping origins invisible while open', async () => {
     const fixture = TestBed.createComponent(AgendaComponent);
-    const dialogService = TestBed.inject(DialogService);
     const taskService = TestBed.inject(TaskService);
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
-    const splitLeadingBtn = el.querySelector('app-agenda-filters-bar m3-split-button .m3-split-btn-leading') as HTMLButtonElement;
-    expect(splitLeadingBtn).toBeTruthy();
+    const doc = document as unknown as {
+      startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+    };
+    const original = doc.startViewTransition;
+    const snapshots: { heroBefore: number; heroAfter: number; dlgBefore: number; dlgAfter: number }[] = [];
+    const pendingResolvers: (() => void)[] = [];
 
-    splitLeadingBtn.click();
-    fixture.detectChanges();
-    expect(dialogService.isDialogOpen()).toBe(true);
-    expect(dialogService.activeOriginKey()).toBe('agenda-split-create');
-    expect(el.querySelector('app-agenda-filters-bar m3-split-button .m3-split-btn')?.classList.contains('invisible')).toBe(true);
+    doc.startViewTransition = (cb: () => void) => {
+      const heroBefore = el.querySelectorAll('[style*="view-transition-name: hero-transform"]').length;
+      const dlgBefore = el.querySelectorAll('[style*="view-transition-name: dialog-transform"]').length;
+      cb();
+      const heroAfter = el.querySelectorAll('[style*="view-transition-name: hero-transform"]').length;
+      const dlgAfter = el.querySelectorAll('[style*="view-transition-name: dialog-transform"]').length;
+      snapshots.push({ heroBefore, heroAfter, dlgBefore, dlgAfter });
+      return {
+        finished: new Promise<void>(resolve => pendingResolvers.push(resolve))
+      };
+    };
 
-    dialogService.closeDialog();
-    fixture.detectChanges();
-    expect(dialogService.activeOriginKey()).toBeNull();
+    try {
+      // 1. Card -> Expanded Hero Card (hero-transform + Stage Recess)
+      const dockCard = el.querySelector('app-agenda-focus-dock section') as HTMLElement;
+      const expandBtn = Array.from(el.querySelectorAll('app-agenda-focus-dock button')).find(btn =>
+        btn.textContent?.includes('Expandir')
+      ) as HTMLButtonElement;
+      expect(expandBtn).toBeTruthy();
+      expandBtn.click();
+      fixture.detectChanges();
 
-    // Verify task row Editar button is origin (not the wide <li> row)
-    const firstTask = taskService.groupedFilteredTasks()[0].items[0];
-    const rowEditBtn = el.querySelector(`button[aria-label="Editar en modal ${firstTask.title}"]`) as HTMLButtonElement;
-    expect(rowEditBtn).toBeTruthy();
-    rowEditBtn.click();
-    fixture.detectChanges();
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 1, heroAfter: 1, dlgBefore: 0, dlgAfter: 0 });
+      expect(fixture.componentInstance.focusTheaterOpen()).toBe(true);
+      expect(fixture.componentInstance.stageOverlay.isOverlayOpen()).toBe(true);
+      expect(
+        el.querySelector('app-agenda-focus-theater-dialog [role="dialog"] .m3-aurora-layer')
+      ).toBeTruthy();
 
-    expect(dialogService.activeOriginKey()).toBe(`task-edit-${firstTask.id}`);
-    expect(rowEditBtn.classList.contains('invisible')).toBe(true);
-    expect(rowEditBtn.closest('li')?.classList.contains('invisible')).toBe(false);
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.focusMorphOwner()).toBeNull();
+      // Dock card must remain invisible the whole time the expanded card is open
+      expect(dockCard.classList.contains('invisible')).toBe(true);
+      expect(dockCard.getAttribute('aria-hidden')).toBe('true');
 
-    dialogService.closeDialog();
-    fixture.detectChanges();
+      // Minimizing expanded Hero Card morphs back into Focus Dock card
+      const minimizeBtn = Array.from(el.querySelectorAll('app-agenda-focus-theater-dialog button')).find(
+        btn => btn.textContent?.includes('Minimizar')
+      ) as HTMLButtonElement;
+      minimizeBtn.click();
+      fixture.detectChanges();
 
-    // Verify mobile <m3-fab> binds its own origin key cleanly
-    const mobileFab = el.querySelector('m3-fab button') as HTMLButtonElement;
-    expect(mobileFab).toBeTruthy();
-    mobileFab.click();
-    fixture.detectChanges();
-    expect(dialogService.activeOriginKey()).toBe('agenda-fab-create');
-    expect(mobileFab.classList.contains('invisible')).toBe(true);
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 1, heroAfter: 1, dlgBefore: 0, dlgAfter: 0 });
+      expect(fixture.componentInstance.focusTheaterOpen()).toBe(false);
+      expect(dockCard.classList.contains('invisible')).toBe(false);
 
-    dialogService.closeDialog();
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.focusMorphOwner()).toBeNull();
+
+      // 2. Button ("Nueva Actividad" Split Button & Card "Editar") -> Form <m3-dialog> (dialog-transform)
+      const splitContainer = el.querySelector('app-agenda-filters-bar .m3-split-btn') as HTMLElement;
+      const splitLeadingBtn = el.querySelector(
+        'app-agenda-filters-bar m3-split-button .m3-split-btn-leading'
+      ) as HTMLButtonElement;
+      splitLeadingBtn.click();
+      fixture.detectChanges();
+
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 0, heroAfter: 0, dlgBefore: 1, dlgAfter: 1 });
+      expect(fixture.componentInstance.taskFormOpen()).toBe(true);
+      expect(splitContainer.classList.contains('invisible')).toBe(true);
+
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+      // Critical: origin trigger must stay invisible AFTER VT finishes while modal stays open
+      expect(fixture.componentInstance.taskFormMorphTarget()).toBeNull();
+      expect(splitContainer.classList.contains('invisible')).toBe(true);
+
+      const closeCreateBtn = Array.from(el.querySelectorAll('app-agenda-task-form-dialog [dialog-actions] button')).find(
+        btn => btn.textContent?.includes('Cancelar')
+      ) as HTMLButtonElement;
+      closeCreateBtn.click();
+      fixture.detectChanges();
+
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 0, heroAfter: 0, dlgBefore: 1, dlgAfter: 1 });
+      expect(fixture.componentInstance.taskFormOpen()).toBe(false);
+      expect(splitContainer.classList.contains('invisible')).toBe(false);
+
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      // Card "Editar" button morph -> dialog -> return morph
+      const selected = taskService.selectedTask()!;
+      const cardEditBtn = el.querySelector(
+        `app-agenda-task-list button[aria-label="Editar en modal ${selected.title}"]`
+      ) as HTMLButtonElement;
+      expect(cardEditBtn).toBeTruthy();
+      cardEditBtn.click();
+      fixture.detectChanges();
+
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 0, heroAfter: 0, dlgBefore: 1, dlgAfter: 1 });
+      expect(fixture.componentInstance.taskFormOpen()).toBe(true);
+      expect(fixture.componentInstance.taskFormLastOrigin()).toBe(`card-${selected.id}`);
+
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(cardEditBtn.classList.contains('invisible')).toBe(true);
+
+      const cancelBtn = Array.from(el.querySelectorAll('app-agenda-task-form-dialog [dialog-actions] button')).find(
+        btn => btn.textContent?.includes('Cancelar')
+      ) as HTMLButtonElement;
+      cancelBtn.click();
+      fixture.detectChanges();
+
+      expect(snapshots.at(-1)).toEqual({ heroBefore: 0, heroAfter: 0, dlgBefore: 1, dlgAfter: 1 });
+      expect(fixture.componentInstance.taskFormOpen()).toBe(false);
+      expect(cardEditBtn.classList.contains('invisible')).toBe(false);
+
+      pendingResolvers.pop()?.();
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.taskFormLastOrigin()).toBeNull();
+    } finally {
+      doc.startViewTransition = original;
+    }
   });
 });
