@@ -11,6 +11,10 @@ import {
 } from '../../core/tasks/task.service';
 import { ContrastLevel, MotionScheme, ThemeService } from '../../core/theme/theme.service';
 import { DialogView, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
+import {
+  M3ButtonGroupComponent,
+  M3ButtonGroupOption
+} from '../components/button/button-group.component';
 import { M3ButtonComponent } from '../components/button/button.component';
 import { M3SwitchComponent } from '../components/switch/switch.component';
 import { M3TextFieldComponent } from '../components/text-field/text-field.component';
@@ -18,7 +22,13 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
 @Component({
   selector: 'app-dialog-container',
   standalone: true,
-  imports: [FormsModule, M3ButtonComponent, M3SwitchComponent, M3TextFieldComponent],
+  imports: [
+    FormsModule,
+    M3ButtonComponent,
+    M3ButtonGroupComponent,
+    M3SwitchComponent,
+    M3TextFieldComponent
+  ],
   host: {
     class: 'contents'
   },
@@ -37,13 +47,13 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
         [class.sm:w-[420px]]="activeTrigger() === 'fab-header'"
         [class.bottom-4]="activeTrigger() === 'menu-bottom-left'" 
         [class.left-4]="activeTrigger() === 'menu-bottom-left'"
-        [class.sm:w-[404px]]="activeTrigger() === 'menu-bottom-left'" 
+        [class.sm:w-[408px]]="activeTrigger() === 'menu-bottom-left'" 
         [class.inset-0]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
         [class.m-auto]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
-        [class.sm:w-[460px]]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
+        [class.sm:w-[600px]]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
         [class.w-[calc(100%-2rem)]]="true"
         [class.m3-container-enter]="!themeService.hasViewTransitions()"
-        class="fixed h-fit max-h-[calc(100dvh-2rem)] bg-surface-box border border-outline-sub/60 forced-colors:border-[CanvasText] p-5 sm:p-6 flex flex-col justify-between shadow-m3-level4 z-50 rounded-m3-xl overflow-hidden">
+        class="fixed h-fit max-h-[calc(100dvh-2rem)] bg-surface-box border border-outline-sub/60 forced-colors:border-[CanvasText] p-6 sm:p-7 flex flex-col justify-between shadow-m3-level4 z-50 rounded-m3-xl overflow-hidden">
 
         <!-- VISTA A & B UNIFICADAS: CENTRO DE PERSONALIZACIÓN M3 EXPRESSIVE -->
         @if (dialogView() === 'menu-main' || dialogView() === 'menu-appearance') {
@@ -63,16 +73,16 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
                 </div>
               </div>
 
-              <button
-                type="button"
-                aria-label="Cerrar opciones del sistema"
-                (click)="closeDialog.emit()"
-                class="btn-m3 focus-ring-m3 w-9 h-9 rounded-full bg-surface hover:bg-surface-high text-muted hover:text-main grid place-items-center shrink-0 cursor-pointer">
-                <span class="material-symbols-rounded text-lg" aria-hidden="true">close</span>
-              </button>
+              <m3-button
+                [iconOnly]="true"
+                variant="text"
+                size="sm"
+                icon="close"
+                ariaLabel="Cerrar opciones del sistema"
+                (action)="closeDialog.emit()" />
             </div>
 
-            <!-- Modo Oscuro / Claro con <m3-switch> y Circular Reveal -->
+            <!-- Modo Oscuro / Claro con <m3-switch> -->
             <div
               (click)="captureThemeSwitchEvent($event)"
               class="bg-surface rounded-m3-lg px-3.5 py-2.5 flex items-center justify-between gap-3">
@@ -129,136 +139,98 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
                 </div>
               </div>
 
-              <div class="space-y-1.5 pt-1 border-t border-outline-sub/50">
+              <div class="space-y-1.5 pt-2 border-t border-outline-sub/50">
                 <span class="block text-[11px] font-semibold text-muted uppercase tracking-wider">
                   Saturación OKLCH
                 </span>
-                <div
-                  role="group"
-                  aria-label="Intensidad cromática OKLCH"
-                  class="grid grid-cols-3 gap-1 bg-surface-high p-1 rounded-[18px]">
-                  @for (preset of chromaPresets; track preset.chroma) {
-                    @let active = themeService.seedChroma() === preset.chroma;
-                    <button
-                      type="button"
-                      (click)="themeService.setSeedChroma(preset.chroma)"
-                      [attr.aria-pressed]="active"
-                      [class]="active
-                        ? 'bg-primary text-on-primary font-semibold rounded-[12px] shadow-xs'
-                        : 'text-muted hover:text-main rounded-[14px]'"
-                      class="btn-m3 focus-ring-m3 py-1.5 px-2 text-xs cursor-pointer transition-all duration-200">
-                      {{ preset.label }}
-                    </button>
-                  }
-                </div>
+                <m3-button-group
+                  variant="connected"
+                  size="xs"
+                  ariaLabel="Intensidad cromática OKLCH"
+                  [options]="chromaOptions"
+                  [value]="[themeService.seedChroma().toString()]"
+                  (selectionChange)="onChromaSelect($event)" />
               </div>
             </div>
 
-            <!-- Contraste M3 y Física Motion -->
+            <!-- Contraste M3 y Física Motion desde <m3-button-group> -->
             <div class="bg-surface rounded-m3-lg p-3.5 space-y-3">
               <div class="space-y-1.5">
                 <span class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
                   <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">contrast</span>
                   Contraste M3
                 </span>
-                <div
-                  role="group"
-                  aria-label="Nivel de contraste M3"
-                  class="grid grid-cols-3 gap-1 bg-surface-high p-1 rounded-[18px]">
-                  @for (lvl of contrastLevels; track lvl.id) {
-                    @let active = themeService.contrastLevel() === lvl.id;
-                    <button
-                      type="button"
-                      (click)="themeService.setContrastLevel(lvl.id)"
-                      [attr.aria-pressed]="active"
-                      [class]="active
-                        ? 'bg-primary text-on-primary font-semibold rounded-[12px] shadow-xs'
-                        : 'text-muted hover:text-main rounded-[14px]'"
-                      class="btn-m3 focus-ring-m3 py-1.5 px-2 text-xs cursor-pointer transition-all duration-200">
-                      {{ lvl.label }}
-                    </button>
-                  }
-                </div>
+                <m3-button-group
+                  variant="connected"
+                  size="xs"
+                  ariaLabel="Nivel de contraste M3"
+                  [options]="contrastOptions"
+                  [value]="[themeService.contrastLevel()]"
+                  (selectionChange)="onContrastSelect($event)" />
               </div>
 
-              <div class="space-y-1.5 pt-1 border-t border-outline-sub/50">
+              <div class="space-y-1.5 pt-2 border-t border-outline-sub/50">
                 <span class="text-xs font-semibold text-muted uppercase tracking-wider flex items-center gap-1.5">
                   <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">animation</span>
                   Física de Movimiento
                 </span>
-                <div
-                  role="group"
-                  aria-label="Esquema de movimiento"
-                  class="grid grid-cols-2 gap-1.5">
-                  @for (scheme of motionSchemes; track scheme.id) {
-                    @let active = themeService.motionScheme() === scheme.id;
-                    <button
-                      type="button"
-                      (click)="themeService.setMotionScheme(scheme.id)"
-                      [attr.aria-pressed]="active"
-                      [class]="active
-                        ? 'bg-sec-box text-on-sec-box font-semibold rounded-[12px]'
-                        : 'bg-surface-high text-muted hover:text-main rounded-[18px]'"
-                      class="btn-m3 focus-ring-m3 py-2 px-3 text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-200">
-                      <span class="material-symbols-rounded text-sm" aria-hidden="true">{{ scheme.icon }}</span>
-                      <span>{{ scheme.label }}</span>
-                    </button>
-                  }
-                </div>
+                <m3-button-group
+                  variant="connected"
+                  size="xs"
+                  ariaLabel="Esquema de movimiento"
+                  [options]="motionOptions"
+                  [value]="[themeService.motionScheme()]"
+                  (selectionChange)="onMotionSelect($event)" />
               </div>
             </div>
 
-            <!-- Navegación Adaptativa -->
+            <!-- Navegación Adaptativa desde <m3-button-group> -->
             <div class="bg-surface rounded-m3-lg p-3.5 space-y-2">
               <span class="block text-xs font-semibold text-muted uppercase tracking-wider">
                 Navegación Adaptativa
               </span>
-              <div class="grid grid-cols-2 gap-2" role="group" aria-label="Estilo de navegación">
-                @for (opt of navStyleOptions; track opt.value) {
-                  @let active = navStyle() === opt.value;
-                  <button
-                    type="button"
-                    (click)="navStyleChange.emit(opt.value)"
-                    [attr.aria-pressed]="active"
-                    [class]="active
-                      ? 'bg-primary-box text-on-primary-box font-semibold rounded-[12px]'
-                      : 'bg-surface-high text-muted hover:text-main rounded-[18px]'"
-                    class="btn-m3 focus-ring-m3 py-2 px-3 text-xs flex items-center gap-2 cursor-pointer transition-all duration-200">
-                    <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">{{ opt.icon }}</span>
-                    <span class="truncate">{{ opt.label }}</span>
-                  </button>
-                }
-              </div>
+              <m3-button-group
+                variant="standard"
+                size="sm"
+                ariaLabel="Estilo de navegación"
+                [options]="navOptions"
+                [value]="[navStyle()]"
+                (selectionChange)="onNavSelect($event)" />
             </div>
           </div>
         }
 
-        <!-- VISTA C: FORMULARIO DE CREACIÓN / EDICIÓN DE TAREA -->
+        <!-- VISTA C: FORMULARIO DE CREACIÓN / EDICIÓN DE TAREA CON <m3-button-group> Y <m3-text-field> -->
         @if (dialogView() === 'task-form') {
           <form (ngSubmit)="submitTaskForm()" novalidate class="flex flex-col min-h-0 flex-1">
-            <div class="space-y-4 overflow-y-auto px-1 pb-2 m3-scrollbar">
-              <div class="flex items-center justify-between pb-3 border-b border-outline-sub">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-9 h-9 rounded-full bg-primary-box text-on-primary-box grid place-items-center shrink-0">
-                    <span class="material-symbols-rounded text-lg" aria-hidden="true">
+            <div class="space-y-5 overflow-y-auto overflow-x-hidden pr-1 pb-2 m3-scrollbar">
+              <div class="flex items-start justify-between gap-3 pb-4 border-b border-outline-sub">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-11 h-11 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+                    <span class="material-symbols-rounded text-xl" aria-hidden="true">
                       {{ activeTaskId() !== null ? 'edit_calendar' : 'event' }}
                     </span>
                   </div>
-                  <h2 class="text-lg font-bold">
-                    {{ activeTaskId() !== null ? 'Editar Tarea' : 'Nueva Tarea' }}
-                  </h2>
+                  <div class="min-w-0">
+                    <h2 class="text-title-lg-emphasized text-main">
+                      {{ activeTaskId() !== null ? 'Editar Tarea' : 'Nueva Tarea' }}
+                    </h2>
+                    <p class="text-body-sm text-muted mt-0.5">
+                      {{ activeTaskId() !== null ? 'Ajusta horizonte temporal, prioridad y notas de seguimiento.' : 'Define objetivo, bloque temporal y prioridad de ejecución.' }}
+                    </p>
+                  </div>
                 </div>
-                <button 
-                  type="button"
-                  aria-label="Cerrar formulario"
-                  (click)="onCancelTaskForm()" 
-                  class="btn-m3 p-2 rounded-full hover:bg-surface-high text-muted hover:text-main cursor-pointer">
-                  <span class="material-symbols-rounded text-xl" aria-hidden="true">close</span>
-                </button>
+                <m3-button
+                  [iconOnly]="true"
+                  variant="text"
+                  size="sm"
+                  icon="close"
+                  ariaLabel="Cerrar formulario"
+                  (action)="onCancelTaskForm()" />
               </div>
 
-              <div class="space-y-4">
-                <m3-text-field 
+              <div class="space-y-5">
+                <m3-text-field
                   #taskTitleField
                   variant="filled"
                   label="Título de la tarea"
@@ -269,149 +241,101 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
                   [maxlength]="80"
                   enterkeyhint="done"
                   [errorText]="titleValidationError()"
-                  [ngModel]="draftTitle()" 
-                  (ngModelChange)="onTitleModelChange($event)"
+                  [value]="draftTitle()"
+                  (valueChange)="onTitleModelChange($event)"
                   (inputBlur)="validateTitleOnBlur()"
-                  [ngModelOptions]="{ standalone: true }"
                   supportingText="Define el objetivo con claridad" />
 
-                <!-- Categoría visible (<= 5 opciones, radiogroup accesible) -->
-                <fieldset class="space-y-1.5 border-0 p-0 m-0">
-                  <legend class="text-[11px] font-semibold text-muted uppercase tracking-wider pl-1">
+                <fieldset class="space-y-2 border-0 p-0 m-0">
+                  <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
                     Categoría
                   </legend>
-                  <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Categoría de tarea">
-                    @for (cat of taskCategories; track cat.name) {
-                      @let isSelected = draftCategory() === cat.name;
-                      <button
-                        type="button"
-                        role="radio"
-                        [attr.aria-checked]="isSelected"
-                        (click)="draftCategory.set(cat.name)"
-                        [class]="isSelected
-                          ? 'bg-primary-box text-on-primary-box font-semibold rounded-[12px]'
-                          : 'bg-surface-high text-muted hover:text-main rounded-[18px]'"
-                        class="btn-m3 focus-ring-m3 min-h-[34px] px-3 py-1 text-xs inline-flex items-center gap-1.5 cursor-pointer transition-all duration-200">
-                        <span class="material-symbols-rounded text-sm shrink-0" aria-hidden="true">
-                          {{ isSelected ? 'check' : cat.icon }}
-                        </span>
-                        <span>{{ cat.name }}</span>
-                      </button>
-                    }
-                  </div>
+                  <m3-button-group
+                    variant="standard"
+                    size="sm"
+                    ariaLabel="Categoría de tarea"
+                    [options]="categoryOptions"
+                    [value]="[draftCategory()]"
+                    (selectionChange)="onCategorySelect($event)" />
                 </fieldset>
 
-                <!-- Bloque temporal y Prioridad en pills visibles (forms rule: < 6 choices) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <fieldset class="space-y-1.5 border-0 p-0 m-0">
-                    <legend class="text-[11px] font-semibold text-muted uppercase tracking-wider pl-1">
+                <!-- CONTENEDOR TONAL PARA PROGRAMACIÓN Y PRIORIDAD SIN SOLAPAMIENTO -->
+                <div class="bg-surface-low rounded-m3-lg p-4 sm:p-5 space-y-4">
+                  <fieldset class="space-y-2 border-0 p-0 m-0">
+                    <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
                       Bloque / Día
                     </legend>
-                    <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Día programado">
-                      @for (bucket of taskDueBuckets; track bucket) {
-                        @let isSelected = draftDate() === bucket;
-                        <button
-                          type="button"
-                          role="radio"
-                          [attr.aria-checked]="isSelected"
-                          (click)="draftDate.set(bucket)"
-                          [class]="isSelected
-                            ? 'bg-sec-box text-on-sec-box font-semibold rounded-[10px]'
-                            : 'bg-surface-high text-muted hover:text-main rounded-[16px]'"
-                          class="btn-m3 focus-ring-m3 min-h-[34px] px-2.5 py-1 text-xs inline-flex items-center gap-1 cursor-pointer transition-all duration-200">
-                          <span class="material-symbols-rounded text-sm shrink-0" aria-hidden="true">
-                            {{ isSelected ? 'check' : 'event' }}
-                          </span>
-                          <span>{{ bucket }}</span>
-                        </button>
-                      }
-                    </div>
+                    <m3-button-group
+                      variant="connected"
+                      size="sm"
+                      ariaLabel="Día programado"
+                      [options]="dueBucketOptions"
+                      [value]="[draftDate()]"
+                      (selectionChange)="onDateSelect($event)" />
                   </fieldset>
 
-                  <fieldset class="space-y-1.5 border-0 p-0 m-0">
-                    <legend class="text-[11px] font-semibold text-muted uppercase tracking-wider pl-1">
+                  <fieldset class="space-y-2 border-0 p-0 m-0">
+                    <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
                       Prioridad
                     </legend>
-                    <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Prioridad de tarea">
-                      @for (prio of taskPriorities; track prio) {
-                        @let isSelected = draftPriority() === prio;
-                        <button
-                          type="button"
-                          role="radio"
-                          [attr.aria-checked]="isSelected"
-                          (click)="draftPriority.set(prio)"
-                          [class]="priorityOptionClass(prio, isSelected)"
-                          class="btn-m3 focus-ring-m3 min-h-[34px] px-2.5 py-1 text-xs inline-flex items-center gap-1 cursor-pointer transition-all duration-200">
-                          <span class="material-symbols-rounded text-sm shrink-0" aria-hidden="true">
-                            {{ prio === 'Alta' ? 'priority_high' : prio === 'Media' ? 'flag' : 'low_priority' }}
-                          </span>
-                          <span>{{ prio }}</span>
-                        </button>
-                      }
-                    </div>
+                    <m3-button-group
+                      variant="connected"
+                      size="sm"
+                      ariaLabel="Prioridad de tarea"
+                      [options]="priorityOptions"
+                      [value]="[draftPriority()]"
+                      (selectionChange)="onPrioritySelect($event)" />
                   </fieldset>
-                </div>
 
-                <!-- Hora y duración estimada -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                  <div class="space-y-1.5">
-                    <label for="dialog-task-time" class="block text-[11px] font-semibold text-muted uppercase tracking-wider pl-1">
-                      Hora sugerida
-                    </label>
-                    <input
-                      id="dialog-task-time"
-                      type="time"
-                      [ngModel]="draftTimeSlot()"
-                      (ngModelChange)="draftTimeSlot.set($event)"
-                      [ngModelOptions]="{ standalone: true }"
-                      class="w-full min-h-[38px] px-3 rounded-m3-md bg-surface-high text-main text-sm font-mono focus-ring-m3 border border-outline-sub" />
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pt-1">
+                    <div class="sm:col-span-5">
+                      <m3-text-field
+                        [id]="'dialog-task-time'"
+                        variant="filled"
+                        type="time"
+                        label="Hora sugerida"
+                        placeholder="HH:mm"
+                        icon="schedule"
+                        [value]="draftTimeSlot()"
+                        (valueChange)="draftTimeSlot.set($event)" />
+                    </div>
+
+                    <fieldset class="sm:col-span-7 space-y-2 border-0 p-0 m-0">
+                      <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+                        Bloque de enfoque
+                      </legend>
+                      <m3-button-group
+                        variant="connected"
+                        size="sm"
+                        ariaLabel="Duración en minutos"
+                        [options]="durationOptions"
+                        [value]="[draftDuration().toString()]"
+                        (selectionChange)="onDurationSelect($event)" />
+                    </fieldset>
                   </div>
-
-                  <fieldset class="space-y-1.5 border-0 p-0 m-0">
-                    <legend class="text-[11px] font-semibold text-muted uppercase tracking-wider pl-1">
-                      Bloque de enfoque
-                    </legend>
-                    <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Duración en minutos">
-                      @for (mins of taskDurations; track mins) {
-                        @let isSelected = draftDuration() === mins;
-                        <button
-                          type="button"
-                          role="radio"
-                          [attr.aria-checked]="isSelected"
-                          (click)="draftDuration.set(mins)"
-                          [class]="isSelected
-                            ? 'bg-primary text-on-primary font-semibold rounded-[10px]'
-                            : 'bg-surface-high text-muted hover:text-main rounded-[16px]'"
-                          class="btn-m3 focus-ring-m3 min-h-[38px] px-2.5 py-1 text-xs font-mono cursor-pointer transition-all duration-200">
-                          {{ mins }}m
-                        </button>
-                      }
-                    </div>
-                  </fieldset>
                 </div>
 
-                <m3-text-field 
-                  variant="outlined"
+                <m3-text-field
+                  variant="filled"
                   label="Notas de apoyo"
                   placeholder="Detalles sobre entidades, puertos y adaptadores..."
                   icon="description"
                   [multiline]="true"
                   [autoGrow]="true"
-                  [rows]="2"
+                  [rows]="3"
                   [maxlength]="300"
-                  [ngModel]="draftNotes()" 
-                  (ngModelChange)="draftNotes.set($event)"
-                  [ngModelOptions]="{ standalone: true }"
+                  [value]="draftNotes()"
+                  (valueChange)="draftNotes.set($event)"
                   supportingText="Especificaciones y contexto técnico" />
               </div>
             </div>
 
-            <div class="flex items-center justify-between pt-4 border-t border-outline-sub mt-3 shrink-0">
+            <div class="flex items-center justify-between gap-3 pt-4 border-t border-outline-sub mt-4 shrink-0">
               @if (activeTaskId() !== null) {
-                <m3-button 
+                <m3-button
                   type="button"
-                  variant="tonal" 
-                  size="sm" 
+                  variant="tonal"
+                  size="sm"
                   icon="delete"
                   (action)="deleteTask.emit()">
                   Eliminar
@@ -420,16 +344,16 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
                 <div></div>
               }
 
-              <div class="flex items-center gap-2.5">
-                <m3-button 
+              <div class="flex items-center gap-3">
+                <m3-button
                   type="button"
-                  variant="text" 
+                  variant="text"
                   (action)="onCancelTaskForm()">
                   Cancelar
                 </m3-button>
-                <m3-button 
+                <m3-button
                   type="submit"
-                  variant="filled" 
+                  variant="filled"
                   icon="check">
                   Guardar
                 </m3-button>
@@ -447,30 +371,47 @@ export class DialogContainerComponent {
   readonly adaptiveLayout = inject(AdaptiveLayoutService);
   private readonly taskTitleField = viewChild<M3TextFieldComponent>('taskTitleField');
 
-  readonly taskCategories = TASK_CATEGORIES;
-  readonly taskDueBuckets = TASK_DUE_BUCKETS;
-  readonly taskPriorities = TASK_PRIORITIES;
-  readonly taskDurations = TASK_DURATIONS;
+  readonly categoryOptions: M3ButtonGroupOption[] = TASK_CATEGORIES.map(c => ({
+    id: c.name,
+    label: c.name,
+    icon: c.icon
+  }));
 
-  readonly navStyleOptions: readonly { value: NavStyle; label: string; icon: string }[] = [
-    { value: 'auto', label: 'Auto (M3)', icon: 'auto_awesome' },
-    { value: 'rail', label: 'Rail', icon: 'view_sidebar' },
-    { value: 'dock', label: 'Dock', icon: 'dock_to_bottom' },
-    { value: 'tunnel', label: 'Focus Bar', icon: 'center_focus_strong' }
+  readonly dueBucketOptions: M3ButtonGroupOption[] = TASK_DUE_BUCKETS.map(b => ({
+    id: b,
+    label: b
+  }));
+
+  readonly priorityOptions: M3ButtonGroupOption[] = TASK_PRIORITIES.map(p => ({
+    id: p,
+    label: p,
+    icon: p === 'Alta' ? 'priority_high' : p === 'Media' ? 'flag' : 'low_priority'
+  }));
+
+  readonly durationOptions: M3ButtonGroupOption[] = TASK_DURATIONS.map(d => ({
+    id: d.toString(),
+    label: `${d}m`
+  }));
+
+  readonly navOptions: M3ButtonGroupOption[] = [
+    { id: 'auto', label: 'Auto (M3)', icon: 'auto_awesome' },
+    { id: 'rail', label: 'Rail', icon: 'view_sidebar' },
+    { id: 'dock', label: 'Dock', icon: 'dock_to_bottom' },
+    { id: 'tunnel', label: 'Focus Bar', icon: 'center_focus_strong' }
   ];
 
-  readonly chromaPresets: readonly { chroma: number; label: string }[] = [
-    { chroma: 0.08, label: 'Suave' },
-    { chroma: 0.16, label: 'Expressive' },
-    { chroma: 0.22, label: 'Vibrante' }
+  readonly chromaOptions: M3ButtonGroupOption[] = [
+    { id: '0.08', label: 'Suave' },
+    { id: '0.16', label: 'Expressive' },
+    { id: '0.22', label: 'Vibrante' }
   ];
 
-  readonly motionSchemes: readonly { id: MotionScheme; label: string; icon: string }[] = [
+  readonly motionOptions: M3ButtonGroupOption[] = [
     { id: 'expressive', label: 'Expresivo', icon: 'animation' },
     { id: 'standard', label: 'Estándar', icon: 'speed' }
   ];
 
-  readonly contrastLevels: readonly { id: ContrastLevel; label: string }[] = [
+  readonly contrastOptions: M3ButtonGroupOption[] = [
     { id: 'standard', label: 'Estándar' },
     { id: 'medium', label: 'Medio' },
     { id: 'high', label: 'Alto' }
@@ -516,11 +457,43 @@ export class DialogContainerComponent {
     this.lastThemePointerEvent = undefined;
   }
 
-  priorityOptionClass(prio: TaskPriority, selected: boolean): string {
-    if (!selected) return 'bg-surface-high text-muted hover:text-main rounded-[16px]';
-    if (prio === 'Alta') return 'bg-error-box text-on-error-box font-semibold rounded-[10px]';
-    if (prio === 'Media') return 'bg-warning-box text-on-warning-box font-semibold rounded-[10px]';
-    return 'bg-tertiary-box text-on-tertiary-box font-semibold rounded-[10px]';
+  onChromaSelect(selected: string[]): void {
+    const val = Number(selected[0]);
+    if (Number.isFinite(val)) this.themeService.setSeedChroma(val);
+  }
+
+  onContrastSelect(selected: string[]): void {
+    const lvl = selected[0] as ContrastLevel | undefined;
+    if (lvl) this.themeService.setContrastLevel(lvl);
+  }
+
+  onMotionSelect(selected: string[]): void {
+    const scheme = selected[0] as MotionScheme | undefined;
+    if (scheme) this.themeService.setMotionScheme(scheme);
+  }
+
+  onNavSelect(selected: string[]): void {
+    const style = selected[0] as NavStyle | undefined;
+    if (style) this.navStyleChange.emit(style);
+  }
+
+  onCategorySelect(selected: string[]): void {
+    if (selected[0]) this.draftCategory.set(selected[0]);
+  }
+
+  onDateSelect(selected: string[]): void {
+    const bucket = selected[0] as TaskDueBucket | undefined;
+    if (bucket) this.draftDate.set(bucket);
+  }
+
+  onPrioritySelect(selected: string[]): void {
+    const prio = selected[0] as TaskPriority | undefined;
+    if (prio) this.draftPriority.set(prio);
+  }
+
+  onDurationSelect(selected: string[]): void {
+    const mins = Number(selected[0]);
+    if (!Number.isNaN(mins) && mins > 0) this.draftDuration.set(mins);
   }
 
   onTitleModelChange(val: string): void {

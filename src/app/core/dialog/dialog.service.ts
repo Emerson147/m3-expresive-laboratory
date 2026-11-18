@@ -21,6 +21,7 @@ export class DialogService {
   readonly isHeroExpanded = signal<boolean>(false);
   readonly activeTransition = signal<TransitionType>(null);
   readonly activeTaskId = signal<number | null>(null);
+  readonly activeOriginKey = signal<string | null>(null);
   readonly navStyle = signal<NavStyle>('auto');
   readonly isRailManuallyExpanded = signal<boolean | null>(null);
 
@@ -42,9 +43,10 @@ export class DialogService {
   readonly draftPriority = signal<TaskPriority>('Alta');
   readonly draftNotes = signal<string>('');
 
-  openFrom(trigger: TriggerMode): void {
+  openFrom(trigger: TriggerMode, originKey: string | null = null): void {
     this.activeTransition.set('dialog');
     this.activeTaskId.set(null);
+    this.activeOriginKey.set(originKey);
     this.resetDraftForm();
     this.dialogView.set(trigger === 'menu-bottom-left' ? 'menu-main' : 'task-form');
     this.activeTrigger.set(trigger);
@@ -58,10 +60,11 @@ export class DialogService {
     );
   }
 
-  openTaskCard(task: TaskItem): void {
+  openTaskCard(task: TaskItem, originKey: string | null = null): void {
     this.activeTransition.set('dialog');
     this.activeTrigger.set('task-card');
     this.activeTaskId.set(task.id);
+    this.activeOriginKey.set(originKey ?? `task-edit-${task.id}`);
     this.dialogView.set('task-form');
     this.draftTitle.set(task.title);
     this.draftCategory.set(task.category);
@@ -71,7 +74,7 @@ export class DialogService {
     this.draftPriority.set(task.priority);
     this.draftNotes.set(task.notes);
 
-    // Synchronize DOM so the clicked task card gets view-transition-name: dialog-transform
+    // Synchronize DOM so the clicked origin button gets view-transition-name: dialog-transform
     this.appRef.tick();
 
     this.runViewTransition(
@@ -93,6 +96,7 @@ export class DialogService {
         this.activeTransition.set(null);
         this.activeTrigger.set(null);
         this.activeTaskId.set(null);
+        this.activeOriginKey.set(null);
         this.resetDraftForm();
       },
       true
@@ -119,6 +123,7 @@ export class DialogService {
       () => {
         if (moveCenter) {
           this.activeTrigger.set('bento-center');
+          this.activeOriginKey.set(null);
           this.resetDraftForm();
         }
         this.dialogView.set(targetView);

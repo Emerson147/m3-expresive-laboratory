@@ -93,10 +93,10 @@ describe('DialogContainerComponent', () => {
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[role="radiogroup"][aria-label="Categoría de tarea"]')).toBeTruthy();
-    expect(el.querySelector('[role="radiogroup"][aria-label="Día programado"]')).toBeTruthy();
-    expect(el.querySelector('[role="radiogroup"][aria-label="Prioridad de tarea"]')).toBeTruthy();
-    expect(el.querySelector('#dialog-task-time')).toBeTruthy();
+    expect(el.querySelector('m3-button-group [aria-label="Categoría de tarea"]')).toBeTruthy();
+    expect(el.querySelector('m3-button-group [aria-label="Día programado"]')).toBeTruthy();
+    expect(el.querySelector('m3-button-group [aria-label="Prioridad de tarea"]')).toBeTruthy();
+    expect(el.querySelector('m3-text-field input#dialog-task-time')).toBeTruthy();
 
     // Submit empty title shows inline validation without disabling Guardar button
     const form = el.querySelector('form') as HTMLFormElement;
