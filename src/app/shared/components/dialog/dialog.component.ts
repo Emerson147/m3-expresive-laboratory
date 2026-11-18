@@ -51,7 +51,7 @@ const TONE_ICON_CLASSES: Record<M3DialogTone, string> = {
       [style.view-transition-name]="viewTransitionName()"
       [attr.aria-labelledby]="titleId"
       [attr.aria-describedby]="describedById()"
-      [attr.closedby]="closeOnBackdrop() ? 'any' : 'closerequest'"
+      [attr.closedby]="managedClose() ? 'none' : (closeOnBackdrop() ? 'any' : 'closerequest')"
       (cancel)="onNativeCancel($event)"
       (close)="onNativeClose()"
       (pointerdown)="onPointerDown($event)"
@@ -174,8 +174,10 @@ export class M3DialogComponent {
   readonly showCloseButton = input<boolean | null>(null);
   readonly closeLabel = input<string>('Cerrar diálogo');
   readonly viewTransitionName = input<string | null>(null);
+  readonly managedClose = input<boolean>(false);
 
   readonly closed = output<string>();
+  readonly closeRequested = output<string>();
 
   private readonly seqId = ++nextDialogId;
   readonly titleId = `m3-dialog-title-${this.seqId}`;
@@ -256,7 +258,9 @@ export class M3DialogComponent {
 
   onPointerUp(event: PointerEvent): void {
     const el = this.dialogRef()?.nativeElement;
-    if (!this.closeOnBackdrop() || !el || 'closedBy' in HTMLDialogElement.prototype) {
+    const needsManualBackdropCheck =
+      this.managedClose() || !('closedBy' in HTMLDialogElement.prototype);
+    if (!this.closeOnBackdrop() || !el || !needsManualBackdropCheck) {
       this.pressedOutside = false;
       return;
     }
@@ -286,6 +290,10 @@ export class M3DialogComponent {
   }
 
   dismiss(reason = 'dismiss'): void {
+    if (this.managedClose()) {
+      this.closeRequested.emit(reason);
+      return;
+    }
     const el = this.dialogRef()?.nativeElement;
     if (el && el.hasAttribute('open')) {
       if (typeof el.close === 'function') {

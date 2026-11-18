@@ -1,33 +1,21 @@
-import { Component, inject, input, model, output, signal, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, input, output } from '@angular/core';
 import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
-import {
-  TASK_CATEGORIES,
-  TASK_DUE_BUCKETS,
-  TASK_DURATIONS,
-  TASK_PRIORITIES,
-  TaskDueBucket,
-  TaskPriority
-} from '../../core/tasks/task.service';
 import { ContrastLevel, MotionScheme, ThemeService } from '../../core/theme/theme.service';
-import { DialogView, NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
+import { NavStyle, TransitionType, TriggerMode } from '../models/ui.models';
 import {
   M3ButtonGroupComponent,
   M3ButtonGroupOption
 } from '../components/button/button-group.component';
 import { M3ButtonComponent } from '../components/button/button.component';
 import { M3SwitchComponent } from '../components/switch/switch.component';
-import { M3TextFieldComponent } from '../components/text-field/text-field.component';
 
 @Component({
   selector: 'app-dialog-container',
   standalone: true,
   imports: [
-    FormsModule,
     M3ButtonComponent,
     M3ButtonGroupComponent,
-    M3SwitchComponent,
-    M3TextFieldComponent
+    M3SwitchComponent
   ],
   host: {
     class: 'contents'
@@ -36,28 +24,21 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
     @if (isDialogOpen()) {
       <div (click)="closeDialog.emit()" class="fixed inset-0 z-40"></div>
 
-      <div 
-        id="dialog-container" 
+      <div
+        id="dialog-container"
         role="dialog"
         aria-modal="true"
-        [attr.aria-label]="dialogAriaLabel()"
+        aria-label="Opciones del Sistema"
         [style.view-transition-name]="isDialogOpen() && activeTransition() === 'dialog' ? 'dialog-transform' : null"
-        [class.top-4]="activeTrigger() === 'fab-header'" 
-        [class.right-4]="activeTrigger() === 'fab-header'"
-        [class.sm:w-[420px]]="activeTrigger() === 'fab-header'"
-        [class.bottom-4]="activeTrigger() === 'menu-bottom-left'" 
+        [class.bottom-4]="activeTrigger() === 'menu-bottom-left'"
         [class.left-4]="activeTrigger() === 'menu-bottom-left'"
-        [class.sm:w-[408px]]="activeTrigger() === 'menu-bottom-left'" 
-        [class.inset-0]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
-        [class.m-auto]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
-        [class.sm:w-[600px]]="activeTrigger() === 'bento-center' || activeTrigger() === 'task-card'"
+        [class.sm:w-[408px]]="activeTrigger() === 'menu-bottom-left'"
         [class.w-[calc(100%-2rem)]]="true"
         [class.m3-container-enter]="!themeService.hasViewTransitions()"
         class="fixed h-fit max-h-[calc(100dvh-2rem)] bg-surface-box border border-outline-sub/60 forced-colors:border-[CanvasText] p-6 sm:p-7 flex flex-col justify-between shadow-m3-level4 z-50 rounded-m3-xl overflow-hidden">
 
-        <!-- VISTA A & B UNIFICADAS: CENTRO DE PERSONALIZACIÓN M3 EXPRESSIVE -->
-        @if (dialogView() === 'menu-main' || dialogView() === 'menu-appearance') {
-          <div class="flex flex-col min-h-0 gap-3.5 overflow-y-auto m3-scrollbar pr-0.5">
+        <!-- CENTRO GLOBAL DE PERSONALIZACIÓN M3 EXPRESSIVE -->
+        <div class="flex flex-col min-h-0 gap-3.5 overflow-y-auto m3-scrollbar pr-0.5">
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
                 <span class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
@@ -198,170 +179,6 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
                 (selectionChange)="onNavSelect($event)" />
             </div>
           </div>
-        }
-
-        <!-- VISTA C: FORMULARIO DE CREACIÓN / EDICIÓN DE TAREA CON <m3-button-group> Y <m3-text-field> -->
-        @if (dialogView() === 'task-form') {
-          <form (ngSubmit)="submitTaskForm()" novalidate class="flex flex-col min-h-0 flex-1">
-            <div class="space-y-5 overflow-y-auto overflow-x-hidden pr-1 pb-2 m3-scrollbar">
-              <div class="flex items-start justify-between gap-3 pb-4 border-b border-outline-sub">
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-11 h-11 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
-                    <span class="material-symbols-rounded text-xl" aria-hidden="true">
-                      {{ activeTaskId() !== null ? 'edit_calendar' : 'event' }}
-                    </span>
-                  </div>
-                  <div class="min-w-0">
-                    <h2 class="text-title-lg-emphasized text-main">
-                      {{ activeTaskId() !== null ? 'Editar Tarea' : 'Nueva Tarea' }}
-                    </h2>
-                    <p class="text-body-sm text-muted mt-0.5">
-                      {{ activeTaskId() !== null ? 'Ajusta horizonte temporal, prioridad y notas de seguimiento.' : 'Define objetivo, bloque temporal y prioridad de ejecución.' }}
-                    </p>
-                  </div>
-                </div>
-                <m3-button
-                  [iconOnly]="true"
-                  variant="text"
-                  size="sm"
-                  icon="close"
-                  ariaLabel="Cerrar formulario"
-                  (action)="onCancelTaskForm()" />
-              </div>
-
-              <div class="space-y-5">
-                <m3-text-field
-                  #taskTitleField
-                  variant="filled"
-                  label="Título de la tarea"
-                  placeholder="Ej. Revisión arquitectónica de DenRaf"
-                  icon="edit_note"
-                  [required]="true"
-                  [clearable]="true"
-                  [maxlength]="80"
-                  enterkeyhint="done"
-                  [errorText]="titleValidationError()"
-                  [value]="draftTitle()"
-                  (valueChange)="onTitleModelChange($event)"
-                  (inputBlur)="validateTitleOnBlur()"
-                  supportingText="Define el objetivo con claridad" />
-
-                <fieldset class="space-y-2 border-0 p-0 m-0">
-                  <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-                    Categoría
-                  </legend>
-                  <m3-button-group
-                    variant="standard"
-                    size="sm"
-                    ariaLabel="Categoría de tarea"
-                    [options]="categoryOptions"
-                    [value]="[draftCategory()]"
-                    (selectionChange)="onCategorySelect($event)" />
-                </fieldset>
-
-                <!-- CONTENEDOR TONAL PARA PROGRAMACIÓN Y PRIORIDAD SIN SOLAPAMIENTO -->
-                <div class="bg-surface-low rounded-m3-lg p-4 sm:p-5 space-y-4">
-                  <fieldset class="space-y-2 border-0 p-0 m-0">
-                    <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-                      Bloque / Día
-                    </legend>
-                    <m3-button-group
-                      variant="connected"
-                      size="sm"
-                      ariaLabel="Día programado"
-                      [options]="dueBucketOptions"
-                      [value]="[draftDate()]"
-                      (selectionChange)="onDateSelect($event)" />
-                  </fieldset>
-
-                  <fieldset class="space-y-2 border-0 p-0 m-0">
-                    <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-                      Prioridad
-                    </legend>
-                    <m3-button-group
-                      variant="connected"
-                      size="sm"
-                      ariaLabel="Prioridad de tarea"
-                      [options]="priorityOptions"
-                      [value]="[draftPriority()]"
-                      (selectionChange)="onPrioritySelect($event)" />
-                  </fieldset>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pt-1">
-                    <div class="sm:col-span-5">
-                      <m3-text-field
-                        [id]="'dialog-task-time'"
-                        variant="filled"
-                        type="time"
-                        label="Hora sugerida"
-                        placeholder="HH:mm"
-                        icon="schedule"
-                        [value]="draftTimeSlot()"
-                        (valueChange)="draftTimeSlot.set($event)" />
-                    </div>
-
-                    <fieldset class="sm:col-span-7 space-y-2 border-0 p-0 m-0">
-                      <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-                        Bloque de enfoque
-                      </legend>
-                      <m3-button-group
-                        variant="connected"
-                        size="sm"
-                        ariaLabel="Duración en minutos"
-                        [options]="durationOptions"
-                        [value]="[draftDuration().toString()]"
-                        (selectionChange)="onDurationSelect($event)" />
-                    </fieldset>
-                  </div>
-                </div>
-
-                <m3-text-field
-                  variant="filled"
-                  label="Notas de apoyo"
-                  placeholder="Detalles sobre entidades, puertos y adaptadores..."
-                  icon="description"
-                  [multiline]="true"
-                  [autoGrow]="true"
-                  [rows]="3"
-                  [maxlength]="300"
-                  [value]="draftNotes()"
-                  (valueChange)="draftNotes.set($event)"
-                  supportingText="Especificaciones y contexto técnico" />
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-3 pt-4 border-t border-outline-sub mt-4 shrink-0">
-              @if (activeTaskId() !== null) {
-                <m3-button
-                  type="button"
-                  variant="tonal"
-                  size="sm"
-                  icon="delete"
-                  (action)="deleteTask.emit()">
-                  Eliminar
-                </m3-button>
-              } @else {
-                <div></div>
-              }
-
-              <div class="flex items-center gap-3">
-                <m3-button
-                  type="button"
-                  variant="text"
-                  (action)="onCancelTaskForm()">
-                  Cancelar
-                </m3-button>
-                <m3-button
-                  type="submit"
-                  variant="filled"
-                  icon="check">
-                  Guardar
-                </m3-button>
-              </div>
-            </div>
-          </form>
-        }
-
       </div>
     }
   `
@@ -369,29 +186,6 @@ import { M3TextFieldComponent } from '../components/text-field/text-field.compon
 export class DialogContainerComponent {
   readonly themeService = inject(ThemeService);
   readonly adaptiveLayout = inject(AdaptiveLayoutService);
-  private readonly taskTitleField = viewChild<M3TextFieldComponent>('taskTitleField');
-
-  readonly categoryOptions: M3ButtonGroupOption[] = TASK_CATEGORIES.map(c => ({
-    id: c.name,
-    label: c.name,
-    icon: c.icon
-  }));
-
-  readonly dueBucketOptions: M3ButtonGroupOption[] = TASK_DUE_BUCKETS.map(b => ({
-    id: b,
-    label: b
-  }));
-
-  readonly priorityOptions: M3ButtonGroupOption[] = TASK_PRIORITIES.map(p => ({
-    id: p,
-    label: p,
-    icon: p === 'Alta' ? 'priority_high' : p === 'Media' ? 'flag' : 'low_priority'
-  }));
-
-  readonly durationOptions: M3ButtonGroupOption[] = TASK_DURATIONS.map(d => ({
-    id: d.toString(),
-    label: `${d}m`
-  }));
 
   readonly navOptions: M3ButtonGroupOption[] = [
     { id: 'auto', label: 'Auto (M3)', icon: 'auto_awesome' },
@@ -422,31 +216,10 @@ export class DialogContainerComponent {
   readonly isDialogOpen = input.required<boolean>();
   readonly activeTrigger = input<TriggerMode | null>(null);
   readonly activeTransition = input<TransitionType>(null);
-  readonly dialogView = input.required<DialogView>();
   readonly navStyle = input.required<NavStyle>();
-  readonly activeTaskId = input<number | null>(null);
-
-  readonly draftTitle = model<string>('');
-  readonly draftCategory = model<string>('Frontend Angular');
-  readonly draftDate = model<string>('Hoy');
-  readonly draftTimeSlot = model<string>('10:00');
-  readonly draftDuration = model<number>(25);
-  readonly draftPriority = model<TaskPriority>('Alta');
-  readonly draftNotes = model<string>('');
-
-  readonly titleValidationError = signal<string | null>(null);
 
   readonly closeDialog = output<void>();
-  readonly saveTask = output<void>();
-  readonly deleteTask = output<void>();
-  readonly morphView = output<{ targetView: DialogView; moveCenter?: boolean }>();
   readonly navStyleChange = output<NavStyle>();
-
-  dialogAriaLabel(): string {
-    const view = this.dialogView();
-    if (view === 'menu-appearance' || view === 'menu-main') return 'Opciones del Sistema';
-    return this.activeTaskId() !== null ? 'Editar Tarea' : 'Nueva Tarea';
-  }
 
   captureThemeSwitchEvent(event: MouseEvent): void {
     this.lastThemePointerEvent = event;
@@ -475,52 +248,5 @@ export class DialogContainerComponent {
   onNavSelect(selected: string[]): void {
     const style = selected[0] as NavStyle | undefined;
     if (style) this.navStyleChange.emit(style);
-  }
-
-  onCategorySelect(selected: string[]): void {
-    if (selected[0]) this.draftCategory.set(selected[0]);
-  }
-
-  onDateSelect(selected: string[]): void {
-    const bucket = selected[0] as TaskDueBucket | undefined;
-    if (bucket) this.draftDate.set(bucket);
-  }
-
-  onPrioritySelect(selected: string[]): void {
-    const prio = selected[0] as TaskPriority | undefined;
-    if (prio) this.draftPriority.set(prio);
-  }
-
-  onDurationSelect(selected: string[]): void {
-    const mins = Number(selected[0]);
-    if (!Number.isNaN(mins) && mins > 0) this.draftDuration.set(mins);
-  }
-
-  onTitleModelChange(val: string): void {
-    this.draftTitle.set(val);
-    if (this.titleValidationError() && val.trim()) {
-      this.titleValidationError.set(null);
-    }
-  }
-
-  validateTitleOnBlur(): void {
-    if (!this.draftTitle().trim()) {
-      this.titleValidationError.set('Ingresa un título para identificar la actividad.');
-    }
-  }
-
-  onCancelTaskForm(): void {
-    this.titleValidationError.set(null);
-    this.closeDialog.emit();
-  }
-
-  submitTaskForm(): void {
-    if (!this.draftTitle().trim()) {
-      this.titleValidationError.set('El título es obligatorio para guardar la tarea.');
-      this.taskTitleField()?.focus();
-      return;
-    }
-    this.titleValidationError.set(null);
-    this.saveTask.emit();
   }
 }

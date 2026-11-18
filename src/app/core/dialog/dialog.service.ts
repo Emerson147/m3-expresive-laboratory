@@ -1,8 +1,13 @@
 import { ApplicationRef, computed, inject, Injectable, signal } from '@angular/core';
-import { DialogView, NavChromeMode, NavStyle, resolveNavChrome, TransitionType, TriggerMode } from '../../shared/models/ui.models';
+import {
+  DialogView,
+  NavChromeMode,
+  NavStyle,
+  resolveNavChrome,
+  TransitionType,
+  TriggerMode
+} from '../../shared/models/ui.models';
 import { AdaptiveLayoutService } from '../layout/adaptive-layout.service';
-import { normalizeDueBucket, TaskDueBucket, TaskItem, TaskPriority, TaskService } from '../tasks/task.service';
-import { ThemeService } from '../theme/theme.service';
 import { StageOverlayService } from './stage-overlay.service';
 
 @Injectable({
@@ -11,17 +16,13 @@ import { StageOverlayService } from './stage-overlay.service';
 export class DialogService {
   private readonly appRef = inject(ApplicationRef);
   private readonly adaptiveLayout = inject(AdaptiveLayoutService);
-  private readonly taskService = inject(TaskService);
-  private readonly themeService = inject(ThemeService);
   private readonly stageOverlay = inject(StageOverlayService);
 
   readonly isDialogOpen = signal<boolean>(false);
   readonly activeTrigger = signal<TriggerMode | null>(null);
-  readonly dialogView = signal<DialogView>('task-form');
+  readonly dialogView = signal<DialogView>('menu-main');
   readonly isHeroExpanded = signal<boolean>(false);
   readonly activeTransition = signal<TransitionType>(null);
-  readonly activeTaskId = signal<number | null>(null);
-  readonly activeOriginKey = signal<string | null>(null);
   readonly navStyle = signal<NavStyle>('auto');
   readonly isRailManuallyExpanded = signal<boolean | null>(null);
 
@@ -34,47 +35,12 @@ export class DialogService {
     )
   );
 
-  // Draft form state
-  readonly draftTitle = signal<string>('');
-  readonly draftCategory = signal<string>('Frontend Angular');
-  readonly draftDate = signal<TaskDueBucket>('Hoy');
-  readonly draftTimeSlot = signal<string>('10:00');
-  readonly draftDuration = signal<number>(25);
-  readonly draftPriority = signal<TaskPriority>('Alta');
-  readonly draftNotes = signal<string>('');
-
-  openFrom(trigger: TriggerMode, originKey: string | null = null): void {
+  openFrom(trigger: TriggerMode = 'menu-bottom-left'): void {
     this.activeTransition.set('dialog');
-    this.activeTaskId.set(null);
-    this.activeOriginKey.set(originKey);
-    this.resetDraftForm();
-    this.dialogView.set(trigger === 'menu-bottom-left' ? 'menu-main' : 'task-form');
+    this.dialogView.set('menu-main');
     this.activeTrigger.set(trigger);
 
-    // Synchronize DOM so trigger element gets view-transition-name before snapshot
-    this.appRef.tick();
-
-    this.runViewTransition(
-      () => this.isDialogOpen.set(true),
-      () => this.activeTransition.set(null)
-    );
-  }
-
-  openTaskCard(task: TaskItem, originKey: string | null = null): void {
-    this.activeTransition.set('dialog');
-    this.activeTrigger.set('task-card');
-    this.activeTaskId.set(task.id);
-    this.activeOriginKey.set(originKey ?? `task-edit-${task.id}`);
-    this.dialogView.set('task-form');
-    this.draftTitle.set(task.title);
-    this.draftCategory.set(task.category);
-    this.draftDate.set(task.dueBucket);
-    this.draftTimeSlot.set(task.timeSlot);
-    this.draftDuration.set(task.durationMinutes);
-    this.draftPriority.set(task.priority);
-    this.draftNotes.set(task.notes);
-
-    // Synchronize DOM so the clicked origin button gets view-transition-name: dialog-transform
+    // Synchronize DOM so the global shell trigger owns view-transition-name before snapshot
     this.appRef.tick();
 
     this.runViewTransition(
@@ -95,9 +61,6 @@ export class DialogService {
       () => {
         this.activeTransition.set(null);
         this.activeTrigger.set(null);
-        this.activeTaskId.set(null);
-        this.activeOriginKey.set(null);
-        this.resetDraftForm();
       },
       true
     );
@@ -115,53 +78,6 @@ export class DialogService {
     );
   }
 
-  morphDialogInternalView(targetView: DialogView, moveCenter = false): void {
-    this.activeTransition.set('dialog');
-    this.appRef.tick();
-
-    this.runViewTransition(
-      () => {
-        if (moveCenter) {
-          this.activeTrigger.set('bento-center');
-          this.activeOriginKey.set(null);
-          this.resetDraftForm();
-        }
-        this.dialogView.set(targetView);
-      },
-      () => this.activeTransition.set(null)
-    );
-  }
-
-  saveTask(): void {
-    const title = this.draftTitle().trim();
-    if (!title) return;
-
-    const dueBucket = normalizeDueBucket(this.draftDate());
-    this.taskService.saveTask(
-      {
-        title,
-        category: this.draftCategory(),
-        dateLabel: dueBucket,
-        dueBucket,
-        timeSlot: this.draftTimeSlot(),
-        durationMinutes: this.draftDuration(),
-        priority: this.draftPriority(),
-        notes: this.draftNotes()
-      },
-      this.activeTaskId()
-    );
-
-    this.closeDialog();
-  }
-
-  deleteActiveTask(): void {
-    const id = this.activeTaskId();
-    if (id !== null) {
-      this.taskService.deleteTask(id);
-      this.closeDialog();
-    }
-  }
-
   setNavStyle(style: NavStyle): void {
     if (this.navStyle() === style) return;
     if (style === 'auto') {
@@ -174,16 +90,6 @@ export class DialogService {
       () => this.navStyle.set(style),
       () => this.activeTransition.set(null)
     );
-  }
-
-  private resetDraftForm(): void {
-    this.draftTitle.set('');
-    this.draftCategory.set('Frontend Angular');
-    this.draftDate.set('Hoy');
-    this.draftTimeSlot.set('10:00');
-    this.draftDuration.set(25);
-    this.draftPriority.set('Alta');
-    this.draftNotes.set('');
   }
 
   private runViewTransition(update: () => void, cleanup: () => void, isExiting = false): void {

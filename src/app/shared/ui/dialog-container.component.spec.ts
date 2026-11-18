@@ -28,12 +28,11 @@ describe('DialogContainerComponent', () => {
     fixture.componentRef.setInput('isDialogOpen', true);
     fixture.componentRef.setInput('activeTrigger', 'menu-bottom-left');
     fixture.componentRef.setInput('activeTransition', null);
-    fixture.componentRef.setInput('dialogView', 'menu-main');
     fixture.componentRef.setInput('navStyle', 'auto');
-    fixture.componentRef.setInput('activeTaskId', null);
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('form')).toBeNull();
     expect(el.textContent).not.toContain('Nueva tarea rápida');
     expect(el.querySelector('[aria-label="Color semilla del tema"]')).toBeTruthy();
 
@@ -77,40 +76,5 @@ describe('DialogContainerComponent', () => {
     ) as HTMLButtonElement;
     dockBtn.click();
     expect(navSpy).toHaveBeenCalledWith('dock');
-  });
-
-  it('renders category, bucket, priority, time, and duration controls in task-form and validates empty title on submit', () => {
-    const fixture = TestBed.createComponent(DialogContainerComponent);
-    const saveSpy = vi.fn();
-    fixture.componentInstance.saveTask.subscribe(saveSpy);
-
-    fixture.componentRef.setInput('isDialogOpen', true);
-    fixture.componentRef.setInput('activeTrigger', 'fab-header');
-    fixture.componentRef.setInput('activeTransition', null);
-    fixture.componentRef.setInput('dialogView', 'task-form');
-    fixture.componentRef.setInput('navStyle', 'auto');
-    fixture.componentRef.setInput('activeTaskId', null);
-    fixture.detectChanges();
-
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('m3-button-group [aria-label="Categoría de tarea"]')).toBeTruthy();
-    expect(el.querySelector('m3-button-group [aria-label="Día programado"]')).toBeTruthy();
-    expect(el.querySelector('m3-button-group [aria-label="Prioridad de tarea"]')).toBeTruthy();
-    expect(el.querySelector('m3-text-field input#dialog-task-time')).toBeTruthy();
-
-    // Submit empty title shows inline validation without disabling Guardar button
-    const form = el.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
-    fixture.detectChanges();
-
-    expect(saveSpy).not.toHaveBeenCalled();
-    expect(el.textContent).toContain('El título es obligatorio para guardar la tarea.');
-
-    fixture.componentInstance.onTitleModelChange('Configurar Pipeline CI');
-    fixture.detectChanges();
-    form.dispatchEvent(new Event('submit'));
-    fixture.detectChanges();
-
-    expect(saveSpy).toHaveBeenCalledTimes(1);
   });
 });
