@@ -1,14 +1,24 @@
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
+  ApplicationRef,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  Injector,
+  TemplateRef,
   ViewEncapsulation,
   computed,
+  effect,
   inject,
-  signal
+  signal,
+  viewChild
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DialogService } from '../../core/dialog/dialog.service';
+import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
 import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
-import { FilterStatus, TaskItem, TaskService } from '../../core/tasks/task.service';
+import { FilterStatus, TaskDraft, TaskItem, TaskService } from '../../core/tasks/task.service';
 import { M3ButtonComponent } from '../../shared/components/button/button.component';
 import { M3FabComponent } from '../../shared/components/button/fab.component';
 import { M3DialogComponent } from '../../shared/components/dialog/dialog.component';
@@ -20,11 +30,21 @@ import {
   AgendaFiltersBarComponent,
   AgendaTaskPresetId
 } from './components/agenda-filters-bar.component';
+import { AgendaFocusDockComponent } from './components/agenda-focus-dock.component';
+import { AgendaFocusTheaterDialogComponent } from './components/agenda-focus-theater-dialog.component';
 import { AgendaInspectorPaneComponent } from './components/agenda-inspector-pane.component';
 import { AgendaKpiQuickFilter, AgendaKpiRibbonComponent } from './components/agenda-kpi-ribbon.component';
+import { AgendaTaskFormDialogComponent } from './components/agenda-task-form-dialog.component';
 import { AgendaTaskListComponent } from './components/agenda-task-list.component';
 
 type AgendaMobileTab = 'list' | 'inspector';
+export type TaskFormMorphOrigin =
+  | 'create-split'
+  | 'mobile-fab'
+  | 'inspector-modal'
+  | `card-${number}`;
+type TaskFormMorphTarget = TaskFormMorphOrigin | 'dialog';
+type FocusMorphOwner = 'dock' | 'theater';
 
 @Component({
   selector: 'app-agenda-page',
@@ -33,6 +53,7 @@ type AgendaMobileTab = 'list' | 'inspector';
   encapsulation: ViewEncapsulation.None,
   styles: [AGENDA_EXPRESSIVE_CSS],
   imports: [
+    NgTemplateOutlet,
     M3ButtonComponent,
     M3DialogComponent,
     M3FabComponent,
@@ -40,6 +61,9 @@ type AgendaMobileTab = 'list' | 'inspector';
     M3TabsComponent,
     AgendaKpiRibbonComponent,
     AgendaFiltersBarComponent,
+    AgendaFocusDockComponent,
+    AgendaFocusTheaterDialogComponent,
+    AgendaTaskFormDialogComponent,
     AgendaTaskListComponent,
     AgendaInspectorPaneComponent
   ],
@@ -47,8 +71,8 @@ type AgendaMobileTab = 'list' | 'inspector';
     class: 'block w-full min-w-0'
   },
   template: `
-    <div class="agenda-workbench flex flex-col gap-7 lg:gap-8 w-full min-w-0">
-      <!-- BANDA 1: PANORAMA Y PULSO DIARIO -->
+    <div class="agenda-workbench flex flex-col gap-5 lg:gap-6 w-full min-w-0">
+      <!-- BANDA 1: PANORAMA COMPACTO Y FILTROS RÁPIDOS -->
       <app-agenda-kpi-ribbon
         [totalCount]="taskService.tasks().length"
         [pendingCount]="taskService.pendingCount()"
@@ -62,7 +86,7 @@ type AgendaMobileTab = 'list' | 'inspector';
         [priorityFilter]="taskService.priorityFilter()"
         (quickFilter)="applyQuickFilter($event)" />
 
-      <!-- BANDA 2: BUSCADOR LANDMARK Y FILTROS DE DESIGN SYSTEM -->
+      <!-- BANDA 2: BUSCADOR, SWITCH INMEDIATO Y CTA CON MORPH ORIGIN -->
       <app-agenda-filters-bar
         [searchQuery]="taskService.searchQuery()"
         [filterStatus]="taskService.filterStatus()"
@@ -71,15 +95,14 @@ type AgendaMobileTab = 'list' | 'inspector';
         [totalCount]="taskService.tasks().length"
         [pendingCount]="taskService.pendingCount()"
         [completedCount]="taskService.completedCount()"
-        [isDialogOpen]="dialogService.isDialogOpen()"
-        [isDialogTransitioning]="dialogService.activeTransition() === 'dialog'"
-        [activeOriginKey]="dialogService.activeOriginKey()"
+        [createViewTransitionName]="taskFormMorphTarget() === 'create-split' ? 'dialog-transform' : null"
+        [hideCreateTrigger]="isOriginHidden('create-split')"
         (searchChange)="taskService.setSearchQuery($event)"
         (statusChange)="onStatusChange($event)"
         (categoryChange)="taskService.setCategoryFilter($event)"
         (onlyTodayChange)="onOnlyTodayChange($event)"
         (requestClearCompleted)="clearDialogOpen.set(true)"
-        (createTask)="openNewTaskDialog('agenda-split-create')"
+        (createTask)="openNewTaskDialog('create-split')"
         (createPreset)="onCreatePresetTask($event)" />
 
       <!-- NAVEGADOR ADAPTATIVO EN MÓVIL / TABLET (< lg) -->
@@ -92,9 +115,9 @@ type AgendaMobileTab = 'list' | 'inspector';
           [(value)]="mobileTab" />
       </div>
 
-      <!-- BANDA 3: COMPOSICIÓN ASIMÉTRICA LIST-DETAIL + SUPPORTING PANE (7 / 5) -->
+      <!-- BANDA 3: COMPOSICIÓN ASIMÉTRICA LIST-DETAIL + POMODORO PROTAGONISTA (7 / 5) -->
       @let isMobileTabMode = adaptiveLayout.windowWidth() < 1024;
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-7 items-start">
         <div
           id="agenda-panel-list"
           [attr.role]="isMobileTabMode ? 'tabpanel' : null"
@@ -105,18 +128,16 @@ type AgendaMobileTab = 'list' | 'inspector';
             [selectedTaskId]="taskService.selectedTask()?.id ?? null"
             [focusActiveTaskId]="focusService.activeTaskId()"
             [focusRunning]="focusService.status() === 'running'"
-            [isDialogOpen]="dialogService.isDialogOpen()"
-            [isDialogTransitioning]="dialogService.activeTransition() === 'dialog'"
-            [activeOriginKey]="dialogService.activeOriginKey()"
-            [activeTrigger]="dialogService.activeTrigger()"
-            [activeTaskId]="dialogService.activeTaskId()"
+            [activeEditOriginTaskId]="activeEditCardId()"
+            [hiddenEditTaskId]="hiddenEditCardId()"
             (selectTask)="onSelectTask($event)"
             (toggleCompleted)="onToggleCompleted($event)"
-            (editTask)="openTaskModal($event, 'task-edit-' + $event.id)"
+            (editTask)="openTaskModal($event)"
             (deleteTask)="onDeleteTask($event)"
+            (focusTask)="onQuickFocusTask($event)"
             (quickAdd)="onQuickAddTask($event)"
             (resetFilters)="resetFilters()"
-            (createTask)="openNewTaskDialog('agenda-empty-create')" />
+            (createTask)="openNewTaskDialog(null)" />
         </div>
 
         <div
@@ -124,23 +145,34 @@ type AgendaMobileTab = 'list' | 'inspector';
           [attr.role]="isMobileTabMode ? 'tabpanel' : null"
           [attr.aria-labelledby]="isMobileTabMode ? 'agenda-mobile-tab-inspector' : null"
           [class]="(mobileTab() === 'inspector' ? 'block' : 'hidden') + ' lg:block lg:col-span-5 lg:sticky lg:top-4 min-w-0'">
-          <app-agenda-inspector-pane
-            [task]="taskService.selectedTask()"
-            [isDialogOpen]="dialogService.isDialogOpen()"
-            [isDialogTransitioning]="dialogService.activeTransition() === 'dialog'"
-            [activeOriginKey]="dialogService.activeOriginKey()"
-            (toggleCompleted)="onToggleCompleted($event)"
-            (openModalEdit)="openTaskModal($event, 'inspector-modal-' + $event.id)"
-            (patchTask)="onPatchTask($event)"
-            (toggleSubtask)="taskService.toggleSubtask($event.taskId, $event.subtaskId)"
-            (addSubtask)="taskService.addSubtask($event.taskId, $event.title)"
-            (removeSubtask)="taskService.removeSubtask($event.taskId, $event.subtaskId)"
-            (focusRecorded)="showToast($event, false)"
-            (announceStatus)="announce($event)" />
+          <aside aria-label="Enfoque y detalle de actividad" class="space-y-5">
+            <!-- POMODORO PROTAGONISTA PERSISTENTE + MORPH CARD -> CARD EXPANDIDA (hero-transform) -->
+            <app-agenda-focus-dock
+              [focusedTask]="focusedTask()"
+              [selectedTask]="taskService.selectedTask()"
+              [viewTransitionName]="focusMorphOwner() === 'dock' ? 'hero-transform' : null"
+              [isHiddenForMorph]="focusTheaterOpen()"
+              (expandTheater)="openFocusTheater()"
+              (focusRecorded)="showToast($event, false)"
+              (selectFocusedTask)="onSelectTask($event)" />
+
+            <!-- DETALLE, SUBTAREAS Y PLANIFICACIÓN -->
+            <app-agenda-inspector-pane
+              [task]="taskService.selectedTask()"
+              [editViewTransitionName]="taskFormMorphTarget() === 'inspector-modal' ? 'dialog-transform' : null"
+              [hideEditButton]="isOriginHidden('inspector-modal')"
+              (toggleCompleted)="onToggleCompleted($event)"
+              (openModalEdit)="openTaskModal($event, 'inspector-modal')"
+              (patchTask)="onPatchTask($event)"
+              (toggleSubtask)="taskService.toggleSubtask($event.taskId, $event.subtaskId)"
+              (addSubtask)="taskService.addSubtask($event.taskId, $event.title)"
+              (removeSubtask)="taskService.removeSubtask($event.taskId, $event.subtaskId)"
+              (announceStatus)="announce($event)" />
+          </aside>
         </div>
       </div>
 
-      <!-- FAB MÓVIL DE SISTEMA PARA CREAR CON CONTAINER TRANSFORM (< md) -->
+      <!-- FAB MÓVIL DE SISTEMA PARA CREAR SIN SUBIR ARRIBA (< md) -->
       <div
         class="md:hidden fixed right-4 z-30"
         [class]="mobileFabBottomClass()">
@@ -149,10 +181,35 @@ type AgendaMobileTab = 'list' | 'inspector';
           size="md"
           variant="primary"
           ariaLabel="Nueva actividad en Agenda"
-          [invisible]="dialogService.isDialogOpen() && dialogService.activeOriginKey() === 'agenda-fab-create'"
-          [viewTransitionName]="dialogService.activeTransition() === 'dialog' && !dialogService.isDialogOpen() && dialogService.activeOriginKey() === 'agenda-fab-create' ? 'dialog-transform' : null"
-          (action)="openNewTaskDialog('agenda-fab-create')" />
+          [invisible]="isOriginHidden('mobile-fab')"
+          [viewTransitionName]="taskFormMorphTarget() === 'mobile-fab' ? 'dialog-transform' : null"
+          (action)="openNewTaskDialog('mobile-fab')" />
       </div>
+
+      <!-- MODO ENFOQUE INMERSIVO (CARD -> HERO CARD EXPANDIDA CON STAGE RECESS vía hero-transform) -->
+      <ng-template #focusTheaterTemplate>
+        <app-agenda-focus-theater-dialog
+          [open]="focusTheaterOpen()"
+          [task]="focusedTask()"
+          [viewTransitionName]="focusMorphOwner() === 'theater' ? 'hero-transform' : null"
+          (closeRequested)="closeFocusTheater()"
+          (toggleSubtask)="taskService.toggleSubtask($event.taskId, $event.subtaskId)"
+          (focusRecorded)="showToast($event, false)" />
+      </ng-template>
+
+      @if (!stageOverlay.hasExternalHost()) {
+        <ng-container [ngTemplateOutlet]="focusTheaterTemplate" />
+      }
+
+      <!-- FORMULARIO LOCAL DEL MÓDULO CON MORPH VIAJERO DESDE SU DISPARADOR -->
+      <app-agenda-task-form-dialog
+        [(open)]="taskFormOpen"
+        [editingTask]="editingTask()"
+        [managedClose]="taskFormLastOrigin() !== null && stageOverlay.hasViewTransitions()"
+        [viewTransitionName]="taskFormMorphTarget() === 'dialog' ? 'dialog-transform' : null"
+        (closeRequested)="closeTaskFormWithMorph()"
+        (saveTask)="onSaveTaskForm($event)"
+        (deleteTask)="onDeleteFromForm($event)" />
 
       <!-- CONFIRMACIÓN MODAL NATIVA PARA LIMPIEZA EN LOTE (<m3-dialog variant="expressive">) -->
       <m3-dialog
@@ -197,15 +254,94 @@ type AgendaMobileTab = 'list' | 'inspector';
 export class AgendaComponent {
   readonly taskService = inject(TaskService);
   readonly dialogService = inject(DialogService);
+  readonly stageOverlay = inject(StageOverlayService);
   readonly focusService = inject(AgendaFocusService);
   readonly adaptiveLayout = inject(AdaptiveLayoutService);
+  private readonly document = inject(DOCUMENT);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
+
+  private readonly focusTheaterTemplate = viewChild<TemplateRef<unknown>>('focusTheaterTemplate');
+  private returnFocusEl: HTMLElement | null = null;
 
   readonly mobileTab = signal<AgendaMobileTab>('list');
   readonly clearDialogOpen = signal<boolean>(false);
+  readonly taskFormOpen = signal<boolean>(false);
+  readonly editingTask = signal<TaskItem | null>(null);
+  readonly focusTheaterOpen = signal<boolean>(false);
+  readonly focusMorphOwner = signal<FocusMorphOwner | null>(null);
+  readonly taskFormMorphTarget = signal<TaskFormMorphTarget | null>(null);
+  readonly taskFormLastOrigin = signal<TaskFormMorphOrigin | null>(null);
+
   readonly localAnnouncement = signal<string>('');
   readonly snackbarOpen = signal<boolean>(false);
   readonly snackbarMessage = signal<string>('');
   readonly snackbarCanUndo = signal<boolean>(false);
+
+  readonly focusedTask = computed<TaskItem | null>(() => {
+    const activeId = this.focusService.activeTaskId();
+    if (activeId !== null) {
+      const bound = this.taskService.tasks().find(t => t.id === activeId);
+      if (bound) return bound;
+    }
+    return this.taskService.selectedTask();
+  });
+
+  readonly activeEditCardId = computed<number | null>(() => {
+    const target = this.taskFormMorphTarget();
+    return typeof target === 'string' && target.startsWith('card-') ? Number(target.slice(5)) : null;
+  });
+
+  readonly hiddenEditCardId = computed<number | null>(() => {
+    const origin = this.taskFormLastOrigin();
+    if (!this.taskFormOpen() || !origin?.startsWith('card-')) {
+      return null;
+    }
+    return Number(origin.slice(5));
+  });
+
+  constructor() {
+    effect(() => {
+      const tpl = this.focusTheaterTemplate();
+      if (tpl && this.stageOverlay.hasExternalHost()) {
+        this.stageOverlay.mountOverlayTemplate(tpl, this.injector);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      const tpl = this.focusTheaterTemplate();
+      if (tpl) {
+        this.stageOverlay.unmountOverlayTemplate(tpl);
+      }
+      this.stageOverlay.setOverlayOpen(false);
+    });
+
+    effect(() => {
+      const selected = this.taskService.selectedTask();
+      if (selected) {
+        this.focusService.syncIdleWithTask(selected.id, selected.durationMinutes);
+      }
+    });
+
+    this.route?.queryParamMap
+      .pipe(takeUntilDestroyed())
+      .subscribe(params => {
+        if (params.get('newTask') === '1') {
+          this.openNewTaskDialog(null);
+          if (this.router && this.route) {
+            void this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { newTask: null },
+              queryParamsHandling: 'merge',
+              replaceUrl: true
+            });
+          }
+        }
+      });
+  }
 
   readonly combinedLiveAnnouncement = computed(
     () => this.localAnnouncement() || this.focusService.announcement()
@@ -237,6 +373,10 @@ export class AgendaComponent {
       panelId: 'agenda-panel-inspector'
     }
   ]);
+
+  isOriginHidden(origin: TaskFormMorphOrigin): boolean {
+    return this.taskFormOpen() && this.taskFormLastOrigin() === origin;
+  }
 
   applyQuickFilter(filter: AgendaKpiQuickFilter): void {
     if (filter === 'high-priority') {
@@ -327,6 +467,16 @@ export class AgendaComponent {
     this.taskService.selectTask(id);
   }
 
+  onQuickFocusTask(task: TaskItem): void {
+    const isRunningHere =
+      this.focusService.activeTaskId() === task.id && this.focusService.status() === 'running';
+    if (isRunningHere) {
+      this.focusService.pause();
+      return;
+    }
+    this.focusService.startTaskSession(task.id, task.durationMinutes, task.title);
+  }
+
   onToggleCompleted(id: number): void {
     const task = this.taskService.tasks().find(t => t.id === id);
     this.taskService.toggleCompleted(id);
@@ -383,12 +533,155 @@ export class AgendaComponent {
     this.taskService.updateTaskFields(event.id, event.patch);
   }
 
-  openNewTaskDialog(originKey: string | null = null): void {
-    this.dialogService.openFrom('bento-center', originKey);
+  openFocusTheater(): void {
+    if (
+      !this.focusedTask() ||
+      this.focusTheaterOpen() ||
+      this.taskFormOpen() ||
+      this.focusMorphOwner() !== null ||
+      this.taskFormMorphTarget() !== null
+    ) {
+      return;
+    }
+
+    this.returnFocusEl = this.document.activeElement as HTMLElement | null;
+    this.focusMorphOwner.set('dock');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.focusTheaterOpen.set(true);
+        this.stageOverlay.setOverlayOpen(true);
+        this.focusMorphOwner.set('theater');
+      },
+      () => {
+        this.focusMorphOwner.set(null);
+      },
+      { rootClass: 'vt-hero' }
+    );
   }
 
-  openTaskModal(task: TaskItem, originKey?: string): void {
-    this.dialogService.openTaskCard(task, originKey ?? null);
+  closeFocusTheater(): void {
+    if (!this.focusTheaterOpen()) return;
+
+    this.focusMorphOwner.set('theater');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.focusTheaterOpen.set(false);
+        this.stageOverlay.setOverlayOpen(false);
+        this.focusMorphOwner.set('dock');
+      },
+      () => {
+        this.focusMorphOwner.set(null);
+        const returnTarget = this.returnFocusEl;
+        this.returnFocusEl = null;
+        if (returnTarget?.isConnected) {
+          returnTarget.focus();
+        }
+      },
+      { isExiting: true, rootClass: 'vt-hero' }
+    );
+  }
+
+  openNewTaskDialog(origin: TaskFormMorphOrigin | null = null): void {
+    this.openTaskForm(null, origin);
+  }
+
+  openTaskModal(task: TaskItem, origin?: TaskFormMorphOrigin): void {
+    this.openTaskForm(task, origin ?? `card-${task.id}`);
+  }
+
+  private openTaskForm(task: TaskItem | null, origin: TaskFormMorphOrigin | null): void {
+    if (
+      this.taskFormOpen() ||
+      this.focusTheaterOpen() ||
+      this.taskFormMorphTarget() !== null ||
+      this.focusMorphOwner() !== null
+    ) {
+      return;
+    }
+
+    if (!origin || !this.stageOverlay.hasViewTransitions()) {
+      this.taskFormLastOrigin.set(null);
+      this.editingTask.set(task);
+      this.taskFormOpen.set(true);
+      return;
+    }
+
+    this.taskFormLastOrigin.set(origin);
+    this.taskFormMorphTarget.set(origin);
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.editingTask.set(task);
+        this.taskFormOpen.set(true);
+        this.taskFormMorphTarget.set('dialog');
+      },
+      () => {
+        this.taskFormMorphTarget.set(null);
+      }
+    );
+  }
+
+  closeTaskFormWithMorph(): void {
+    if (!this.taskFormOpen()) return;
+    const origin = this.taskFormLastOrigin();
+
+    if (!origin || !this.stageOverlay.hasViewTransitions()) {
+      this.taskFormOpen.set(false);
+      this.taskFormLastOrigin.set(null);
+      this.taskFormMorphTarget.set(null);
+      this.editingTask.set(null);
+      return;
+    }
+
+    this.taskFormMorphTarget.set('dialog');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.taskFormOpen.set(false);
+        this.taskFormMorphTarget.set(origin);
+      },
+      () => {
+        this.taskFormMorphTarget.set(null);
+        this.taskFormLastOrigin.set(null);
+        this.editingTask.set(null);
+      },
+      { isExiting: true }
+    );
+  }
+
+  onSaveTaskForm(draft: TaskDraft): void {
+    const editingId = this.editingTask()?.id ?? null;
+    const saved = this.taskService.saveTask(draft, editingId);
+    const msg =
+      editingId !== null
+        ? `Actividad "${saved.title}" actualizada.`
+        : `Actividad "${saved.title}" creada.`;
+    this.announce(msg);
+    this.showToast(msg, false);
+    if (this.taskFormOpen()) {
+      this.closeTaskFormWithMorph();
+    } else {
+      this.editingTask.set(null);
+    }
+  }
+
+  onDeleteFromForm(id: number): void {
+    // Drop deleted card morph origin so close does not target a removed node
+    if (this.taskFormLastOrigin() === `card-${id}`) {
+      this.taskFormLastOrigin.set(null);
+    }
+    if (this.taskFormOpen()) {
+      this.closeTaskFormWithMorph();
+    } else {
+      this.editingTask.set(null);
+    }
+    this.onDeleteTask(id);
   }
 
   resetFilters(): void {

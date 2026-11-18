@@ -105,4 +105,28 @@ describe('OverviewComponent', () => {
     expect(el.querySelector('#overview-inline-spec-panel')).toBeNull();
     expect(el.querySelector('a[href="/design-system/styles"]')).toBeTruthy();
   });
+
+  it('opens local m3-dialog for quick task creation without invoking global DialogService form', () => {
+    const fixture = TestBed.createComponent(OverviewComponent);
+    const dialogService = TestBed.inject(DialogService);
+    const taskService = TestBed.inject(TaskService);
+    const openGlobalSpy = vi.spyOn(dialogService, 'openFrom');
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const triggerBtn = el.querySelector('#trigger-bento-center button') as HTMLButtonElement;
+    triggerBtn.click();
+    fixture.detectChanges();
+
+    expect(openGlobalSpy).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.quickTaskOpen()).toBe(true);
+    expect(el.querySelector('m3-dialog dialog.m3-dialog-expressive')?.hasAttribute('open')).toBe(true);
+
+    fixture.componentInstance.onQuickTitleChange('Revisar métricas de Overview');
+    fixture.componentInstance.submitQuickTask();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.quickTaskOpen()).toBe(false);
+    expect(taskService.tasks().some(t => t.title === 'Revisar métricas de Overview')).toBe(true);
+  });
 });

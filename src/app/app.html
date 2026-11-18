@@ -49,17 +49,13 @@
     [completedCount]="taskService.completedCount()" [pendingCount]="taskService.pendingCount()"
     (close)="dialogService.toggleHeroDetail(false)" />
 
-  <!-- 4. CONTENEDOR TRANSFORMABLE MULTIPROPÓSITO -->
-  <app-dialog-container [isDialogOpen]="dialogService.isDialogOpen()" [activeTrigger]="dialogService.activeTrigger()"
+  <!-- 4. CONTENEDOR TRANSFORMABLE GLOBAL (Solo Opciones del Sistema vía dialog-transform) -->
+  <app-dialog-container
+    [isDialogOpen]="dialogService.isDialogOpen()"
+    [activeTrigger]="dialogService.activeTrigger()"
     [activeTransition]="dialogService.activeTransition()"
-    [dialogView]="dialogService.dialogView()" [navStyle]="dialogService.navStyle()"
-    [activeTaskId]="dialogService.activeTaskId()" [(draftTitle)]="dialogService.draftTitle"
-    [(draftCategory)]="dialogService.draftCategory" [(draftDate)]="dialogService.draftDate"
-    [(draftTimeSlot)]="dialogService.draftTimeSlot" [(draftDuration)]="dialogService.draftDuration"
-    [(draftPriority)]="dialogService.draftPriority" [(draftNotes)]="dialogService.draftNotes"
-    (closeDialog)="dialogService.closeDialog()" (saveTask)="dialogService.saveTask()"
-    (deleteTask)="dialogService.deleteActiveTask()"
-    (morphView)="dialogService.morphDialogInternalView($event.targetView, $event.moveCenter)"
+    [navStyle]="dialogService.navStyle()"
+    (closeDialog)="dialogService.closeDialog()"
     (navStyleChange)="dialogService.setNavStyle($event)" />
 
   <!-- 5. PORTAL EXTERNO PARA MODALES DE MÓDULOS LAZY (POS, Clínica, etc.) -->

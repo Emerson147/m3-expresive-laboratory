@@ -121,7 +121,7 @@ export class App {
   }
 
   openQuickTaskFromCommandPalette(): void {
-    this.dialogService.openFrom('bento-center');
+    void this.router.navigate(['/agenda'], { queryParams: { newTask: '1' } });
   }
 
   private isStageModalActive(): boolean {

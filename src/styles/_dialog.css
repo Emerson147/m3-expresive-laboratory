@@ -64,13 +64,28 @@ dialog.m3-dialog[open]:where(:not([data-closing])) {
   }
 }
 
-/* When View Transitions API orchestrates Container Transform, avoid opacity:0 @starting-style capture */
+/* When View Transitions API orchestrates Container Transform, defer dialog transitions/shadow to VT group */
+dialog.m3-dialog.is-vt-managed,
+dialog.m3-dialog.is-vt-managed::backdrop {
+  transition: none;
+}
+
 dialog.m3-dialog.is-vt-managed[open]:where(:not([data-closing])) {
   transition: none;
+  box-shadow: none;
 
   @starting-style {
     opacity: 1;
     transform: none;
+  }
+}
+
+dialog.m3-dialog.is-vt-managed[open]:where(:not([data-closing]))::backdrop {
+  transition: none;
+
+  @starting-style {
+    background-color: oklch(0% 0 0 / 0.56);
+    backdrop-filter: blur(6px);
   }
 }
 

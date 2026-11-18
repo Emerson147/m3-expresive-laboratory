@@ -1,10 +1,10 @@
-export type TriggerMode = 'fab-header' | 'bento-center' | 'menu-bottom-left' | 'task-card';
+export type TriggerMode = 'menu-bottom-left';
 export type AppSection = 'overview' | 'agenda' | 'design-system' | 'pos' | 'inventory' | 'telemetry' | 'kanban' | 'campus' | 'clinic';
 export type NavStyle = 'auto' | 'rail' | 'dock' | 'tunnel';
 export type NavChromeMode = 'bar' | 'rail-collapsed' | 'rail-expanded' | 'tunnel' | 'dock';
 export type NavGroupId = 'core' | 'workbenches';
 export type AppShellMode = 'editorial' | 'workbench';
-export type DialogView = 'menu-main' | 'menu-appearance' | 'task-form';
+export type DialogView = 'menu-main' | 'menu-appearance';
 export type TransitionType = 'section' | 'nav' | 'hero' | 'dialog' | null;
 
 export interface AppNavGroup {

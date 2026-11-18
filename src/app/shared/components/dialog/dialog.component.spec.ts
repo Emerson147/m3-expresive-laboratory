@@ -127,4 +127,26 @@ describe('M3DialogComponent', () => {
       'Confirmar'
     );
   });
+
+  it('defers close to closeRequested when managedClose is enabled so View Transitions can snapshot before closing', () => {
+    const requested: string[] = [];
+    component.closeRequested.subscribe(r => requested.push(r));
+    fixture.componentRef.setInput('managedClose', true);
+    component.open.set(true);
+    fixture.detectChanges();
+
+    const dialog = fixture.nativeElement.querySelector('dialog.m3-dialog') as HTMLDialogElement;
+    expect(dialog.getAttribute('closedby')).toBe('none');
+
+    component.dismiss('escape');
+    fixture.detectChanges();
+
+    expect(requested).toEqual(['escape']);
+    expect(component.open()).toBe(true);
+    expect(dialog.hasAttribute('open')).toBe(true);
+
+    component.open.set(false);
+    fixture.detectChanges();
+    expect(dialog.hasAttribute('open')).toBe(false);
+  });
 });

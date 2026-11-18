@@ -34,6 +34,19 @@ export class AgendaFocusService {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   });
 
+  readonly statusLabel = computed(() => {
+    switch (this.status()) {
+      case 'running':
+        return 'En curso';
+      case 'paused':
+        return 'Pausa';
+      case 'completed':
+        return 'Logrado';
+      default:
+        return 'Listo';
+    }
+  });
+
   constructor() {
     this.destroyRef.onDestroy(() => this.clearTimerHandle());
   }
@@ -82,6 +95,39 @@ export class AgendaFocusService {
 
     const label = taskTitle ? ` para ${taskTitle}` : '';
     this.announcement.set(`Sesión de enfoque iniciada${label}.`);
+  }
+
+  /** Ensures the timer adopts a task's preset before starting or resuming focus. */
+  startTaskSession(taskId: number, durationMinutes: number, taskTitle?: string): void {
+    if (this.activeTaskId() !== taskId) {
+      this.setDurationPreset(durationMinutes, taskId);
+    }
+    this.startOrResume(taskId, taskTitle);
+  }
+
+  recordTaskSession(taskId: number): void {
+    if (this.activeTaskId() !== taskId) {
+      this.activeTaskId.set(taskId);
+    }
+    this.completeSession();
+  }
+
+  getTaskFormattedTime(taskId: number, fallbackDurationMinutes: number): string {
+    if (this.activeTaskId() === taskId) {
+      return this.formattedTime();
+    }
+    return `${fallbackDurationMinutes.toString().padStart(2, '0')}:00`;
+  }
+
+  getTaskStatusLabel(taskId: number): string {
+    if (this.activeTaskId() !== taskId) {
+      return 'Listo';
+    }
+    return this.statusLabel();
+  }
+
+  getTaskProgressPercent(taskId: number): number {
+    return this.activeTaskId() === taskId ? this.progressPercent() : 0;
   }
 
   pause(): void {

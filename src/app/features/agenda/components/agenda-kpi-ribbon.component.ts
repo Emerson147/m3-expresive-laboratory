@@ -17,28 +17,34 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
     <m3-card
       variant="filled"
       shape="xl"
-      padding="lg"
+      padding="md"
       [interactive]="false"
-      customClass="!bg-surface-low rounded-m3-xl-inc space-y-5">
-      <!-- FILA 1: RESUMEN EJECUTIVO AMPLIO + BARRA ONDULADA M3 EXPRESSIVE -->
-      <div class="space-y-3.5">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="space-y-1 min-w-0">
-            <div class="flex items-center gap-2 text-label-md-emphasized uppercase tracking-wider text-primary">
-              <span class="material-symbols-rounded text-base" aria-hidden="true">wb_twilight</span>
-              <span>Panorama del Día</span>
+      customClass="!bg-surface-low rounded-m3-xl-inc space-y-3.5">
+      <!-- FILA 1: RESUMEN EJECUTIVO COMPACTO + BARRA ONDULADA M3 EXPRESSIVE -->
+      <div class="space-y-2.5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex items-start sm:items-center gap-3 min-w-0">
+            <span class="w-9 h-9 rounded-m3-md bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+              <span class="material-symbols-rounded text-lg" aria-hidden="true">wb_twilight</span>
+            </span>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                <h2 class="text-title-md-emphasized text-main tabular-nums">
+                  {{ completionRate() }}% completado · {{ pendingCount() }} pendientes
+                </h2>
+                <span class="text-label-sm uppercase tracking-wider text-primary font-semibold">
+                  Panorama del Día
+                </span>
+              </div>
+              <p class="text-body-sm text-muted tabular-nums">
+                {{ todayPendingCount() }} para hoy · {{ totalPendingMinutes() }} min estimados · {{ totalFocusSessions() }} bloques registrados
+              </p>
             </div>
-            <h2 class="text-headline-sm-emphasized text-main tabular-nums">
-              {{ completionRate() }}% completado · {{ pendingCount() }} bloques pendientes
-            </h2>
-            <p class="text-body-sm text-muted tabular-nums pt-0.5">
-              {{ todayPendingCount() }} para hoy · {{ totalPendingMinutes() }} min estimados · {{ totalFocusSessions() }} bloques registrados
-            </p>
           </div>
 
-          <div class="px-4 py-2.5 rounded-m3-lg bg-surface-box text-right shrink-0 self-start sm:self-center">
-            <span class="block text-label-sm uppercase tracking-wider text-muted">Progreso</span>
-            <span class="text-title-lg-emphasized text-primary tabular-nums block mt-0.5">
+          <div class="px-3.5 py-1.5 rounded-m3-md bg-surface-box inline-flex items-center gap-2 shrink-0 self-start md:self-center">
+            <span class="text-label-sm uppercase tracking-wider text-muted">Progreso</span>
+            <span class="text-title-md-emphasized text-primary tabular-nums">
               {{ completedCount() }}/{{ totalCount() }}
             </span>
           </div>
@@ -52,9 +58,9 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
           ariaLabel="Avance general de actividades en Agenda" />
       </div>
 
-      <!-- FILA 2: 4 SELECTORES KPI CONCÉNTRICOS CON AIRE REAL -->
+      <!-- FILA 2: 4 SELECTORES KPI COMPACTOS CON MORPH DE ESQUINA -->
       <div
-        class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1"
+        class="grid grid-cols-2 lg:grid-cols-4 gap-2.5"
         role="group"
         aria-label="Filtros rápidos de estado">
         <button
@@ -64,13 +70,13 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
           [class]="activeQuickFilter() === 'all'
             ? 'bg-primary-box text-on-primary-box shadow-2xs'
             : 'bg-surface text-main hover:bg-surface-high'"
-          class="agenda-kpi-btn focus-ring-m3 px-4 py-3.5 text-left flex items-center justify-between gap-3 cursor-pointer">
+          class="agenda-kpi-btn focus-ring-m3 px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 cursor-pointer">
           <span class="min-w-0">
             <span class="block text-label-sm uppercase tracking-wider opacity-85">Total</span>
-            <span class="block text-title-lg-emphasized tabular-nums mt-1">{{ totalCount() }}</span>
+            <span class="block text-title-md-emphasized tabular-nums leading-tight mt-0.5">{{ totalCount() }}</span>
           </span>
-          <span class="w-9 h-9 rounded-m3-sm bg-surface-box/75 text-primary grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-lg" aria-hidden="true">view_agenda</span>
+          <span class="w-8 h-8 rounded-m3-sm bg-surface-box/75 text-primary grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-base" aria-hidden="true">view_agenda</span>
           </span>
         </button>
 
@@ -81,13 +87,13 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
           [class]="activeQuickFilter() === 'pending'
             ? 'bg-primary-box text-on-primary-box shadow-2xs'
             : 'bg-surface text-main hover:bg-surface-high'"
-          class="agenda-kpi-btn focus-ring-m3 px-4 py-3.5 text-left flex items-center justify-between gap-3 cursor-pointer">
+          class="agenda-kpi-btn focus-ring-m3 px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 cursor-pointer">
           <span class="min-w-0">
             <span class="block text-label-sm uppercase tracking-wider opacity-85">Pendientes</span>
-            <span class="block text-title-lg-emphasized tabular-nums mt-1">{{ pendingCount() }}</span>
+            <span class="block text-title-md-emphasized tabular-nums leading-tight mt-0.5">{{ pendingCount() }}</span>
           </span>
-          <span class="w-9 h-9 rounded-m3-sm bg-sec-box text-on-sec-box grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-lg" aria-hidden="true">pending_actions</span>
+          <span class="w-8 h-8 rounded-m3-sm bg-sec-box text-on-sec-box grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-base" aria-hidden="true">pending_actions</span>
           </span>
         </button>
 
@@ -98,13 +104,13 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
           [class]="activeQuickFilter() === 'high-priority'
             ? 'bg-error-box text-on-error-box shadow-2xs'
             : 'bg-surface text-main hover:bg-surface-high'"
-          class="agenda-kpi-btn focus-ring-m3 px-4 py-3.5 text-left flex items-center justify-between gap-3 cursor-pointer">
+          class="agenda-kpi-btn focus-ring-m3 px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 cursor-pointer">
           <span class="min-w-0">
             <span class="block text-label-sm uppercase tracking-wider opacity-85">Prioridad Alta</span>
-            <span class="block text-title-lg-emphasized tabular-nums mt-1">{{ highPriorityPendingCount() }}</span>
+            <span class="block text-title-md-emphasized tabular-nums leading-tight mt-0.5">{{ highPriorityPendingCount() }}</span>
           </span>
-          <span class="w-9 h-9 rounded-m3-sm bg-error-box text-on-error-box grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-lg" aria-hidden="true">priority_high</span>
+          <span class="w-8 h-8 rounded-m3-sm bg-error-box text-on-error-box grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-base" aria-hidden="true">priority_high</span>
           </span>
         </button>
 
@@ -115,13 +121,13 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
           [class]="activeQuickFilter() === 'completed'
             ? 'bg-success-box text-on-success-box shadow-2xs'
             : 'bg-surface text-main hover:bg-surface-high'"
-          class="agenda-kpi-btn focus-ring-m3 px-4 py-3.5 text-left flex items-center justify-between gap-3 cursor-pointer">
+          class="agenda-kpi-btn focus-ring-m3 px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 cursor-pointer">
           <span class="min-w-0">
             <span class="block text-label-sm uppercase tracking-wider opacity-85">Completadas</span>
-            <span class="block text-title-lg-emphasized tabular-nums mt-1">{{ completedCount() }}</span>
+            <span class="block text-title-md-emphasized tabular-nums leading-tight mt-0.5">{{ completedCount() }}</span>
           </span>
-          <span class="w-9 h-9 rounded-m3-sm bg-success-box text-on-success-box grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-lg" aria-hidden="true">task_alt</span>
+          <span class="w-8 h-8 rounded-m3-sm bg-success-box text-on-success-box grid place-items-center shrink-0">
+            <span class="material-symbols-rounded text-base" aria-hidden="true">task_alt</span>
           </span>
         </button>
       </div>

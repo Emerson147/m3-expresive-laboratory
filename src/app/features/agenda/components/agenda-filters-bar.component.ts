@@ -26,8 +26,8 @@ export type AgendaTaskPresetId = 'deep-45' | 'review-25' | 'quick-15';
     class: 'block w-full min-w-0'
   },
   template: `
-    <div class="space-y-4">
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="space-y-3">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <!-- Landmark <search> sobre <m3-text-field> oficial -->
         <search class="flex-1 min-w-0 lg:max-w-lg">
           <m3-text-field
@@ -43,7 +43,7 @@ export type AgendaTaskPresetId = 'deep-45' | 'review-25' | 'quick-15';
             (valueChange)="searchChange.emit($event)" />
         </search>
 
-        <div class="flex flex-wrap items-center justify-between lg:justify-end gap-4 shrink-0">
+        <div class="flex flex-wrap items-center justify-between lg:justify-end gap-3 shrink-0">
           <!-- Switch binario inmediato (Biblia M3: sin Guardar, iconMode="selected" en barras densas) -->
           <div class="px-3.5 py-1.5 rounded-m3-lg bg-surface-low">
             <m3-switch
@@ -63,7 +63,7 @@ export type AgendaTaskPresetId = 'deep-45' | 'review-25' | 'quick-15';
             </m3-button>
           }
 
-          <!-- Único CTA primario 'filled' de la vista con plantillas vía Split Button y Container Transform -->
+          <!-- Único CTA primario 'filled' de la vista con plantillas vía Split Button + origin de morph -->
           <div class="hidden md:inline-flex shrink-0">
             <m3-split-button
               label="Nueva Actividad"
@@ -71,17 +71,17 @@ export type AgendaTaskPresetId = 'deep-45' | 'review-25' | 'quick-15';
               variant="filled"
               size="md"
               menuAriaLabel="Plantillas rápidas de actividad"
+              [invisible]="hideCreateTrigger()"
+              [viewTransitionName]="createViewTransitionName()"
               [menuItems]="presetMenuItems"
-              [invisible]="isDialogOpen() && activeOriginKey() === 'agenda-split-create'"
-              [viewTransitionName]="isDialogTransitioning() && !isDialogOpen() && activeOriginKey() === 'agenda-split-create' ? 'dialog-transform' : null"
               (primaryAction)="createTask.emit()"
               (itemAction)="onPresetItemAction($event)" />
           </div>
         </div>
       </div>
 
-      <!-- Chips unificados de estado y categoría con respiro horizontal y vertical -->
-      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 pt-0.5">
+      <!-- Chips unificados de estado y categoría -->
+      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
         <div class="flex flex-wrap items-center gap-2.5" role="group" aria-label="Filtrar por estado">
           <m3-chip
             type="filter"
@@ -148,9 +148,8 @@ export class AgendaFiltersBarComponent {
   readonly totalCount = input.required<number>();
   readonly pendingCount = input.required<number>();
   readonly completedCount = input.required<number>();
-  readonly isDialogOpen = input<boolean>(false);
-  readonly isDialogTransitioning = input<boolean>(false);
-  readonly activeOriginKey = input<string | null>(null);
+  readonly createViewTransitionName = input<string | null>(null);
+  readonly hideCreateTrigger = input<boolean>(false);
 
   readonly searchChange = output<string>();
   readonly statusChange = output<FilterStatus>();
