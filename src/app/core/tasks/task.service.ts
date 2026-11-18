@@ -240,7 +240,9 @@ export class TaskService {
   readonly searchQuery = signal<string>('');
   readonly categoryFilter = signal<string>('all');
   readonly priorityFilter = signal<TaskPriority | 'all'>('all');
+  readonly onlyToday = signal<boolean>(false);
   readonly selectedTaskId = signal<number | null>(INITIAL_TASKS[1]?.id ?? INITIAL_TASKS[0]?.id ?? null);
+  readonly lastDeletedTask = signal<{ task: TaskItem; index: number } | null>(null);
 
   readonly completedCount = computed(() => this.tasks().filter(t => t.completed).length);
   readonly pendingCount = computed(() => this.tasks().filter(t => !t.completed).length);
@@ -268,11 +270,13 @@ export class TaskService {
     const query = this.searchQuery().trim().toLowerCase();
     const category = this.categoryFilter();
     const priority = this.priorityFilter();
+    const onlyToday = this.onlyToday();
 
     return this.tasks()
       .filter(task => {
         if (status === 'pending' && task.completed) return false;
         if (status === 'completed' && !task.completed) return false;
+        if (onlyToday && task.dueBucket !== 'Hoy') return false;
         if (category !== 'all' && task.category !== category) return false;
         if (priority !== 'all' && task.priority !== priority) return false;
 
@@ -346,11 +350,16 @@ export class TaskService {
     this.priorityFilter.set(priority);
   }
 
+  setOnlyToday(enabled: boolean): void {
+    this.onlyToday.set(enabled);
+  }
+
   resetAllFilters(): void {
     this.filterStatus.set('all');
     this.searchQuery.set('');
     this.categoryFilter.set('all');
     this.priorityFilter.set('all');
+    this.onlyToday.set(false);
   }
 
   saveTask(draft: TaskDraft, editingId: number | null): TaskItem {
@@ -429,12 +438,47 @@ export class TaskService {
     );
   }
 
-  deleteTask(id: number): void {
-    const remaining = this.tasks().filter(t => t.id !== id);
+  deleteTask(id: number): TaskItem | null {
+    const current = this.tasks();
+    const idx = current.findIndex(t => t.id === id);
+    if (idx === -1) return null;
+    const removed = current[idx];
+    this.lastDeletedTask.set({ task: removed, index: idx });
+    const remaining = current.filter(t => t.id !== id);
     this.tasks.set(remaining);
     if (this.selectedTaskId() === id) {
       this.selectedTaskId.set(remaining[0]?.id ?? null);
     }
+    return removed;
+  }
+
+  restoreLastDeleted(): TaskItem | null {
+    const entry = this.lastDeletedTask();
+    if (!entry) return null;
+    this.tasks.update(list => {
+      if (list.some(t => t.id === entry.task.id)) return list;
+      const copy = list.slice();
+      copy.splice(Math.min(entry.index, copy.length), 0, entry.task);
+      return copy;
+    });
+    this.selectedTaskId.set(entry.task.id);
+    this.lastDeletedTask.set(null);
+    return entry.task;
+  }
+
+  /** Removes all completed tasks at once and returns the number of purged items. */
+  clearCompletedTasks(): number {
+    const current = this.tasks();
+    const remaining = current.filter(t => !t.completed);
+    const removedCount = current.length - remaining.length;
+    if (removedCount === 0) return 0;
+
+    this.tasks.set(remaining);
+    const currentSelectedId = this.selectedTaskId();
+    if (currentSelectedId !== null && !remaining.some(t => t.id === currentSelectedId)) {
+      this.selectedTaskId.set(remaining[0]?.id ?? null);
+    }
+    return removedCount;
   }
 
   toggleCompleted(id: number): void {
