@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CampusService } from '../../core/campus/campus.service';
 import { ClinicService } from '../../core/clinic/clinic.service';
@@ -6,10 +7,21 @@ import { DialogService } from '../../core/dialog/dialog.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
 import { KanbanService } from '../../core/kanban/kanban.service';
 import { PosService } from '../../core/pos/pos.service';
-import { TaskPriority, TaskService } from '../../core/tasks/task.service';
+import {
+  TASK_CATEGORIES,
+  TASK_DUE_BUCKETS,
+  TASK_PRIORITIES,
+  TaskDueBucket,
+  TaskPriority,
+  TaskService
+} from '../../core/tasks/task.service';
 import { TelemetryService } from '../../core/telemetry/telemetry.service';
+import { M3ButtonGroupComponent, M3ButtonGroupOption } from '../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../shared/components/button/button.component';
+import { M3DialogComponent } from '../../shared/components/dialog/dialog.component';
 import { M3LinearProgressComponent } from '../../shared/components/progress';
+import { M3SnackbarComponent } from '../../shared/components/snackbar/snackbar.component';
+import { M3TextFieldComponent } from '../../shared/components/text-field/text-field.component';
 
 type PulseTone = 'primary' | 'success' | 'warning' | 'error';
 
@@ -36,7 +48,16 @@ const PULSE_BADGE_CLASSES: Record<PulseTone, string> = {
 @Component({
   selector: 'app-overview-page',
   standalone: true,
-  imports: [RouterLink, M3ButtonComponent, M3LinearProgressComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    M3ButtonComponent,
+    M3ButtonGroupComponent,
+    M3DialogComponent,
+    M3LinearProgressComponent,
+    M3SnackbarComponent,
+    M3TextFieldComponent
+  ],
   template: `
     <div class="space-y-6">
 
@@ -114,16 +135,14 @@ const PULSE_BADGE_CLASSES: Record<PulseTone, string> = {
             (click)="$event.stopPropagation()"
             (keydown.enter)="$event.stopPropagation()"
             (keydown.space)="$event.stopPropagation()">
-            <button
+            <m3-button
               id="trigger-bento-center"
-              type="button"
-              (click)="dialogService.openFrom('bento-center')"
-              [class.invisible]="dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center'"
-              [style.view-transition-name]="dialogService.activeTransition() === 'dialog' && !dialogService.isDialogOpen() && dialogService.activeTrigger() === 'bento-center' ? 'dialog-transform' : null"
-              class="btn-m3 px-5 py-2.5 bg-primary text-on-primary font-medium rounded-full text-sm shadow-sm inline-flex items-center gap-2 cursor-pointer">
-              <span class="material-symbols-rounded text-base" aria-hidden="true">add</span>
-              <span>Nueva tarea</span>
-            </button>
+              variant="filled"
+              size="md"
+              icon="add"
+              (action)="openQuickTaskDialog()">
+              Nueva tarea
+            </m3-button>
 
             <m3-button
               variant="tonal"
@@ -275,6 +294,90 @@ const PULSE_BADGE_CLASSES: Record<PulseTone, string> = {
       </section>
 
     </div>
+
+    <!-- DIÁLOGO LOCAL DEL DASHBOARD PARA CREACIÓN RÁPIDA DE TAREA (<m3-dialog variant="expressive">) -->
+    <m3-dialog
+      #quickTaskDlg
+      variant="expressive"
+      size="md"
+      tone="primary"
+      icon="add_task"
+      headline="Nueva tarea rápida"
+      subtitle="Registra un pendiente sin salir del panel ejecutivo."
+      [(open)]="quickTaskOpen"
+      (closed)="quickTaskError.set(null)">
+      <form (ngSubmit)="submitQuickTask()" novalidate class="space-y-4">
+        <m3-text-field
+          #quickTitleField
+          [id]="'overview-quick-title'"
+          variant="filled"
+          label="Título de la tarea"
+          placeholder="Ej. Validar cierre de turno POS"
+          icon="edit_note"
+          [required]="true"
+          [clearable]="true"
+          [maxlength]="80"
+          enterkeyhint="done"
+          [errorText]="quickTaskError()"
+          [value]="quickTitle()"
+          (valueChange)="onQuickTitleChange($event)" />
+
+        <fieldset class="space-y-1.5 border-0 p-0 m-0">
+          <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+            Área
+          </legend>
+          <m3-button-group
+            variant="standard"
+            size="xs"
+            ariaLabel="Área de la tarea"
+            [options]="categoryOptions"
+            [value]="[quickCategory()]"
+            (selectionChange)="quickCategory.set($event[0] || quickCategory())" />
+        </fieldset>
+
+        <div class="bg-surface-low rounded-m3-lg p-4 space-y-3.5">
+          <fieldset class="space-y-1.5 border-0 p-0 m-0">
+            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+              Bloque / Día
+            </legend>
+            <m3-button-group
+              variant="connected"
+              size="xs"
+              ariaLabel="Horizonte de tarea"
+              [options]="dueBucketOptions"
+              [value]="[quickBucket()]"
+              (selectionChange)="onBucketSelect($event)" />
+          </fieldset>
+
+          <fieldset class="space-y-1.5 border-0 p-0 m-0">
+            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+              Prioridad
+            </legend>
+            <m3-button-group
+              variant="connected"
+              size="xs"
+              ariaLabel="Prioridad de tarea"
+              [options]="priorityOptions"
+              [value]="[quickPriority()]"
+              (selectionChange)="onPrioritySelect($event)" />
+          </fieldset>
+        </div>
+      </form>
+
+      <div dialog-actions class="flex items-center gap-3">
+        <m3-button type="button" variant="text" (action)="quickTaskDlg.dismiss('cancel')">
+          Cancelar
+        </m3-button>
+        <m3-button type="button" variant="filled" icon="check" (action)="submitQuickTask()">
+          Crear tarea
+        </m3-button>
+      </div>
+    </m3-dialog>
+
+    <m3-snackbar
+      [open]="snackbarOpen()"
+      [message]="snackbarMessage()"
+      (openChange)="snackbarOpen.set($event)" />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -287,6 +390,28 @@ export class OverviewComponent {
   private readonly inventoryService = inject(InventoryService);
   private readonly kanbanService = inject(KanbanService);
   private readonly telemetryService = inject(TelemetryService);
+  private readonly quickTitleField = viewChild<M3TextFieldComponent>('quickTitleField');
+
+  readonly quickTaskOpen = signal<boolean>(false);
+  readonly quickTitle = signal<string>('');
+  readonly quickCategory = signal<string>('Frontend Angular');
+  readonly quickBucket = signal<TaskDueBucket>('Hoy');
+  readonly quickPriority = signal<TaskPriority>('Alta');
+  readonly quickTaskError = signal<string | null>(null);
+  readonly snackbarOpen = signal<boolean>(false);
+  readonly snackbarMessage = signal<string>('');
+
+  readonly categoryOptions: M3ButtonGroupOption[] = TASK_CATEGORIES.map(c => ({
+    id: c.name,
+    label: c.name,
+    icon: c.icon
+  }));
+  readonly dueBucketOptions: M3ButtonGroupOption[] = TASK_DUE_BUCKETS.map(b => ({ id: b, label: b }));
+  readonly priorityOptions: M3ButtonGroupOption[] = TASK_PRIORITIES.map(p => ({
+    id: p,
+    label: p,
+    icon: p === 'Alta' ? 'priority_high' : p === 'Media' ? 'flag' : 'low_priority'
+  }));
 
   readonly previewTasks = computed(() => this.taskService.tasks().slice(0, 4));
 
@@ -397,5 +522,60 @@ export class OverviewComponent {
     if (priority === 'Alta') return 'bg-error-box text-on-error-box';
     if (priority === 'Media') return 'bg-warning-box text-on-warning-box';
     return 'bg-surface-high text-muted';
+  }
+
+  openQuickTaskDialog(): void {
+    this.quickTitle.set('');
+    this.quickCategory.set('Frontend Angular');
+    this.quickBucket.set('Hoy');
+    this.quickPriority.set('Alta');
+    this.quickTaskError.set(null);
+    this.quickTaskOpen.set(true);
+  }
+
+  onQuickTitleChange(value: string): void {
+    this.quickTitle.set(value);
+    if (this.quickTaskError() && value.trim()) {
+      this.quickTaskError.set(null);
+    }
+  }
+
+  onBucketSelect(selected: string[]): void {
+    const bucket = selected[0] as TaskDueBucket | undefined;
+    if (bucket) this.quickBucket.set(bucket);
+  }
+
+  onPrioritySelect(selected: string[]): void {
+    const prio = selected[0] as TaskPriority | undefined;
+    if (prio) this.quickPriority.set(prio);
+  }
+
+  submitQuickTask(): void {
+    const title = this.quickTitle().trim();
+    if (!title) {
+      this.quickTaskError.set('Ingresa un título para registrar la tarea.');
+      this.quickTitleField()?.focus();
+      return;
+    }
+
+    const bucket = this.quickBucket();
+    const created = this.taskService.saveTask(
+      {
+        title,
+        category: this.quickCategory(),
+        dateLabel: bucket,
+        dueBucket: bucket,
+        timeSlot: '',
+        durationMinutes: 25,
+        priority: this.quickPriority(),
+        notes: 'Creada desde Dashboard'
+      },
+      null
+    );
+
+    this.quickTaskOpen.set(false);
+    this.snackbarMessage.set(`Tarea creada en ${bucket}: ${created.title}`);
+    this.snackbarOpen.set(false);
+    queueMicrotask(() => this.snackbarOpen.set(true));
   }
 }
