@@ -121,12 +121,12 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
   },
   {
     id: 'selection-controls',
-    name: 'Checkbox (Tri-state) & Radio (1–5)',
+    name: 'Checkbox (Tri-state) & Radio Button (20dp)',
     category: 'Containment & Selection',
-    docUrl: 'https://m3.material.io/components/checkbox/overview',
-    selectorOrCss: '<m3-checkbox [indeterminate]="...">, <m3-radio-group [options]="...">',
-    keyRule: 'Checkbox (18×18dp, radio 2dp) para multi-selección o padre-hijo indeterminate; Radio (20dp) para 1–5 opciones excluyentes visibles antes de pasar a <select>.',
-    webNotes: '<input type="checkbox|radio"> nativo en target 48dp + halo 40dp, fieldset/legend y navegación por flechas nativa.'
+    docUrl: 'https://m3.material.io/components/radio-button/specs',
+    selectorOrCss: '<m3-checkbox>, <m3-radio>, <m3-radio-group>',
+    keyRule: 'Checkbox (18×18dp, radio 2dp) para multi-selección o tri-state; Radio (20dp anillo / 10dp punto, tokens --md-comp-radio-button-*) para 2–5 opciones excluyentes visibles antes de pasar a <select>.',
+    webNotes: '<input type="checkbox|radio"> nativo en target 48dp + halo 40dp ::before (spring fast-spatial/effects), fieldset/legend siempre presente, errorText role="alert", 38% disabled y forced-colors.'
   },
   {
     id: 'slider',

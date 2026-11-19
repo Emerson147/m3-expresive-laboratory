@@ -53,7 +53,11 @@ import {
 import { observePrefersReducedMotion } from '../../../shared/components/progress/progress-motion.controller';
 import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbox.component';
 import { M3DialogComponent } from '../../../shared/components/dialog/dialog.component';
-import { M3RadioGroupComponent, M3RadioOption } from '../../../shared/components/radio/radio.component';
+import {
+  M3RadioComponent,
+  M3RadioGroupComponent,
+  M3RadioOption
+} from '../../../shared/components/radio/radio.component';
 import { M3SliderComponent, M3SliderSize } from '../../../shared/components/slider/slider.component';
 import { M3SnackbarComponent } from '../../../shared/components/snackbar/snackbar.component';
 import { M3SwitchComponent, M3SwitchIconMode } from '../../../shared/components/switch/switch.component';
@@ -90,6 +94,7 @@ import {
     M3LoadingIndicatorComponent,
     M3SwitchComponent,
     M3CheckboxComponent,
+    M3RadioComponent,
     M3RadioGroupComponent,
     M3SliderComponent,
     M3TabsComponent,
@@ -2226,11 +2231,11 @@ import {
                   <div>
                     <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
                       <span class="material-symbols-rounded text-base">check_box</span>
-                      M3 Selection • Checkbox &amp; Radio Group
+                      M3 Selection • Checkbox &amp; Radio Button
                     </div>
-                    <h3 class="text-title-md font-bold text-main">Checkbox (Tri-state 18dp) &amp; Radio Group (&lt; 6 opciones)</h3>
+                    <h3 class="text-title-md font-bold text-main">Checkbox (Tri-state 18dp) &amp; Radio (&lt;m3-radio&gt; 20dp)</h3>
                     <p class="text-xs text-muted mt-1 leading-relaxed">
-                      Usa <code>&lt;m3-checkbox&gt;</code> para selecciones m&uacute;ltiples pendientes de confirmar y <code>&lt;m3-radio-group&gt;</code> cuando hay menos de 6 opciones excluyentes visibles.
+                      Usa <code>&lt;m3-checkbox&gt;</code> para selecciones m&uacute;ltiples pendientes de confirmar y <code>&lt;m3-radio&gt;</code> / <code>&lt;m3-radio-group&gt;</code> (anillo 20dp, punto 10dp, halo 40dp, target 48dp) cuando hay 2&ndash;5 opciones excluyentes visibles.
                     </p>
                   </div>
 
@@ -2265,13 +2270,35 @@ import {
                     </div>
                   </div>
 
-                  <div class="space-y-2 sm:border-l sm:border-outline-sub sm:pl-4">
+                  <div class="space-y-3 sm:border-l sm:border-outline-sub sm:pl-4">
                     <m3-radio-group
-                      legend="Plan del cliente (3 opciones)"
+                      legend="Plan del cliente (options)"
+                      supportingText="20dp anillo · 10dp punto · 40dp halo · 48dp target"
                       [options]="demoRadioOptions"
                       [(value)]="demoRadioPlan" />
-                    <div class="text-[11px] font-mono text-primary pt-1">
-                      Plan activo: {{ demoRadioPlan() }}
+
+                    <div class="pt-2.5 border-t border-outline-sub/60 space-y-2">
+                      <m3-radio-group
+                        legend="Entrega (<m3-radio> composable)"
+                        orientation="horizontal"
+                        [errorText]="demoRadioError() ? 'Selecciona un canal de entrega habilitado' : null"
+                        [(value)]="demoRadioDelivery">
+                        <m3-radio value="email" label="Email" />
+                        <m3-radio value="sms">SMS</m3-radio>
+                        <m3-radio value="fax" label="Fax" [disabled]="true" />
+                      </m3-radio-group>
+
+                      <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                        <span class="text-[11px] font-mono text-primary">
+                          Plan: {{ demoRadioPlan() }} · Canal: {{ demoRadioDelivery() }}
+                        </span>
+                        <m3-chip
+                          type="filter"
+                          [selected]="demoRadioError()"
+                          (action)="demoRadioError.set(!demoRadioError())">
+                          Estado error
+                        </m3-chip>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2697,6 +2724,8 @@ export class ComponentsLabComponent {
   readonly demoCheckboxMaster = computed(() => this.demoCheckboxAudit() && this.demoCheckboxBackup());
   readonly demoCheckboxIndeterminate = computed(() => this.demoCheckboxAudit() !== this.demoCheckboxBackup());
   readonly demoRadioPlan = signal<string>('pro');
+  readonly demoRadioDelivery = signal<string>('email');
+  readonly demoRadioError = signal<boolean>(false);
   readonly demoRadioOptions: M3RadioOption[] = [
     { value: 'starter', label: 'Starter', description: 'Hasta 3 usuarios activos' },
     { value: 'pro', label: 'Profesional', description: 'Multisede + Auditoria OKLCH' },
@@ -3053,7 +3082,7 @@ export class ComponentsLabComponent {
         label: 'Snippet <m3-switch> copiado'
       },
       selection: {
-        code: `<m3-checkbox label="Modulo" [(checked)]="checked" [indeterminate]="partial" />\n<m3-radio-group legend="Plan" [options]="options" [(value)]="plan" />\n<m3-slider label="Margen" unit="%" size="${this.demoSliderSize()}" [showStops]="${this.demoSliderStops()}" [(value)]="margin" />`,
+        code: `<m3-checkbox label="Modulo" [(checked)]="checked" [indeterminate]="partial" />\n<m3-radio-group legend="Plan" [options]="options" [(value)]="plan" />\n<m3-radio-group legend="Entrega" orientation="horizontal" [(value)]="channel">\n  <m3-radio value="email" label="Email" />\n  <m3-radio value="sms">SMS</m3-radio>\n</m3-radio-group>\n<m3-slider label="Margen" unit="%" size="${this.demoSliderSize()}" [showStops]="${this.demoSliderStops()}" [(value)]="margin" />`,
         label: 'Snippet Seleccion & Slider copiado'
       },
       dialog: {

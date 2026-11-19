@@ -100,8 +100,14 @@ describe('ComponentsLabComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('a[href="/design-system/playbook"]')).toBeTruthy();
     expect(el.querySelectorAll('m3-checkbox').length).toBeGreaterThanOrEqual(4);
-    expect(el.querySelector('m3-radio-group')).toBeTruthy();
+    expect(el.querySelectorAll('m3-radio-group').length).toBeGreaterThanOrEqual(2);
+    expect(el.querySelectorAll('m3-radio').length).toBeGreaterThanOrEqual(6);
     expect(el.querySelector('m3-slider')).toBeTruthy();
+
+    // Composable <m3-radio> error state renders accessible alert feedback
+    component.demoRadioError.set(true);
+    fixture.detectChanges();
+    expect(el.querySelector('m3-radio-group [role="alert"]')?.textContent).toContain('Selecciona un canal de entrega habilitado');
     expect(el.querySelector('m3-tabs')).toBeTruthy();
     expect(el.querySelector('m3-dialog')).toBeTruthy();
 
