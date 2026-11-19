@@ -213,14 +213,19 @@ describe('AgendaComponent', () => {
     const prevSessions = selected.focusSessionsCompleted;
 
     focusService.setDurationPreset(25, selected.id);
+    expect(focusService.getTaskProgressPercent(selected.id)).toBe(0);
+
     focusService.startOrResume(selected.id, selected.title);
     expect(focusService.status()).toBe('running');
+    expect(focusService.getTaskProgressPercent(selected.id)).toBe(0);
 
     focusService.tick();
     expect(focusService.remainingSeconds()).toBe(25 * 60 - 1);
+    expect(focusService.getTaskProgressPercent(selected.id)).toBeGreaterThan(0);
 
     focusService.completeSession();
     expect(focusService.status()).toBe('completed');
+    expect(focusService.getTaskProgressPercent(selected.id)).toBe(100);
     expect(taskService.tasks().find(t => t.id === selected.id)?.focusSessionsCompleted).toBe(
       prevSessions + 1
     );

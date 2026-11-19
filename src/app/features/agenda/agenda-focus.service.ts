@@ -127,7 +127,16 @@ export class AgendaFocusService {
   }
 
   getTaskProgressPercent(taskId: number): number {
-    return this.activeTaskId() === taskId ? this.progressPercent() : 0;
+    if (this.activeTaskId() !== taskId || this.status() === 'idle') {
+      return 0;
+    }
+    if (this.status() === 'completed') {
+      return 100;
+    }
+    const total = this.totalSeconds();
+    if (total <= 0) return 0;
+    const elapsed = Math.max(0, total - this.remainingSeconds());
+    return Math.min(100, Number(((elapsed / total) * 100).toFixed(2)));
   }
 
   pause(): void {

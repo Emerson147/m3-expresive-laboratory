@@ -3,6 +3,7 @@ import { TaskGroup, TaskItem } from '../../../core/tasks/task.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbox.component';
+import { M3LinearProgressComponent } from '../../../shared/components/progress/linear-progress.component';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
 import {
   getBucketHeaderMeta,
@@ -16,7 +17,13 @@ import {
   selector: 'app-agenda-task-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [M3ButtonComponent, M3CardComponent, M3CheckboxComponent, M3TextFieldComponent],
+  imports: [
+    M3ButtonComponent,
+    M3CardComponent,
+    M3CheckboxComponent,
+    M3LinearProgressComponent,
+    M3TextFieldComponent
+  ],
   host: {
     class: 'block w-full min-w-0'
   },
@@ -133,7 +140,7 @@ import {
                   [interactive]="false"
                   shape="lg"
                   padding="md"
-                  [customClass]="rowCardClasses(task, isSelected)">
+                  [customClass]="rowCardClasses(task, isSelected, isFocusActive)">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                     <div class="flex items-start gap-2 flex-1 min-w-0">
                       <m3-checkbox
@@ -239,7 +246,19 @@ import {
                     [attr.inert]="!isSelected ? '' : null"
                     [attr.aria-hidden]="!isSelected ? 'true' : null">
                     <div class="agenda-expand-inner">
-                      <div class="mt-3 pt-2.5 border-t border-outline-sub/50 flex flex-wrap items-center justify-between gap-2.5">
+                      @if (subSummary.total > 0) {
+                        <div class="mt-3 pt-2.5 border-t border-outline-sub/50 space-y-2">
+                          <m3-linear-progress
+                            [wavy]="false"
+                            size="sm"
+                            [value]="subSummary.percent"
+                            color="secondary"
+                            [ariaLabel]="'Progreso de subtareas de ' + task.title" />
+                        </div>
+                      }
+                      <div
+                        [class]="subSummary.total > 0 ? 'mt-2.5' : 'mt-3 pt-2.5 border-t border-outline-sub/50'"
+                        class="flex flex-wrap items-center justify-between gap-2.5">
                         <span class="text-label-sm text-muted tabular-nums inline-flex items-center gap-1.5">
                           <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">
                             {{ isFocusActive ? 'graphic_eq' : 'bolt' }}
@@ -347,14 +366,15 @@ export class AgendaTaskListComponent {
     return task.completed ? 'outlined' : 'elevated';
   }
 
-  rowCardClasses(task: TaskItem, isSelected: boolean): string {
+  rowCardClasses(task: TaskItem, isSelected: boolean, isFocusActive = false): string {
+    const focusRing = isFocusActive ? ' ring-1 ring-primary/45 shadow-xs' : '';
     if (isSelected) {
-      return 'agenda-task-tile is-selected shadow-xs';
+      return `agenda-task-tile is-selected shadow-xs${focusRing}`;
     }
     if (task.completed) {
-      return 'agenda-task-tile opacity-80 text-muted';
+      return `agenda-task-tile opacity-80 text-muted${focusRing}`;
     }
-    return 'agenda-task-tile hover:bg-surface-box';
+    return `agenda-task-tile hover:bg-surface-box${focusRing}`;
   }
 
   onQuickKeyEnter(event: Event): void {

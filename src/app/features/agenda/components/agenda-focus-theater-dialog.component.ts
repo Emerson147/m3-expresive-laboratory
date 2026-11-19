@@ -104,19 +104,21 @@ import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.
           @if (task(); as current) {
             @let subSummary = subtaskSummary(current);
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center my-auto max-w-6xl w-full mx-auto">
-              <!-- Columna Izquierda: Reloj Wavy protagonista + Presets -->
-              <div class="lg:col-span-6 flex flex-col items-center text-center gap-5">
-                <div class="relative grid place-items-center">
-                  <m3-circular-progress
-                    [diameter]="220"
-                    [wavy]="isRunning()"
-                    [paused]="!isRunning()"
-                    [value]="focusProgress()"
-                    color="primary"
-                    ariaLabel="Progreso inmersivo de Pomodoro" />
+              <!-- Columna Izquierda: Reloj Wavy protagonista flotando sobre Aurora + Presets -->
+              <div class="lg:col-span-6 flex flex-col items-center text-center gap-6">
+                <div class="relative w-60 h-60 sm:w-[272px] sm:h-[272px] grid place-items-center">
+                  <div class="sm:scale-[1.13] origin-center grid place-items-center">
+                    <m3-circular-progress
+                      [diameter]="240"
+                      [wavy]="isRunning()"
+                      [paused]="!isRunning()"
+                      [value]="focusProgress()"
+                      color="primary"
+                      ariaLabel="Progreso inmersivo de Pomodoro" />
+                  </div>
 
                   <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span class="text-display-sm md:text-display-md font-mono tabular-nums text-main tracking-tight">
+                    <span class="text-display-sm sm:text-display-md font-mono font-bold tabular-nums text-main tracking-tight">
                       {{ displayedTimerText() }}
                     </span>
                     <span class="text-label-md-emphasized uppercase tracking-widest text-primary mt-1">
@@ -171,7 +173,10 @@ import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.
                         color="secondary"
                         ariaLabel="Avance de pasos durante el enfoque" />
 
-                      <ul role="list" class="list-none m-0 p-0 space-y-2 max-h-48 overflow-y-auto m3-scrollbar pr-1">
+                      <ul
+                        role="list"
+                        [class]="current.subtasks.length > 4 ? 'max-h-64 overflow-y-auto m3-scrollbar pr-1' : ''"
+                        class="list-none m-0 p-0 space-y-2">
                         @for (st of current.subtasks; track st.id) {
                           <li class="flex items-center gap-1.5 bg-surface-low rounded-m3-md px-2.5 py-1">
                             <m3-checkbox
