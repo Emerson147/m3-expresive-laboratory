@@ -1,4 +1,4 @@
-@let isStageRecessed = dialogService.isDialogOpen() || dialogService.isHeroExpanded() || stageOverlay.isOverlayOpen();
+@let isStageRecessed = dialogService.isDialogOpen() || stageOverlay.isOverlayOpen();
 <div
   [class]="isStageRecessed ? 'bg-black' : 'bg-surface-low'"
   class="h-dvh w-full overflow-hidden text-main select-none relative">
@@ -43,13 +43,7 @@
     </main>
   </div>
 
-  <!-- 3. HERO CARD EXPANDIDA A PANTALLA COMPLETA -->
-  <app-hero-detail-modal [isHeroExpanded]="dialogService.isHeroExpanded()"
-    [activeTransition]="dialogService.activeTransition()" [completionRate]="taskService.completionRate()"
-    [completedCount]="taskService.completedCount()" [pendingCount]="taskService.pendingCount()"
-    (close)="dialogService.toggleHeroDetail(false)" />
-
-  <!-- 4. CONTENEDOR TRANSFORMABLE GLOBAL (Solo Opciones del Sistema vía dialog-transform) -->
+  <!-- 3. CONTENEDOR TRANSFORMABLE GLOBAL (Solo Opciones del Sistema vía dialog-transform) -->
   <app-dialog-container
     [isDialogOpen]="dialogService.isDialogOpen()"
     [activeTrigger]="dialogService.activeTrigger()"

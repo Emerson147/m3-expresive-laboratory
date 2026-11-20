@@ -5,7 +5,7 @@ export type NavChromeMode = 'bar' | 'rail-collapsed' | 'rail-expanded' | 'tunnel
 export type NavGroupId = 'core' | 'workbenches';
 export type AppShellMode = 'editorial' | 'workbench';
 export type DialogView = 'menu-main' | 'menu-appearance';
-export type TransitionType = 'section' | 'nav' | 'hero' | 'dialog' | null;
+export type TransitionType = 'section' | 'nav' | 'dialog' | null;
 
 export interface AppNavGroup {
   readonly id: NavGroupId;

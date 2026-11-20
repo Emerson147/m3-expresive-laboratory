@@ -21,7 +21,6 @@ export class DialogService {
   readonly isDialogOpen = signal<boolean>(false);
   readonly activeTrigger = signal<TriggerMode | null>(null);
   readonly dialogView = signal<DialogView>('menu-main');
-  readonly isHeroExpanded = signal<boolean>(false);
   readonly activeTransition = signal<TransitionType>(null);
   readonly navStyle = signal<NavStyle>('auto');
   readonly isRailManuallyExpanded = signal<boolean | null>(null);
@@ -66,18 +65,6 @@ export class DialogService {
     );
   }
 
-  toggleHeroDetail(expand: boolean): void {
-    if (this.isHeroExpanded() === expand) return;
-    this.activeTransition.set('hero');
-    this.appRef.tick();
-
-    this.runViewTransition(
-      () => this.isHeroExpanded.set(expand),
-      () => this.activeTransition.set(null),
-      !expand
-    );
-  }
-
   setNavStyle(style: NavStyle): void {
     if (this.navStyle() === style) return;
     if (style === 'auto') {
@@ -93,9 +80,6 @@ export class DialogService {
   }
 
   private runViewTransition(update: () => void, cleanup: () => void, isExiting = false): void {
-    this.stageOverlay.runViewTransition(update, cleanup, {
-      isExiting,
-      rootClass: this.activeTransition() === 'hero' ? 'vt-hero' : undefined
-    });
+    this.stageOverlay.runViewTransition(update, cleanup, { isExiting });
   }
 }

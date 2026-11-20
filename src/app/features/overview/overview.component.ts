@@ -1,419 +1,172 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
+import {
+  ApplicationRef,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  Injector,
+  TemplateRef,
+  ViewEncapsulation,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild
+} from '@angular/core';
+import { Router } from '@angular/router';
 import { CampusService } from '../../core/campus/campus.service';
 import { ClinicService } from '../../core/clinic/clinic.service';
-import { DialogService } from '../../core/dialog/dialog.service';
+import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
 import { InventoryService } from '../../core/inventory/inventory.service';
 import { KanbanService } from '../../core/kanban/kanban.service';
 import { PosService } from '../../core/pos/pos.service';
-import {
-  TASK_CATEGORIES,
-  TASK_DUE_BUCKETS,
-  TASK_PRIORITIES,
-  TaskDueBucket,
-  TaskPriority,
-  TaskService
-} from '../../core/tasks/task.service';
+import { TaskService } from '../../core/tasks/task.service';
 import { TelemetryService } from '../../core/telemetry/telemetry.service';
-import { M3ButtonGroupComponent, M3ButtonGroupOption } from '../../shared/components/button/button-group.component';
-import { M3ButtonComponent } from '../../shared/components/button/button.component';
-import { M3DialogComponent } from '../../shared/components/dialog/dialog.component';
-import { M3LinearProgressComponent } from '../../shared/components/progress';
 import { M3SnackbarComponent } from '../../shared/components/snackbar/snackbar.component';
-import { M3TextFieldComponent } from '../../shared/components/text-field/text-field.component';
-
-type PulseTone = 'primary' | 'success' | 'warning' | 'error';
-
-interface ModulePulseCard {
-  readonly section: string;
-  readonly title: string;
-  readonly route: string;
-  readonly icon: string;
-  readonly iconBgClass: string;
-  readonly headline: string;
-  readonly detail: string;
-  readonly statusLabel: string;
-  readonly statusIcon: string;
-  readonly statusTone: PulseTone;
-}
-
-const PULSE_BADGE_CLASSES: Record<PulseTone, string> = {
-  primary: 'bg-primary-box text-on-primary-box',
-  success: 'bg-success-box text-on-success-box',
-  warning: 'bg-warning-box text-on-warning-box',
-  error: 'bg-error-box text-on-error-box'
-};
+import { AgendaFocusService } from '../agenda/agenda-focus.service';
+import { OVERVIEW_EXPRESSIVE_CSS } from './components/overview-expressive.styles';
+import { OverviewHeroCardComponent } from './components/overview-hero-card.component';
+import { OverviewHeroDetailComponent } from './components/overview-hero-detail.component';
+import { OverviewLiveAgendaComponent } from './components/overview-live-agenda.component';
+import { OverviewModulesGridComponent } from './components/overview-modules-grid.component';
+import { OverviewQuickTaskDialogComponent } from './components/overview-quick-task-dialog.component';
+import {
+  ModulePulseCard,
+  OverviewHeroMetric,
+  OverviewHeroMorphOwner,
+  OverviewModuleFilter,
+  OverviewQuickTaskDraft,
+  OverviewQuickTaskMorphTarget
+} from './overview.models';
 
 @Component({
   selector: 'app-overview-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  styles: [OVERVIEW_EXPRESSIVE_CSS],
   imports: [
-    FormsModule,
-    RouterLink,
-    M3ButtonComponent,
-    M3ButtonGroupComponent,
-    M3DialogComponent,
-    M3LinearProgressComponent,
+    NgTemplateOutlet,
     M3SnackbarComponent,
-    M3TextFieldComponent
+    OverviewHeroCardComponent,
+    OverviewHeroDetailComponent,
+    OverviewLiveAgendaComponent,
+    OverviewModulesGridComponent,
+    OverviewQuickTaskDialogComponent
   ],
   template: `
-    <div class="space-y-6">
-
+    <div class="space-y-5">
       <!-- BANDA 1: HERO AURORA OPERATIVO (7 COLS) + AGENDA EN VIVO (5 COLS) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+        <app-overview-hero-card
+          [completionRate]="taskService.completionRate()"
+          [completedCount]="taskService.completedCount()"
+          [pendingCount]="taskService.pendingCount()"
+          [totalTasks]="taskService.tasks().length"
+          [totalActiveAlerts]="totalActiveAlerts()"
+          [modulesCount]="modulePulseCards().length"
+          [metrics]="heroExecutiveMetrics()"
+          [focusStatus]="focusService.status()"
+          [focusTime]="focusService.formattedTime()"
+          [focusLabel]="focusService.statusLabel()"
+          [isHeroHidden]="heroDetailOpen()"
+          [heroViewTransitionName]="heroMorphOwner() === 'card' ? 'hero-transform' : null"
+          [isQuickTaskOriginHidden]="quickTaskOpen()"
+          [quickTaskViewTransitionName]="quickTaskMorphTarget() === 'button' ? 'dialog-transform' : null"
+          (openQuickTask)="openQuickTaskDialog()"
+          (openDetail)="openHeroDetail()" />
 
-        <!-- HERO CARD EXPANDIBLE CON AURORA GPU VIVA + CONTAINER TRANSFORM -->
-        <section
-          role="button"
-          tabindex="0"
-          [attr.aria-hidden]="dialogService.isHeroExpanded()"
-          aria-label="Abrir vista detallada de métricas del sistema"
-          (click)="dialogService.toggleHeroDetail(true)"
-          (keydown.enter)="dialogService.toggleHeroDetail(true)"
-          (keydown.space)="$event.preventDefault(); dialogService.toggleHeroDetail(true)"
-          [class.invisible]="dialogService.isHeroExpanded()"
-          [style.view-transition-name]="dialogService.activeTransition() === 'hero' && !dialogService.isHeroExpanded() ? 'hero-transform' : null"
-          class="card-interactive hero-mesh-m3 m3-aurora-glow focus-ring-m3 lg:col-span-7 min-w-0 rounded-m3-xl p-6 md:p-8 flex flex-col justify-between min-h-[300px] shadow-xs cursor-pointer group border border-transparent forced-colors:border-[ButtonText]">
-
-          <div class="m3-aurora-layer" aria-hidden="true">
-            <span class="m3-aurora-orb m3-aurora-orb-1"></span>
-            <span class="m3-aurora-orb m3-aurora-orb-2"></span>
-            <span class="m3-aurora-orb m3-aurora-orb-3"></span>
-          </div>
-
-          <div class="space-y-4 max-w-2xl">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="px-3.5 py-1.5 bg-primary-box text-on-primary-box rounded-full text-xs font-semibold tracking-wide inline-flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm" aria-hidden="true">hub</span>
-                Operación en Vivo
-              </span>
-
-              @let alerts = totalActiveAlerts();
-              <span
-                [class]="alerts > 0 ? 'bg-warning-box text-on-warning-box' : 'bg-success-box text-on-success-box'"
-                class="px-3 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
-                <span class="material-symbols-rounded text-sm" aria-hidden="true">
-                  {{ alerts > 0 ? 'notifications_active' : 'verified' }}
-                </span>
-                {{ alerts > 0 ? alerts + ' alertas activas' : 'Sistema estable' }}
-              </span>
-
-              <span class="px-3 py-1.5 bg-surface/75 backdrop-blur-md rounded-full text-xs font-semibold text-primary font-mono">
-                {{ taskService.completionRate() }}% tareas
-              </span>
-            </div>
-
-            <div class="space-y-2 pt-1">
-              <h2 class="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight text-main">
-                Pulso operativo del sistema
-              </h2>
-              <p class="text-muted text-sm md:text-base leading-relaxed max-w-xl">
-                Supervisión reactiva sobre {{ taskService.pendingCount() }} pendientes de agenda y 6 estaciones en tiempo real con señales Angular.
-              </p>
-            </div>
-
-            <div class="pt-1 space-y-1.5 max-w-lg">
-              <div class="flex items-center justify-between text-[11px] font-medium text-muted">
-                <span>Avance de jornada</span>
-                <span class="font-mono text-main font-semibold">
-                  {{ taskService.completedCount() }} / {{ taskService.tasks().length }} completadas
-                </span>
-              </div>
-              <m3-linear-progress
-                [value]="taskService.completionRate()"
-                color="primary"
-                [wavy]="true"
-                size="sm"
-                ariaLabel="Avance general de tareas" />
-            </div>
-          </div>
-
-          <div
-            class="pt-6 flex flex-wrap items-center justify-between gap-3"
-            (click)="$event.stopPropagation()"
-            (keydown.enter)="$event.stopPropagation()"
-            (keydown.space)="$event.stopPropagation()">
-            <m3-button
-              id="trigger-bento-center"
-              variant="filled"
-              size="md"
-              icon="add"
-              (action)="openQuickTaskDialog()">
-              Nueva tarea
-            </m3-button>
-
-            <m3-button
-              variant="tonal"
-              size="sm"
-              icon="open_in_full"
-              (action)="dialogService.toggleHeroDetail(true)">
-              Ver desglose
-            </m3-button>
-          </div>
-        </section>
-
-        <!-- FOCUS STACK: AGENDA ACCIONABLE EN VIVO (REEMPLAZA TARJETA DUPLICADA DE COLOR) -->
-        <section
-          aria-label="Agenda en vivo"
-          style="animation-delay: 40ms;"
-          class="m3-anim-item-in lg:col-span-5 min-w-0 bg-surface-low rounded-m3-xl p-6 flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]">
-          <div class="flex items-start justify-between gap-3">
-            <div class="space-y-0.5 min-w-0">
-              <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
-                <span class="material-symbols-rounded text-base" aria-hidden="true">event_upcoming</span>
-                <span>Foco del Día</span>
-              </div>
-              <h3 class="text-xl font-bold text-main">Agenda en vivo</h3>
-            </div>
-
-            <a
-              routerLink="/agenda"
-              class="btn-m3 focus-ring-m3 h-8 px-3.5 rounded-full bg-sec-box text-on-sec-box text-xs font-semibold inline-flex items-center gap-1.5 no-underline shrink-0 cursor-pointer">
-              <span>Ver Agenda</span>
-              <span class="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
-            </a>
-          </div>
-
-          <ul role="list" class="list-none m-0 p-0 space-y-2">
-            @for (task of previewTasks(); track task.id) {
-              <li>
-                <button
-                  type="button"
-                  role="checkbox"
-                  [attr.aria-checked]="task.completed"
-                  (click)="taskService.toggleCompleted(task.id)"
-                  [class]="task.completed
-                    ? 'bg-surface/55 text-muted hover:bg-surface'
-                    : 'bg-surface-box text-main hover:bg-surface-high shadow-2xs'"
-                  class="btn-m3 w-full text-left px-3.5 py-2.5 rounded-m3-lg flex items-center justify-between gap-3 cursor-pointer border border-transparent forced-colors:border-[ButtonText]">
-                  <span class="flex items-center gap-3 min-w-0">
-                    <span
-                      class="material-symbols-rounded text-xl shrink-0"
-                      [class]="task.completed ? 'text-primary' : 'text-muted'"
-                      aria-hidden="true">
-                      {{ task.completed ? 'check_circle' : 'radio_button_unchecked' }}
-                    </span>
-                    <span class="min-w-0">
-                      <span
-                        [class.line-through]="task.completed"
-                        [class.opacity-65]="task.completed"
-                        class="block text-sm font-medium truncate">
-                        {{ task.title }}
-                      </span>
-                      <span class="block text-[11px] text-muted truncate">
-                        {{ task.category }} · {{ task.dateLabel }}
-                      </span>
-                    </span>
-                  </span>
-
-                  <span
-                    [class]="priorityBadgeClass(task.priority, task.completed)"
-                    class="px-2 py-0.5 rounded-m3-full text-[11px] font-semibold inline-flex items-center gap-1 shrink-0">
-                    <span class="material-symbols-rounded text-xs" aria-hidden="true">
-                      {{ task.completed ? 'done' : task.priority === 'Alta' ? 'priority_high' : 'flag' }}
-                    </span>
-                    <span>{{ task.completed ? 'Lista' : task.priority }}</span>
-                  </span>
-                </button>
-              </li>
-            }
-          </ul>
-
-          <div class="pt-1 flex items-center justify-between gap-2 text-xs text-muted">
-            <span>Toca una actividad para actualizar la barra del Hero.</span>
-            <span class="font-mono font-semibold text-main shrink-0">
-              {{ taskService.pendingCount() }} pend.
-            </span>
-          </div>
-        </section>
+        <app-overview-live-agenda
+          [tasks]="previewTasks()"
+          [pendingCount]="taskService.pendingCount()"
+          [focusStatus]="focusService.status()"
+          [focusTime]="focusService.formattedTime()"
+          [focusLabel]="focusService.statusLabel()"
+          [focusTaskTitle]="activeFocusTaskTitle()"
+          (toggleTask)="taskService.toggleCompleted($event)"
+          (toggleFocusTimer)="toggleFocusTimer()" />
       </div>
 
-      <!-- BANDA 2: PULSO MULTIDOMINIO (6 WORKBENCHES EN VIVO) -->
-      <section aria-labelledby="overview-modules-heading" class="space-y-3.5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="space-y-0.5">
-            <h3 id="overview-modules-heading" class="text-base font-bold tracking-tight text-main">
-              Módulos en Vivo
-            </h3>
-            <p class="text-xs text-muted">
-              Estado consolidado de tus 6 estaciones operativas con acceso directo.
-            </p>
-          </div>
-
-          <a
-            routerLink="/design-system/styles"
-            class="btn-m3 px-3.5 py-1.5 rounded-m3-full bg-surface-low hover:bg-surface-high text-xs font-medium text-muted hover:text-main inline-flex items-center gap-1.5 no-underline cursor-pointer">
-            <span class="material-symbols-rounded text-base text-primary" aria-hidden="true">widgets</span>
-            <span>Design System M3</span>
-            <span class="material-symbols-rounded text-sm" aria-hidden="true">arrow_forward</span>
-          </a>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          @for (card of modulePulseCards(); track card.section; let idx = $index) {
-            <a
-              [routerLink]="card.route"
-              [style.animation-delay]="(idx * 35 + 80) + 'ms'"
-              class="card-interactive m3-anim-item-in focus-ring-m3 bg-surface-low hover:bg-surface-container rounded-m3-xl p-5 no-underline flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[LinkText]">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <span
-                    [class]="card.iconBgClass"
-                    class="w-10 h-10 rounded-m3-md grid place-items-center shrink-0">
-                    <span class="material-symbols-rounded text-xl" aria-hidden="true">{{ card.icon }}</span>
-                  </span>
-                  <div class="min-w-0">
-                    <div class="text-xs font-semibold text-muted uppercase tracking-wider truncate">
-                      {{ card.title }}
-                    </div>
-                    <div class="text-xl font-extrabold text-main font-mono truncate">
-                      {{ card.headline }}
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  [class]="badgeClass(card.statusTone)"
-                  class="px-2.5 py-1 rounded-m3-full text-[11px] font-semibold inline-flex items-center gap-1 shrink-0">
-                  <span class="material-symbols-rounded text-xs" aria-hidden="true">{{ card.statusIcon }}</span>
-                  <span>{{ card.statusLabel }}</span>
-                </span>
-              </div>
-
-              <div class="flex items-center justify-between gap-2 text-xs text-muted pt-1">
-                <span class="truncate">{{ card.detail }}</span>
-                <span class="material-symbols-rounded text-base text-primary shrink-0" aria-hidden="true">
-                  arrow_forward
-                </span>
-              </div>
-            </a>
-          }
-        </div>
-      </section>
-
+      <!-- BANDA 2: PULSO MULTIDOMINIO (6 WORKBENCHES EN VIVO + M3 FILTER CHIPS) -->
+      <app-overview-modules-grid
+        [cards]="filteredModuleCards()"
+        [activeFilter]="moduleFilter()"
+        [totalCount]="modulePulseCards().length"
+        [alertsModuleCount]="alertsModuleCount()"
+        [stableModuleCount]="stableModuleCount()"
+        (filterChange)="moduleFilter.set($event)" />
     </div>
 
-    <!-- DIÁLOGO LOCAL DEL DASHBOARD PARA CREACIÓN RÁPIDA DE TAREA (<m3-dialog variant="expressive">) -->
-    <m3-dialog
-      #quickTaskDlg
-      variant="expressive"
-      size="md"
-      tone="primary"
-      icon="add_task"
-      headline="Nueva tarea rápida"
-      subtitle="Registra un pendiente sin salir del panel ejecutivo."
+    <!-- HERO DETAIL EXPANDIDO A PANTALLA COMPLETA (PORTAL STAGE OVERLAY vía hero-transform) -->
+    <ng-template #heroDetailTemplate>
+      <app-overview-hero-detail
+        [open]="heroDetailOpen()"
+        [viewTransitionName]="heroMorphOwner() === 'detail' ? 'hero-transform' : null"
+        [completionRate]="taskService.completionRate()"
+        [completedCount]="taskService.completedCount()"
+        [pendingCount]="taskService.pendingCount()"
+        [totalActiveAlerts]="totalActiveAlerts()"
+        [moduleCards]="modulePulseCards()"
+        [focusStatus]="focusService.status()"
+        [focusTime]="focusService.formattedTime()"
+        [focusLabel]="focusService.statusLabel()"
+        [focusTaskTitle]="activeFocusTaskTitle()"
+        (closeRequested)="closeHeroDetail()"
+        (navigateModule)="navigateFromHero($event)" />
+    </ng-template>
+
+    @if (!stageOverlay.hasExternalHost()) {
+      <ng-container [ngTemplateOutlet]="heroDetailTemplate" />
+    }
+
+    <!-- DIÁLOGO LOCAL DEL DASHBOARD CON MORPH VIAJERO (dialog-transform) -->
+    <app-overview-quick-task-dialog
       [(open)]="quickTaskOpen"
-      (closed)="quickTaskError.set(null)">
-      <form (ngSubmit)="submitQuickTask()" novalidate class="space-y-4">
-        <m3-text-field
-          #quickTitleField
-          [id]="'overview-quick-title'"
-          variant="filled"
-          label="Título de la tarea"
-          placeholder="Ej. Validar cierre de turno POS"
-          icon="edit_note"
-          [required]="true"
-          [clearable]="true"
-          [maxlength]="80"
-          enterkeyhint="done"
-          [errorText]="quickTaskError()"
-          [value]="quickTitle()"
-          (valueChange)="onQuickTitleChange($event)" />
-
-        <fieldset class="space-y-1.5 border-0 p-0 m-0">
-          <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-            Área
-          </legend>
-          <m3-button-group
-            variant="standard"
-            size="xs"
-            ariaLabel="Área de la tarea"
-            [options]="categoryOptions"
-            [value]="[quickCategory()]"
-            (selectionChange)="quickCategory.set($event[0] || quickCategory())" />
-        </fieldset>
-
-        <div class="bg-surface-low rounded-m3-lg p-4 space-y-3.5">
-          <fieldset class="space-y-1.5 border-0 p-0 m-0">
-            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-              Bloque / Día
-            </legend>
-            <m3-button-group
-              variant="connected"
-              size="xs"
-              ariaLabel="Horizonte de tarea"
-              [options]="dueBucketOptions"
-              [value]="[quickBucket()]"
-              (selectionChange)="onBucketSelect($event)" />
-          </fieldset>
-
-          <fieldset class="space-y-1.5 border-0 p-0 m-0">
-            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
-              Prioridad
-            </legend>
-            <m3-button-group
-              variant="connected"
-              size="xs"
-              ariaLabel="Prioridad de tarea"
-              [options]="priorityOptions"
-              [value]="[quickPriority()]"
-              (selectionChange)="onPrioritySelect($event)" />
-          </fieldset>
-        </div>
-      </form>
-
-      <div dialog-actions class="flex items-center gap-3">
-        <m3-button type="button" variant="text" (action)="quickTaskDlg.dismiss('cancel')">
-          Cancelar
-        </m3-button>
-        <m3-button type="button" variant="filled" icon="check" (action)="submitQuickTask()">
-          Crear tarea
-        </m3-button>
-      </div>
-    </m3-dialog>
+      [managedClose]="stageOverlay.hasViewTransitions()"
+      [viewTransitionName]="quickTaskMorphTarget() === 'dialog' ? 'dialog-transform' : null"
+      (closeRequested)="closeQuickTaskDialog()"
+      (saveTask)="onSaveQuickTask($event)" />
 
     <m3-snackbar
       [open]="snackbarOpen()"
       [message]="snackbarMessage()"
       (openChange)="snackbarOpen.set($event)" />
-  `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  `
 })
 export class OverviewComponent {
   readonly taskService = inject(TaskService);
-  readonly dialogService = inject(DialogService);
+  readonly focusService = inject(AgendaFocusService);
+  readonly stageOverlay = inject(StageOverlayService);
   private readonly clinicService = inject(ClinicService);
   private readonly campusService = inject(CampusService);
   private readonly posService = inject(PosService);
   private readonly inventoryService = inject(InventoryService);
   private readonly kanbanService = inject(KanbanService);
   private readonly telemetryService = inject(TelemetryService);
-  private readonly quickTitleField = viewChild<M3TextFieldComponent>('quickTitleField');
+  private readonly router = inject(Router, { optional: true });
+  private readonly document = inject(DOCUMENT);
+  private readonly appRef = inject(ApplicationRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
+  private readonly heroDetailTemplate = viewChild<TemplateRef<unknown>>('heroDetailTemplate');
+  private returnFocusEl: HTMLElement | null = null;
+
+  readonly moduleFilter = signal<OverviewModuleFilter>('all');
+  readonly heroDetailOpen = signal<boolean>(false);
+  readonly heroMorphOwner = signal<OverviewHeroMorphOwner | null>(null);
   readonly quickTaskOpen = signal<boolean>(false);
-  readonly quickTitle = signal<string>('');
-  readonly quickCategory = signal<string>('Frontend Angular');
-  readonly quickBucket = signal<TaskDueBucket>('Hoy');
-  readonly quickPriority = signal<TaskPriority>('Alta');
-  readonly quickTaskError = signal<string | null>(null);
+  readonly quickTaskMorphTarget = signal<OverviewQuickTaskMorphTarget | null>(null);
   readonly snackbarOpen = signal<boolean>(false);
   readonly snackbarMessage = signal<string>('');
 
-  readonly categoryOptions: M3ButtonGroupOption[] = TASK_CATEGORIES.map(c => ({
-    id: c.name,
-    label: c.name,
-    icon: c.icon
-  }));
-  readonly dueBucketOptions: M3ButtonGroupOption[] = TASK_DUE_BUCKETS.map(b => ({ id: b, label: b }));
-  readonly priorityOptions: M3ButtonGroupOption[] = TASK_PRIORITIES.map(p => ({
-    id: p,
-    label: p,
-    icon: p === 'Alta' ? 'priority_high' : p === 'Media' ? 'flag' : 'low_priority'
-  }));
-
   readonly previewTasks = computed(() => this.taskService.tasks().slice(0, 4));
+
+  readonly activeFocusTaskTitle = computed<string | null>(() => {
+    const activeId = this.focusService.activeTaskId();
+    if (activeId === null) return null;
+    return this.taskService.tasks().find(t => t.id === activeId)?.title ?? null;
+  });
 
   readonly totalActiveAlerts = computed(() => {
     const clinicAlerts = this.clinicService.kpiSummary().criticalCases;
@@ -422,16 +175,56 @@ export class OverviewComponent {
     const kanbanAlerts = this.kanbanService.kpis().slaBreachCount;
     const fleetAlerts = this.telemetryService.kpiSummary().delayedCount;
     const campusAlerts = this.campusService.pendingAssignmentsCount();
-    return clinicAlerts + stockAlerts + kanbanAlerts + fleetAlerts + campusAlerts;
+    const posAlerts = this.posService.shiftInfo().sunatOnline ? 0 : 1;
+    return clinicAlerts + stockAlerts + kanbanAlerts + fleetAlerts + campusAlerts + posAlerts;
+  });
+
+  readonly heroExecutiveMetrics = computed<readonly OverviewHeroMetric[]>(() => {
+    const totalModules = this.modulePulseCards().length;
+    const stableCount = this.stableModuleCount();
+    const posShift = this.posService.shiftInfo();
+    const telemetry = this.telemetryService.kpiSummary();
+
+    return [
+      {
+        label: 'Estaciones',
+        value: `${stableCount}/${totalModules} OK`,
+        caption: `${this.alertsModuleCount()} con atención`,
+        icon: stableCount === totalModules ? 'verified' : 'monitoring',
+        toneClass:
+          stableCount === totalModules
+            ? 'bg-success-box text-on-success-box'
+            : 'bg-warning-box text-on-warning-box'
+      },
+      {
+        label: 'Ventas POS',
+        value: `${posShift.salesCountToday} tickets`,
+        caption: posShift.sunatOnline ? 'SUNAT en línea' : posShift.status,
+        icon: 'point_of_sale',
+        toneClass: 'bg-tertiary-box text-on-tertiary-box'
+      },
+      {
+        label: 'Flota Viva',
+        value: `${telemetry.activeFleetCount}/${telemetry.totalFleetCount} en ruta`,
+        caption: `${telemetry.slaRate}% SLA entrega`,
+        icon: 'local_shipping',
+        toneClass: 'bg-primary-box text-on-primary-box'
+      }
+    ];
   });
 
   readonly modulePulseCards = computed<readonly ModulePulseCard[]>(() => {
     const clinic = this.clinicService.kpiSummary();
+    const clinicOccupancy = Math.round((clinic.occupiedBeds / Math.max(1, clinic.totalBeds)) * 100);
     const activeClass = this.campusService.activeClass();
     const pendingAssignments = this.campusService.pendingAssignmentsCount();
     const creditProgress = this.campusService.creditProgress();
     const posShift = this.posService.shiftInfo();
     const cartCount = this.posService.cartCount();
+    const posProducts = this.posService.products();
+    const posAvailablePercent = Math.round(
+      (posProducts.filter(p => p.stock > 0).length / Math.max(1, posProducts.length)) * 100
+    );
     const inventory = this.inventoryService.kpiSummary();
     const stockIssues = inventory.lowStockSkus + inventory.outOfStockSkus;
     const kanban = this.kanbanService.kpis();
@@ -448,7 +241,12 @@ export class OverviewComponent {
         detail: `Boxes ${clinic.occupiedBeds}/${clinic.totalBeds} · Shock ${clinic.shockTraumaOccupancy}`,
         statusLabel: clinic.criticalCases > 0 ? `${clinic.criticalCases} críticos` : 'Estable',
         statusIcon: clinic.criticalCases > 0 ? 'emergency' : 'check_circle',
-        statusTone: clinic.criticalCases > 0 ? 'error' : 'success'
+        statusTone: clinic.criticalCases > 0 ? 'error' : 'success',
+        hasAlert: clinic.criticalCases > 0,
+        alertCount: clinic.criticalCases,
+        healthPercent: clinicOccupancy,
+        healthLabel: 'Ocupación boxes',
+        healthColor: clinic.criticalCases > 0 ? 'error' : 'primary'
       },
       {
         section: 'campus',
@@ -457,10 +255,15 @@ export class OverviewComponent {
         icon: 'school',
         iconBgClass: 'bg-primary-box text-on-primary-box',
         headline: activeClass.code,
-        detail: `${activeClass.subject} · ${creditProgress.formattedPercent} avance`,
+        detail: `${activeClass.subject} · ${activeClass.timeRange}`,
         statusLabel: pendingAssignments > 0 ? `${pendingAssignments} entregas` : 'Al día',
         statusIcon: pendingAssignments > 0 ? 'assignment_late' : 'task_alt',
-        statusTone: pendingAssignments > 0 ? 'warning' : 'primary'
+        statusTone: pendingAssignments > 0 ? 'warning' : 'primary',
+        hasAlert: pendingAssignments > 0,
+        alertCount: pendingAssignments,
+        healthPercent: Math.round(creditProgress.percent),
+        healthLabel: 'Avance curricular',
+        healthColor: 'primary'
       },
       {
         section: 'pos',
@@ -471,8 +274,13 @@ export class OverviewComponent {
         headline: `${posShift.salesCountToday} tickets`,
         detail: `${posShift.register} · ${posShift.shift} · ${cartCount} en carrito`,
         statusLabel: posShift.sunatOnline ? 'SUNAT OK' : posShift.status,
-        statusIcon: 'verified',
-        statusTone: 'success'
+        statusIcon: posShift.sunatOnline ? 'verified' : 'warning',
+        statusTone: posShift.sunatOnline ? 'success' : 'warning',
+        hasAlert: !posShift.sunatOnline,
+        alertCount: posShift.sunatOnline ? 0 : 1,
+        healthPercent: posAvailablePercent,
+        healthLabel: 'Disponibilidad carta',
+        healthColor: 'tertiary'
       },
       {
         section: 'inventory',
@@ -484,7 +292,12 @@ export class OverviewComponent {
         detail: `${inventory.totalUnits} uds · ${inventory.totalSkus} SKUs`,
         statusLabel: stockIssues > 0 ? `${stockIssues} alertas` : 'Stock OK',
         statusIcon: stockIssues > 0 ? 'warning' : 'inventory',
-        statusTone: stockIssues > 0 ? 'warning' : 'success'
+        statusTone: stockIssues > 0 ? 'warning' : 'success',
+        hasAlert: stockIssues > 0,
+        alertCount: stockIssues,
+        healthPercent: inventory.healthRate,
+        healthLabel: 'Salud de stock',
+        healthColor: stockIssues > 0 ? 'tertiary' : 'primary'
       },
       {
         section: 'kanban',
@@ -493,10 +306,15 @@ export class OverviewComponent {
         icon: 'view_kanban',
         iconBgClass: kanban.slaBreachCount > 0 ? 'bg-warning-box text-on-warning-box' : 'bg-primary-box text-on-primary-box',
         headline: `${kanban.totalActive} órdenes`,
-        detail: `Prom. ${kanban.avgPrepTimeMin} min · ${kanban.onTimeRatePercent}% SLA`,
+        detail: `Prom. ${kanban.avgPrepTimeMin} min · ${kanban.readyCount} listas · ${kanban.throughputPerHour}/h`,
         statusLabel: kanban.slaBreachCount > 0 ? `${kanban.slaBreachCount} demoradas` : 'En tiempo',
         statusIcon: kanban.slaBreachCount > 0 ? 'timer_off' : 'timer',
-        statusTone: kanban.slaBreachCount > 0 ? 'error' : 'success'
+        statusTone: kanban.slaBreachCount > 0 ? 'error' : 'success',
+        hasAlert: kanban.slaBreachCount > 0,
+        alertCount: kanban.slaBreachCount,
+        healthPercent: kanban.onTimeRatePercent,
+        healthLabel: 'Cumplimiento SLA',
+        healthColor: kanban.slaBreachCount > 0 ? 'error' : 'primary'
       },
       {
         section: 'telemetry',
@@ -508,74 +326,194 @@ export class OverviewComponent {
         detail: `${telemetry.averageSpeedKmh} km/h · Frío ${telemetry.coldChainAvgTempC}°C`,
         statusLabel: telemetry.delayedCount > 0 ? `${telemetry.delayedCount} retrasos` : `${telemetry.slaRate}% SLA`,
         statusIcon: telemetry.delayedCount > 0 ? 'schedule' : 'route',
-        statusTone: telemetry.delayedCount > 0 ? 'warning' : 'primary'
+        statusTone: telemetry.delayedCount > 0 ? 'warning' : 'primary',
+        hasAlert: telemetry.delayedCount > 0,
+        alertCount: telemetry.delayedCount,
+        healthPercent: telemetry.slaRate,
+        healthLabel: 'SLA de flota',
+        healthColor: telemetry.delayedCount > 0 ? 'tertiary' : 'primary'
       }
     ];
   });
 
-  badgeClass(tone: PulseTone): string {
-    return PULSE_BADGE_CLASSES[tone];
+  readonly alertsModuleCount = computed(
+    () => this.modulePulseCards().filter(card => card.hasAlert).length
+  );
+
+  readonly stableModuleCount = computed(
+    () => this.modulePulseCards().filter(card => !card.hasAlert).length
+  );
+
+  readonly filteredModuleCards = computed<readonly ModulePulseCard[]>(() => {
+    const filter = this.moduleFilter();
+    const cards = this.modulePulseCards();
+    if (filter === 'alerts') return cards.filter(card => card.hasAlert);
+    if (filter === 'stable') return cards.filter(card => !card.hasAlert);
+    return cards;
+  });
+
+  constructor() {
+    effect(() => {
+      const tpl = this.heroDetailTemplate();
+      if (tpl && this.stageOverlay.hasExternalHost()) {
+        this.stageOverlay.mountOverlayTemplate(tpl, this.injector);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      const tpl = this.heroDetailTemplate();
+      if (tpl) {
+        this.stageOverlay.unmountOverlayTemplate(tpl);
+      }
+      this.stageOverlay.setOverlayOpen(false);
+    });
   }
 
-  priorityBadgeClass(priority: TaskPriority, completed: boolean): string {
-    if (completed) return 'bg-surface-high text-muted';
-    if (priority === 'Alta') return 'bg-error-box text-on-error-box';
-    if (priority === 'Media') return 'bg-warning-box text-on-warning-box';
-    return 'bg-surface-high text-muted';
+  private isModalOrTransitionActive(): boolean {
+    return (
+      this.heroDetailOpen() ||
+      this.quickTaskOpen() ||
+      this.heroMorphOwner() !== null ||
+      this.quickTaskMorphTarget() !== null
+    );
   }
 
-  openQuickTaskDialog(): void {
-    this.quickTitle.set('');
-    this.quickCategory.set('Frontend Angular');
-    this.quickBucket.set('Hoy');
-    this.quickPriority.set('Alta');
-    this.quickTaskError.set(null);
-    this.quickTaskOpen.set(true);
-  }
-
-  onQuickTitleChange(value: string): void {
-    this.quickTitle.set(value);
-    if (this.quickTaskError() && value.trim()) {
-      this.quickTaskError.set(null);
-    }
-  }
-
-  onBucketSelect(selected: string[]): void {
-    const bucket = selected[0] as TaskDueBucket | undefined;
-    if (bucket) this.quickBucket.set(bucket);
-  }
-
-  onPrioritySelect(selected: string[]): void {
-    const prio = selected[0] as TaskPriority | undefined;
-    if (prio) this.quickPriority.set(prio);
-  }
-
-  submitQuickTask(): void {
-    const title = this.quickTitle().trim();
-    if (!title) {
-      this.quickTaskError.set('Ingresa un título para registrar la tarea.');
-      this.quickTitleField()?.focus();
+  openHeroDetail(): void {
+    if (this.isModalOrTransitionActive()) {
       return;
     }
 
-    const bucket = this.quickBucket();
+    this.returnFocusEl = this.document.activeElement as HTMLElement | null;
+    this.heroMorphOwner.set('card');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.heroDetailOpen.set(true);
+        this.stageOverlay.setOverlayOpen(true);
+        this.heroMorphOwner.set('detail');
+      },
+      () => {
+        this.heroMorphOwner.set(null);
+      },
+      { rootClass: 'vt-hero' }
+    );
+  }
+
+  closeHeroDetail(): void {
+    if (!this.heroDetailOpen()) return;
+
+    this.heroMorphOwner.set('detail');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.heroDetailOpen.set(false);
+        this.stageOverlay.setOverlayOpen(false);
+        this.heroMorphOwner.set('card');
+      },
+      () => {
+        this.heroMorphOwner.set(null);
+        const target = this.returnFocusEl;
+        this.returnFocusEl = null;
+        if (target?.isConnected) {
+          target.focus();
+        }
+      },
+      { isExiting: true, rootClass: 'vt-hero' }
+    );
+  }
+
+  navigateFromHero(route: string): void {
+    this.returnFocusEl = null;
+    this.heroDetailOpen.set(false);
+    this.heroMorphOwner.set(null);
+    this.stageOverlay.setOverlayOpen(false);
+    if (this.router) {
+      void this.router.navigateByUrl(route);
+    }
+  }
+
+  openQuickTaskDialog(): void {
+    if (this.isModalOrTransitionActive()) {
+      return;
+    }
+
+    if (!this.stageOverlay.hasViewTransitions()) {
+      this.quickTaskOpen.set(true);
+      return;
+    }
+
+    this.quickTaskMorphTarget.set('button');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.quickTaskOpen.set(true);
+        this.quickTaskMorphTarget.set('dialog');
+      },
+      () => {
+        this.quickTaskMorphTarget.set(null);
+      }
+    );
+  }
+
+  closeQuickTaskDialog(): void {
+    if (!this.quickTaskOpen()) return;
+
+    if (!this.stageOverlay.hasViewTransitions()) {
+      this.quickTaskOpen.set(false);
+      this.quickTaskMorphTarget.set(null);
+      return;
+    }
+
+    this.quickTaskMorphTarget.set('dialog');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.quickTaskOpen.set(false);
+        this.quickTaskMorphTarget.set('button');
+      },
+      () => {
+        this.quickTaskMorphTarget.set(null);
+      },
+      { isExiting: true }
+    );
+  }
+
+  onSaveQuickTask(draft: OverviewQuickTaskDraft): void {
     const created = this.taskService.saveTask(
       {
-        title,
-        category: this.quickCategory(),
-        dateLabel: bucket,
-        dueBucket: bucket,
+        title: draft.title,
+        category: draft.category,
+        dateLabel: draft.dueBucket,
+        dueBucket: draft.dueBucket,
         timeSlot: '',
         durationMinutes: 25,
-        priority: this.quickPriority(),
+        priority: draft.priority,
         notes: 'Creada desde Dashboard'
       },
       null
     );
 
-    this.quickTaskOpen.set(false);
-    this.snackbarMessage.set(`Tarea creada en ${bucket}: ${created.title}`);
+    this.closeQuickTaskDialog();
+    this.snackbarMessage.set(`Tarea creada en ${draft.dueBucket}: ${created.title}`);
     this.snackbarOpen.set(false);
     queueMicrotask(() => this.snackbarOpen.set(true));
+  }
+
+  toggleFocusTimer(): void {
+    const status = this.focusService.status();
+    if (status === 'running') {
+      this.focusService.pause();
+      return;
+    }
+    if (status === 'paused') {
+      const taskId = this.focusService.activeTaskId() ?? this.previewTasks()[0]?.id;
+      if (taskId !== undefined) {
+        this.focusService.startOrResume(taskId, this.activeFocusTaskTitle() ?? undefined);
+      }
+    }
   }
 }

@@ -10,7 +10,6 @@ import { AppSection, detectSectionFromUrl, getShellModeForSection } from './shar
 import { CommandPaletteComponent } from './shared/ui/command-palette.component';
 import { DialogContainerComponent } from './shared/ui/dialog-container.component';
 import { HeaderComponent } from './shared/ui/header.component';
-import { HeroDetailModalComponent } from './shared/ui/hero-detail-modal.component';
 import { NavigationComponent } from './shared/ui/navigation.component';
 
 export type { AppSection, DialogView, NavChromeMode, NavStyle, TransitionType, TriggerMode } from './shared/models/ui.models';
@@ -25,7 +24,6 @@ export type { ThemeOption } from './core/theme/theme.service';
     RouterOutlet,
     NavigationComponent,
     HeaderComponent,
-    HeroDetailModalComponent,
     DialogContainerComponent,
     CommandPaletteComponent
   ],
@@ -127,7 +125,6 @@ export class App {
   private isStageModalActive(): boolean {
     return (
       this.dialogService.isDialogOpen() ||
-      this.dialogService.isHeroExpanded() ||
       this.stageOverlay.isOverlayOpen()
     );
   }
