@@ -1,12 +1,16 @@
 /**
  * Scoped Material 3 Expressive styles for the Inventory Atelier & Workbench.
  * Loaded via ViewEncapsulation.None on InventoryComponent so @starting-style,
- * View Transitions pseudo-elements, and interpolate-size work cleanly without
- * leaking outside `.inv-*` or editing global stylesheets.
+ * View Transitions pseudo-elements, container queries, and native <m3-dialog>
+ * customizations work cleanly without leaking outside `.inv-*` or editing global styles.
  */
 export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
   .inv-workbench {
     interpolate-size: allow-keywords;
+  }
+
+  .inv-header-shell {
+    container-type: inline-size;
   }
 
   .inv-scroll-pane {
@@ -88,6 +92,18 @@ export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
     border-radius: var(--radius-m3-xl, 28px);
   }
 
+  /* ── Matrix Header & Summary Container Adaptation ────────────────────────── */
+  @container (inline-size < 740px) {
+    .inv-matrix-summary-layout {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .inv-matrix-summary-controls {
+      justify-content: space-between;
+    }
+  }
+
   /* ── Organic Expressive Matrix Cells ─────────────────────────────────────── */
   .inv-matrix-cell {
     position: relative;
@@ -128,7 +144,7 @@ export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
     }
   }
 
-  /* ── M3 Expressive Side Sheet (Docked xl / Trailing Scrim < xl) ───────────── */
+  /* ── M3 Expressive Side Sheet (Docked 2xl / Trailing Scrim < 2xl) ────────── */
   .inv-side-sheet-scrim {
     transition:
       opacity 260ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1)),
@@ -155,6 +171,56 @@ export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
     }
   }
 
+  /* ── Native Top-Layer <m3-dialog> Shells (Product Studio & Transfer) ─────── */
+  dialog.m3-dialog.inv-studio-dialog {
+    width: min(64rem, calc(100vw - 1.5rem));
+    max-width: min(64rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.inv-transfer-dialog {
+    width: min(36rem, calc(100vw - 2rem));
+    max-width: min(36rem, calc(100vw - 2rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.inv-studio-dialog > .m3-dialog-inner,
+  dialog.m3-dialog.inv-transfer-dialog > .m3-dialog-inner {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.inv-studio-dialog > .m3-dialog-inner > h2,
+  dialog.m3-dialog.inv-transfer-dialog > .m3-dialog-inner > h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    margin: 0;
+  }
+
+  dialog.m3-dialog.inv-studio-dialog > .m3-dialog-inner > .m3-dialog-body,
+  dialog.m3-dialog.inv-transfer-dialog > .m3-dialog-inner > .m3-dialog-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.inv-studio-dialog > .m3-dialog-inner > .m3-dialog-footer,
+  dialog.m3-dialog.inv-transfer-dialog > .m3-dialog-inner > .m3-dialog-footer {
+    padding: 0.75rem 1.5rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
   /* ── Studio Swatch Corner Morph (12px -> 28px) ───────────────────────────── */
   .inv-swatch-tile {
     border-radius: var(--radius-m3-md, 12px);
@@ -176,30 +242,13 @@ export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
     transform: scale(1.03);
   }
 
-  /* ── Intrinsic Expandable Tray & Route Bars ──────────────────────────────── */
-  .inv-expandable {
-    overflow: hidden;
-    transition:
-      height 300ms var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1)),
-      opacity 240ms ease,
-      display 300ms allow-discrete;
-  }
-
-  @starting-style {
-    .inv-expandable {
-      height: 0;
-      opacity: 0;
-    }
-  }
-
   /* ── Accessibility & Reduced Motion ──────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .inv-catalog-card,
     .inv-matrix-cell,
     .inv-side-sheet-scrim,
     .inv-side-sheet-panel,
-    .inv-swatch-tile,
-    .inv-expandable {
+    .inv-swatch-tile {
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
       animation-delay: 0ms !important;
@@ -219,6 +268,11 @@ export const INVENTORY_EXPRESSIVE_STYLES = /* css */ `
     .inv-swatch-tile,
     .inv-side-sheet-panel {
       border: 1px solid CanvasText;
+    }
+
+    .inv-catalog-card.is-selected,
+    .inv-swatch-tile.is-selected {
+      outline: 2px solid Highlight;
     }
   }
 `;

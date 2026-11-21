@@ -26,10 +26,15 @@ describe('InventoryComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the multidimensional inventory title and warehouse switcher', () => {
+  it('should render the multidimensional inventory title, semantic catalog search, and warehouse switcher', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Matriz Multidimensional de Stock');
     expect(compiled.textContent).toContain('Consolidado');
+    expect(compiled.querySelector('app-inventory-catalog search m3-text-field input[type="search"]')).toBeTruthy();
+
+    const headerCreateBtn = compiled.querySelector('app-inventory-header m3-button[variant="filled"] button') as HTMLButtonElement;
+    expect(headerCreateBtn?.textContent).not.toContain('+ Nueva Prenda');
+    expect(headerCreateBtn?.textContent).toContain('Nueva Prenda');
   });
 
   it('should render semantic 2D matrix table and dynamic legend thresholds', () => {
@@ -75,11 +80,14 @@ describe('InventoryComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Transferencia Inter-Almacén');
-    expect(compiled.querySelector('[role="dialog"][aria-modal="true"]')).toBeTruthy();
+    expect(compiled.querySelector('app-inventory-transfer-modal dialog.m3-dialog.inv-transfer-dialog[open]')).toBeTruthy();
     expect(stageOverlay.isOverlayOpen()).toBe(true);
 
     const fromSelect = compiled.querySelector('#transfer-from-wh') as HTMLSelectElement | null;
+    const toSelect = compiled.querySelector('#transfer-to-wh') as HTMLSelectElement | null;
     expect(fromSelect?.value).toBe('WH-MIRAFLORES');
+    expect(fromSelect?.closest('.inv-filled-select')).toBeTruthy();
+    expect(toSelect?.closest('.inv-filled-select')).toBeTruthy();
 
     // Switch back to WH-CENTRAL which has stock >= 10 and verify +5 adds instead of overwriting
     service.closeTransferModal();
@@ -110,7 +118,7 @@ describe('InventoryComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Product Studio • Alta de Modelo');
     expect(compiled.textContent).toContain('Generador 2D');
-    expect(compiled.querySelector('[role="dialog"][aria-modal="true"]')).toBeTruthy();
+    expect(compiled.querySelector('app-inventory-create-modal dialog.m3-dialog.inv-studio-dialog[open]')).toBeTruthy();
     expect(stageOverlay.isOverlayOpen()).toBe(true);
 
     const skuInput = compiled.querySelector('#create-product-sku') as HTMLInputElement;
@@ -225,7 +233,7 @@ describe('InventoryComponent', () => {
 
     expect(service.isCreateModalOpen()).toBe(true);
     expect(component.createTriggerOrigin()).toBe('header');
-    expect(compiled.querySelector('[role="dialog"][aria-labelledby="inventory-create-title"]')).toBeTruthy();
+    expect(compiled.querySelector('app-inventory-create-modal dialog.m3-dialog.inv-studio-dialog[open]')).toBeTruthy();
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
@@ -288,7 +296,12 @@ describe('InventoryComponent', () => {
     expect(compiled.querySelector('m3-circular-progress')).toBeNull();
     expect(compiled.querySelector('m3-loading-indicator')).toBeNull();
 
-    // Bounded flex layout on desktop panes (prevents lg:block clipping multi-color matrix rows)
+    // Fluid outer page scroll on desktop without clipping catalog cards or matrix rows inside 100dvh
+    const workbench = compiled.querySelector('.inv-workbench') as HTMLElement;
+    expect(workbench?.classList.contains('overflow-y-auto')).toBe(true);
+    expect(workbench?.classList.contains('lg:overflow-hidden')).toBe(false);
+
+    // Responsive flex layout on desktop panes (prevents lg:block clipping multi-color matrix rows)
     const catalogPanel = compiled.querySelector('#inv-panel-catalog') as HTMLElement;
     const matrixPanel = compiled.querySelector('#inv-panel-matrix') as HTMLElement;
     expect(catalogPanel?.classList.contains('lg:flex')).toBe(true);
@@ -318,22 +331,21 @@ describe('InventoryComponent', () => {
     const healthyCells = Array.from(compiled.querySelectorAll('.m3-matrix-cell-healthy'));
     expect(healthyCells.every(c => c.classList.contains('opacity-40'))).toBe(true);
 
-    // Open Create Studio modal: verify no wavy gauges/loaders and aligned M3 dialog container token classes
+    // Open Create Studio modal: verify no wavy gauges/loaders and native <dialog> Top-Layer classes
     component.openCreateModal('header');
     fixture.detectChanges();
     expect(document.querySelector('m3-circular-progress')).toBeNull();
     expect(document.querySelector('m3-loading-indicator')).toBeNull();
 
-    const dialogSurface = document.querySelector('[role="dialog"]') as HTMLElement;
+    const dialogSurface = document.querySelector('app-inventory-create-modal dialog.m3-dialog.inv-studio-dialog[open]') as HTMLDialogElement;
     expect(dialogSurface).toBeTruthy();
-    expect(dialogSurface.classList.contains('rounded-m3-xl')).toBe(true);
-    expect(dialogSurface.classList.contains('rounded-m3-2xl')).toBe(false);
-    expect(dialogSurface.classList.contains('bg-surface-box')).toBe(true);
-    expect(dialogSurface.classList.contains('shadow-m3-level3')).toBe(true);
+    expect(dialogSurface.classList.contains('m3-dialog')).toBe(true);
+    expect(dialogSurface.classList.contains('inv-studio-dialog')).toBe(true);
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
     expect(service.isCreateModalOpen()).toBe(false);
+    expect(document.querySelector('app-inventory-create-modal dialog.m3-dialog[open]')).toBeNull();
   });
 
   it('prevents persistent catalog view-transition stacking bugs when idle and clears FLIP state after category filter', () => {

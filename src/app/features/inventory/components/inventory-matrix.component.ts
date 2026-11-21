@@ -14,21 +14,18 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
   imports: [M3ButtonComponent, M3SwitchComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'flex flex-col gap-3 min-h-0'
+    class: 'inv-matrix-pane flex flex-col gap-3 min-h-0'
   },
   styles: [`
-    .table-wrapper {
-      overflow: auto;
-      max-inline-size: 100%;
-      max-block-size: min(540px, 70vh);
+    :host {
       container-type: inline-size;
-      touch-action: pan-x pan-y;
     }
 
-    @media (min-width: 1024px) {
-      .table-wrapper {
-        max-block-size: none;
-      }
+    .table-wrapper {
+      overflow-x: auto;
+      max-inline-size: 100%;
+      container-type: inline-size;
+      touch-action: pan-x pan-y;
     }
 
     .inventory-matrix-table {
@@ -72,7 +69,7 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
     <!-- Clean Editorial Garment Summary Strip -->
     <section
       aria-label="Resumen de modelo seleccionado"
-      class="bg-surface-low rounded-m3-xl p-4 shrink-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+      class="inv-matrix-summary-layout bg-surface-low rounded-m3-xl p-4 shrink-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
       <div class="flex items-center gap-3.5 min-w-0">
         <div
           [style.view-transition-name]="transitionPhase() === 'after' ? 'product-hero-image' : null"
@@ -92,7 +89,7 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
           }
         </div>
 
-        <div class="space-y-1 min-w-0">
+        <div class="flex flex-col gap-1 min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <span class="px-2 py-0.5 rounded-m3-xs font-mono text-label-sm-emphasized bg-primary text-on-primary">
               {{ product().sku }}
@@ -121,7 +118,7 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
       </div>
 
       <!-- Single Authoritative Matrix Controls & Legend -->
-      <div class="flex flex-wrap items-center justify-between xl:justify-end gap-3 shrink-0">
+      <div class="inv-matrix-summary-controls flex flex-wrap items-center justify-between xl:justify-end gap-3 shrink-0">
         <div class="flex flex-wrap items-center gap-2.5 bg-surface px-3 py-1.5 rounded-m3-full">
           <span class="flex items-center gap-1.5 text-label-sm-emphasized text-muted">
             <span class="w-2 h-2 rounded-m3-full bg-success" aria-hidden="true"></span>
@@ -146,13 +143,13 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
       </div>
     </section>
 
-    <!-- Scrollable 2D Matrix Workspace (Bounded Flex Height) -->
+    <!-- Scrollable 2D Matrix Workspace (Natural Flow Vertical Height, Horizontal Scroll) -->
     <section
       aria-label="Matriz interactiva de color por talla"
-      class="flex-1 min-h-0 flex flex-col bg-surface-low rounded-m3-xl p-2.5">
+      class="flex flex-col bg-surface-low rounded-m3-xl p-2.5">
 
       <div
-        [class]="'table-wrapper inv-scroll-pane flex-1 min-h-0 rounded-m3-lg bg-surface m3-scrollbar ' +
+        [class]="'table-wrapper rounded-m3-lg bg-surface m3-scrollbar ' +
           (transitionPhase() === 'after' ? 'inv-matrix-revealed' : '')">
         <table class="inventory-matrix-table text-left">
           <caption class="sr-only">
@@ -166,7 +163,7 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
                 Color / Talla
               </th>
               @for (col of columns(); track col.size) {
-                <th scope="col" class="m3-matrix-size-col p-2.5 text-center min-w-[126px] bg-surface-high">
+                <th scope="col" class="m3-matrix-size-col p-2.5 text-center min-w-[136px] bg-surface-high">
                   <div class="flex flex-col items-center gap-0.5">
                     <span class="text-title-sm-emphasized text-main font-mono">{{ col.size }}</span>
                     <span class="text-label-sm font-mono tabular-nums text-muted">
@@ -232,7 +229,7 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
                         }
                       </div>
 
-                      <div class="flex items-center justify-center gap-1 opacity-90 group-hover/cell:opacity-100 focus-within:opacity-100 transition-opacity m3-transition-fast">
+                      <div class="flex items-center justify-center gap-2 opacity-90 group-hover/cell:opacity-100 focus-within:opacity-100 transition-opacity m3-transition-fast">
                         <m3-button
                           variant="text"
                           size="xs"

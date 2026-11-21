@@ -21,29 +21,34 @@ export interface InventoryCategoryOption {
   template: `
     <aside
       aria-label="Catálogo de estilos y modelos"
-      class="flex-1 min-h-0 flex flex-col gap-3 bg-surface-low rounded-m3-xl p-3.5">
+      class="flex flex-col gap-3 bg-surface-low rounded-m3-xl p-3.5">
 
       <!-- Clean Sticky Search & Category Filter Rail -->
-      <div class="space-y-2.5 shrink-0">
+      <div class="flex flex-col gap-2.5 shrink-0">
         <div class="flex items-baseline justify-between gap-2 px-0.5">
           <h2 class="text-title-md-emphasized text-main truncate">Prendas & Modelos</h2>
           <span class="text-label-sm font-mono tabular-nums text-muted shrink-0">
-            {{ products().length }} estilos
+            {{ products().length }} {{ products().length === 1 ? 'estilo' : 'estilos' }}
           </span>
         </div>
 
-        <m3-text-field
-          #searchField
-          variant="outlined"
-          icon="search"
-          label="Buscar prenda"
-          placeholder="SKU, nombre o marca..."
-          [clearable]="true"
-          [value]="searchQuery()"
-          (valueChange)="searchChange.emit($event)"
-          (clear)="searchChange.emit('')" />
+        <search class="block">
+          <m3-text-field
+            #searchField
+            [id]="'inv-catalog-search'"
+            variant="outlined"
+            type="search"
+            icon="search"
+            label="Buscar prenda"
+            placeholder="SKU, nombre o marca..."
+            enterkeyhint="search"
+            [clearable]="true"
+            [value]="searchQuery()"
+            (valueChange)="searchChange.emit($event)"
+            (clear)="searchChange.emit('')" />
+        </search>
 
-        <div role="group" aria-label="Filtrar por categoría" class="flex flex-wrap gap-1.5">
+        <div role="group" aria-label="Filtrar por categoría" class="flex flex-wrap gap-2">
           @for (cat of categories(); track cat.id) {
             <m3-chip
               type="filter"
@@ -56,12 +61,12 @@ export interface InventoryCategoryOption {
         </div>
       </div>
 
-      <!-- Independent Scrollable Master List -->
+      <!-- Master Catalog List (Full Page Breathability) -->
       @if (products().length > 0) {
         <ul
           role="list"
           aria-label="Lista de prendas disponibles"
-          class="inv-scroll-pane flex-1 min-h-0 max-h-[540px] lg:max-h-none overflow-y-auto m3-scrollbar list-none m-0 p-0.5 space-y-2">
+          class="list-none m-0 p-0.5 flex flex-col gap-2">
           @for (prod of products(); track prod.id) {
             @let isSelected = selectedProductId() === prod.id;
             <li
