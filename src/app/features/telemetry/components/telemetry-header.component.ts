@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { ThemeOption } from '../../../core/theme/theme.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3SliderComponent } from '../../../shared/components/slider/slider.component';
 import { M3SwitchComponent } from '../../../shared/components/switch/switch.component';
 
 let nextCalibrationSeq = 0;
@@ -18,28 +19,28 @@ let nextCalibrationSeq = 0;
 @Component({
   selector: 'app-telemetry-header',
   standalone: true,
-  imports: [M3ButtonComponent, M3SwitchComponent],
+  imports: [M3ButtonComponent, M3SwitchComponent, M3SliderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="bg-surface-low rounded-m3-xl px-5 py-4 sm:px-6 sm:py-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div class="w-11 h-11 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
           <span class="material-symbols-rounded text-xl" aria-hidden="true">satellite_alt</span>
         </div>
 
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <span
-              class="w-2.5 h-2.5 rounded-m3-full shrink-0"
-              [class]="isLiveTelemetryActive() ? 'bg-success animate-pulse' : 'bg-outline'"
+              [class]="'w-2.5 h-2.5 rounded-m3-full shrink-0 ' +
+                (isLiveTelemetryActive() ? 'bg-success animate-pulse' : 'bg-outline')"
               aria-hidden="true">
             </span>
             <span class="text-label-sm-emphasized uppercase tracking-wider text-primary">
               Aether Fleet • Mission Control
             </span>
             <span
-              class="text-label-sm-emphasized px-2 py-0.5 rounded-m3-full font-mono tabular-nums"
-              [class]="isLiveTelemetryActive() ? 'bg-success-box text-on-success-box' : 'bg-surface-high text-muted'">
+              [class]="'text-label-sm-emphasized px-2.5 py-0.5 rounded-m3-full font-mono tabular-nums ' +
+                (isLiveTelemetryActive() ? 'bg-success-box text-on-success-box' : 'bg-surface-high text-muted')">
               {{ isLiveTelemetryActive() ? 'Sincronía cada ' + refreshIntervalSeconds() + 's' : 'En pausa' }}
             </span>
           </div>
@@ -65,7 +66,7 @@ let nextCalibrationSeq = 0;
         <div class="relative inline-flex items-center touch-gap-8">
           <button
             type="button"
-            class="m3-btn m3-btn-tonal m3-btn-sm state-layer focus-ring-m3 touch-target-48 has-icon-leading"
+            class="tel-calibration-trigger m3-btn m3-btn-tonal m3-btn-sm state-layer focus-ring-m3 touch-target-48 has-icon-leading"
             [attr.aria-expanded]="calibrationOpen()"
             [attr.aria-controls]="popoverId"
             [attr.aria-label]="'Calibrar tema M3 (' + currentHue() + ' grados)'"
@@ -125,21 +126,17 @@ let nextCalibrationSeq = 0;
               </div>
             </div>
 
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-label-sm">
-                <label [for]="hueSliderId" class="font-medium text-main">Matiz personalizado</label>
-                <span class="font-mono tabular-nums text-muted">{{ currentHue() }}° / 360°</span>
-              </div>
-              <input
-                [id]="hueSliderId"
-                type="range"
-                min="0"
-                max="360"
-                step="1"
+            <div class="pt-0.5">
+              <m3-slider
+                [customId]="hueSliderId"
+                label="Matiz personalizado"
+                unit="°"
+                size="xs"
+                [min]="0"
+                [max]="360"
+                [step]="1"
                 [value]="currentHue()"
-                (input)="onHueRangeInput($event)"
-                [style.--tel-range-progress.%]="(currentHue() / 360) * 100"
-                class="tel-range-input w-full" />
+                (valueChange)="hueChange.emit($event)" />
             </div>
           </div>
         </div>
@@ -187,6 +184,11 @@ export class TelemetryHeaderComponent {
     'popover' in HTMLElement.prototype &&
     typeof HTMLElement.prototype.showPopover === 'function';
 
+  private readonly supportsAnchorPositioning =
+    typeof CSS !== 'undefined' &&
+    typeof CSS.supports === 'function' &&
+    CSS.supports('position-area: block-end');
+
   constructor() {
     if (!this.supportsNativePopover && typeof document !== 'undefined') {
       const onDocClick = (event: MouseEvent) => {
@@ -212,11 +214,19 @@ export class TelemetryHeaderComponent {
     const panel = this.calibrationPopover()?.nativeElement;
     if (!panel) return;
 
-    const triggerRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    panel.style.position = 'fixed';
-    panel.style.inset = 'auto';
-    panel.style.top = `${Math.round(triggerRect.bottom + 8)}px`;
-    panel.style.right = `${Math.max(12, Math.round(window.innerWidth - triggerRect.right))}px`;
+    if (!this.supportsAnchorPositioning || !this.supportsNativePopover) {
+      const triggerRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      panel.style.position = 'fixed';
+      panel.style.inset = 'auto';
+      panel.style.margin = '0';
+      panel.style.top = `${Math.round(triggerRect.bottom + 8)}px`;
+      panel.style.right = `${Math.max(12, Math.round(window.innerWidth - triggerRect.right))}px`;
+    } else {
+      panel.style.removeProperty('top');
+      panel.style.removeProperty('right');
+      panel.style.removeProperty('left');
+      panel.style.removeProperty('bottom');
+    }
 
     if (this.supportsNativePopover && typeof panel.togglePopover === 'function') {
       panel.togglePopover();
@@ -232,10 +242,5 @@ export class TelemetryHeaderComponent {
 
   selectPresetHue(hue: number): void {
     this.hueChange.emit(hue);
-  }
-
-  onHueRangeInput(event: Event): void {
-    const val = Number((event.target as HTMLInputElement).value);
-    this.hueChange.emit(val);
   }
 }

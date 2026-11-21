@@ -15,7 +15,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
   imports: [M3ChipComponent, M3ButtonComponent, M3LinearProgressComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'flex flex-col'
+    class: 'flex flex-col min-w-0'
   },
   template: `
     <section
@@ -67,19 +67,19 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
         </span>
       </div>
 
-      <!-- Scrollable Fleet Grid -->
+      <!-- Fluid Full-Height Fleet Grid (No Cramped Inner Scrollbar) -->
       @if (vehicles().length > 0) {
         <ul
           role="list"
           aria-label="Lista de vehículos filtrados"
-          class="tel-scroll-pane max-h-[680px] overflow-y-auto m3-scrollbar list-none m-0 p-1 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+          class="list-none m-0 p-0.5 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
           @for (v of vehicles(); track v.id) {
             @let isSelected = selectedVehicleId() === v.id;
             <li
               class="tel-fleet-item"
               [style.view-transition-name]="isFleetFlipActive() ? 'tel-card-' + v.id : null">
               <article
-                [class]="'tel-fleet-card flex flex-col justify-between gap-3.5 p-4 sm:p-5 transition-colors ' +
+                [class]="'tel-fleet-card flex flex-col justify-between gap-3.5 p-4 sm:p-5 h-full transition-colors ' +
                   (isSelected
                     ? 'is-selected bg-primary-box text-on-primary-box shadow-m3-level1'
                     : 'bg-surface hover:bg-surface-high text-main')">
@@ -113,8 +113,8 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
                     </div>
 
                     <span
-                      [class]="getStatusBadgeClass(v.status)"
-                      class="inline-flex items-center gap-1 text-label-sm-emphasized px-2 py-0.5 rounded-m3-full shrink-0">
+                      [class]="'inline-flex items-center gap-1 text-label-sm-emphasized px-2.5 py-0.5 rounded-m3-full shrink-0 ' +
+                        getStatusBadgeClass(v.status)">
                       <span class="material-symbols-rounded text-[14px]" aria-hidden="true">{{ getStatusIcon(v.status) }}</span>
                       <span>{{ getStatusLabel(v.status) }}</span>
                     </span>
@@ -132,8 +132,8 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
                     <div>
                       <span [class]="'block ' + (isSelected ? 'opacity-75' : 'text-muted')">Térmico</span>
                       <span
-                        class="font-mono font-bold tabular-nums"
-                        [class]="v.cargoTempC < 0 ? (isSelected ? 'text-on-primary-box' : 'text-tertiary') : ''">
+                        [class]="'font-mono font-bold tabular-nums ' +
+                          (v.cargoTempC < 0 ? (isSelected ? 'text-on-primary-box' : 'text-tertiary') : '')">
                         {{ v.cargoTempC }}°C
                       </span>
                     </div>
@@ -166,7 +166,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
                     icon="visibility"
                     [morph]="true"
                     [invisible]="isInspectModalOpen() && activeInspectTrigger() === ('inspect-' + v.id)"
-                    [viewTransitionName]="!isInspectModalOpen() && activeInspectTrigger() === ('inspect-' + v.id) ? 'dialog-transform' : null"
+                    [viewTransitionName]="inspectMorphOwner() === 'trigger' && activeInspectTrigger() === ('inspect-' + v.id) ? 'dialog-transform' : null"
                     (action)="inspectVehicle.emit(v)">
                     Inspeccionar
                   </m3-button>
@@ -176,7 +176,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
           }
         </ul>
       } @else {
-        <div class="flex-1 grid place-items-center py-10 text-center">
+        <div class="grid place-items-center py-10 text-center">
           <div class="space-y-2.5 max-w-xs">
             <span class="material-symbols-rounded text-4xl text-muted" aria-hidden="true">directions_bus</span>
             <p class="text-title-sm-emphasized text-main">Sin unidades en este filtro</p>
@@ -200,6 +200,7 @@ export class TelemetryFleetPanelComponent {
   readonly isFleetFlipActive = input.required<boolean>();
   readonly activeInspectTrigger = input<string | null>(null);
   readonly isInspectModalOpen = input<boolean>(false);
+  readonly inspectMorphOwner = input<'trigger' | 'modal' | null>(null);
 
   readonly filterChange = output<TelemetryFilter>();
   readonly selectVehicle = output<string>();

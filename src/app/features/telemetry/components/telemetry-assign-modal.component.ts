@@ -1,21 +1,20 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  afterNextRender,
   computed,
-  inject,
+  effect,
   input,
   model,
   output,
   signal,
+  untracked,
   viewChild
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { StageOverlayService } from '../../../core/dialog/stage-overlay.service';
 import { Vehicle } from '../../../core/telemetry/telemetry.models';
 import { M3ButtonGroupComponent, M3ButtonGroupOption } from '../../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3DialogComponent } from '../../../shared/components/dialog/dialog.component';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
 import { TELEMETRY_SELECT_STYLES } from './telemetry-expressive.styles';
 
@@ -45,29 +44,31 @@ export const TELEMETRY_CORRIDOR_OPTIONS: readonly { value: string; label: string
 @Component({
   selector: 'app-telemetry-assign-modal',
   standalone: true,
-  imports: [FormsModule, M3ButtonComponent, M3ButtonGroupComponent, M3TextFieldComponent],
+  imports: [
+    FormsModule,
+    M3DialogComponent,
+    M3ButtonComponent,
+    M3ButtonGroupComponent,
+    M3TextFieldComponent
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [TELEMETRY_SELECT_STYLES],
   host: {
     class: 'contents'
   },
   template: `
-    <div
-      (click)="close.emit()"
-      [class.m3-dialog-backdrop]="!stageOverlay.hasViewTransitions()"
-      class="fixed inset-0 z-40 bg-scrim cursor-pointer"></div>
+    <m3-dialog
+      variant="basic"
+      size="lg"
+      [open]="open()"
+      [managedClose]="true"
+      [showCloseButton]="false"
+      headline="Asignar Nueva Ruta"
+      [viewTransitionName]="viewTransitionName()"
+      customClass="tel-assign-dialog"
+      (closeRequested)="close.emit()">
 
-    <div
-      id="telemetry-assign-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tel-assign-title"
-      [style.view-transition-name]="isDialogTransitionActive() ? 'dialog-transform' : null"
-      [class.m3-dialog-surface]="!stageOverlay.hasViewTransitions()"
-      [class.shadow-m3-level3]="!isDialogTransitionActive()"
-      class="fixed inset-0 m-auto z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-xl h-fit max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col rounded-m3-xl bg-surface-box">
-
-      <!-- Fixed Tonal Modal Header (Divider-Free) -->
+      <!-- Floating Tonal Modal Header -->
       <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-2.5 shrink-0">
         <header class="bg-surface rounded-m3-xl p-4 flex items-start justify-between gap-3">
           <div class="flex items-center gap-3.5 min-w-0">
@@ -76,13 +77,22 @@ export const TELEMETRY_CORRIDOR_OPTIONS: readonly { value: string; label: string
             </div>
 
             <div class="min-w-0">
-              <h2
-                #modalHeading
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="px-2 py-0.5 rounded-m3-xs bg-primary text-on-primary text-label-sm-emphasized font-mono uppercase tracking-wider">
+                  Despacho Activo
+                </span>
+                @if (selectedVehicleSummary(); as unit) {
+                  <span class="text-label-sm text-muted font-mono tabular-nums">
+                    {{ unit.plate }} • {{ unit.cargoTempC }}°C actual
+                  </span>
+                }
+              </div>
+
+              <h3
                 id="tel-assign-title"
-                tabindex="-1"
-                class="text-title-lg-emphasized text-main outline-none leading-tight">
+                class="text-title-lg-emphasized text-main leading-tight">
                 Asignar Nueva Ruta
-              </h2>
+              </h3>
               <p class="text-body-sm text-muted truncate mt-0.5">
                 Configuración de corredor logístico y protocolo de despacho
               </p>
@@ -103,36 +113,38 @@ export const TELEMETRY_CORRIDOR_OPTIONS: readonly { value: string; label: string
         <!-- Inner Scrollable Body -->
         <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar px-5 sm:px-6 py-2 space-y-4">
           <div class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-4">
-            <div class="tel-filled-select">
-              <label for="tel-assign-vehicle" class="tel-filled-select__label">Unidad de Flota</label>
-              <select
-                id="tel-assign-vehicle"
-                name="vehicleId"
-                [value]="vehicleId()"
-                (change)="vehicleId.set($any($event.target).value)"
-                class="tel-select font-mono">
-                @for (v of vehicles(); track v.id) {
-                  <option [value]="v.id" [selected]="v.id === vehicleId()">
-                    {{ v.id }} • {{ v.plate }} ({{ v.driver }}) — {{ v.destination }}
-                  </option>
-                }
-              </select>
-            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div class="tel-filled-select">
+                <label for="tel-assign-vehicle" class="tel-filled-select__label">Unidad de Flota</label>
+                <select
+                  id="tel-assign-vehicle"
+                  name="vehicleId"
+                  [value]="vehicleId()"
+                  (change)="vehicleId.set($any($event.target).value)"
+                  class="tel-select font-mono">
+                  @for (v of vehicles(); track v.id) {
+                    <option [value]="v.id" [selected]="v.id === vehicleId()">
+                      {{ v.id }} • {{ v.plate }} ({{ v.driver }})
+                    </option>
+                  }
+                </select>
+              </div>
 
-            <div class="tel-filled-select">
-              <label for="tel-assign-corridor" class="tel-filled-select__label">Corredor Logístico</label>
-              <select
-                id="tel-assign-corridor"
-                name="corridor"
-                [value]="corridor()"
-                (change)="corridor.set($any($event.target).value)"
-                class="tel-select">
-                @for (opt of corridorOptions; track opt.value) {
-                  <option [value]="opt.value" [selected]="opt.value === corridor()">
-                    {{ opt.label }}
-                  </option>
-                }
-              </select>
+              <div class="tel-filled-select">
+                <label for="tel-assign-corridor" class="tel-filled-select__label">Corredor Logístico</label>
+                <select
+                  id="tel-assign-corridor"
+                  name="corridor"
+                  [value]="corridor()"
+                  (change)="corridor.set($any($event.target).value)"
+                  class="tel-select">
+                  @for (opt of corridorOptions; track opt.value) {
+                    <option [value]="opt.value" [selected]="opt.value === corridor()">
+                      {{ opt.label }}
+                    </option>
+                  }
+                </select>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
@@ -170,17 +182,37 @@ export const TELEMETRY_CORRIDOR_OPTIONS: readonly { value: string; label: string
             </div>
           </div>
 
-          <section aria-label="Protocolo de carga" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-2.5">
-            <span class="text-label-md-emphasized text-main block">Protocolo de Carga</span>
+          <section aria-label="Protocolo de carga" class="bg-surface rounded-m3-xl p-4 sm:p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-label-md-emphasized text-main">Protocolo de Carga</span>
+              <span class="text-label-sm text-muted">{{ protocolDescription() }}</span>
+            </div>
+
             <m3-button-group
-              variant="standard"
+              class="tel-cargo-group-host"
+              variant="connected"
               selectionMode="single"
               size="md"
+              customClass="tel-cargo-group"
               ariaLabel="Protocolo de carga"
               [options]="cargoOptions"
               [value]="selectedCargoGroup()"
               (selectionChange)="onCargoSelectionChange($event)" />
           </section>
+
+          <!-- Live Dispatch Preview Capsule -->
+          <div class="rounded-m3-xl bg-primary-box/45 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-rounded text-base text-primary shrink-0" aria-hidden="true">route</span>
+              <span class="text-label-md text-main truncate">
+                <strong class="font-mono">{{ vehicleId() }}</strong> &rarr;
+                {{ destination().trim() || 'Destino por definir' }}
+              </span>
+            </div>
+            <span class="text-label-sm font-mono tabular-nums text-primary shrink-0">
+              {{ selectedProtocolLabel() }} • {{ driver().trim() || 'Sin operador' }}
+            </span>
+          </div>
         </div>
 
         <!-- Fixed Divider-Free Action Footer -->
@@ -193,24 +225,22 @@ export const TELEMETRY_CORRIDOR_OPTIONS: readonly { value: string; label: string
           </m3-button>
         </footer>
       </form>
-    </div>
+    </m3-dialog>
   `
 })
 export class TelemetryAssignModalComponent {
-  readonly stageOverlay = inject(StageOverlayService);
-
+  readonly open = input<boolean>(false);
   readonly vehicles = input.required<Vehicle[]>();
   readonly vehicleId = model.required<string>();
   readonly corridor = model.required<string>();
   readonly destination = model.required<string>();
   readonly driver = model.required<string>();
   readonly cargoType = model.required<TelemetryCargoProtocol>();
-  readonly isDialogTransitionActive = input<boolean>(false);
+  readonly viewTransitionName = input<string | null>(null);
 
   readonly close = output<void>();
   readonly submitRoute = output<void>();
 
-  private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
   private readonly destinationField = viewChild<M3TextFieldComponent>('destinationField');
   private readonly driverField = viewChild<M3TextFieldComponent>('driverField');
 
@@ -218,9 +248,39 @@ export class TelemetryAssignModalComponent {
   readonly driverTouched = signal<boolean>(false);
   readonly submitAttempted = signal<boolean>(false);
 
+  private wasOpen = false;
+
   readonly cargoOptions = [...TELEMETRY_CARGO_PROTOCOL_OPTIONS];
   readonly corridorOptions = TELEMETRY_CORRIDOR_OPTIONS;
   readonly selectedCargoGroup = computed<string[]>(() => [this.cargoType()]);
+
+  readonly selectedVehicleSummary = computed(() =>
+    this.vehicles().find(v => v.id === this.vehicleId()) ?? null
+  );
+
+  readonly selectedProtocolLabel = computed(() => {
+    switch (this.cargoType()) {
+      case 'cold_chain':
+        return 'Frío (-18°C)';
+      case 'pharma':
+        return 'Farma (2-8°C)';
+      case 'dry':
+      default:
+        return 'Seca General';
+    }
+  });
+
+  readonly protocolDescription = computed(() => {
+    switch (this.cargoType()) {
+      case 'cold_chain':
+        return 'Congelado profundo con alerta térmica > -16°C';
+      case 'pharma':
+        return 'Trazabilidad farmacéutica controlada de 2°C a 8°C';
+      case 'dry':
+      default:
+        return 'Transporte seco estándar sin consigna térmica';
+    }
+  });
 
   readonly destinationError = computed<string | null>(() => {
     if (!this.destinationTouched() && !this.submitAttempted()) return null;
@@ -239,8 +299,16 @@ export class TelemetryAssignModalComponent {
   });
 
   constructor() {
-    afterNextRender(() => {
-      this.modalHeading()?.nativeElement.focus();
+    effect(() => {
+      const isOpen = this.open();
+      if (isOpen && !this.wasOpen) {
+        untracked(() => {
+          this.destinationTouched.set(false);
+          this.driverTouched.set(false);
+          this.submitAttempted.set(false);
+        });
+      }
+      this.wasOpen = isOpen;
     });
   }
 

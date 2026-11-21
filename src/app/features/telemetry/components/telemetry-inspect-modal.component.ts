@@ -1,44 +1,36 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  afterNextRender,
   computed,
-  inject,
   input,
-  output,
-  viewChild
+  output
 } from '@angular/core';
-import { StageOverlayService } from '../../../core/dialog/stage-overlay.service';
 import { LiveTelemetryEvent, Vehicle, VehicleStatus } from '../../../core/telemetry/telemetry.models';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3DialogComponent } from '../../../shared/components/dialog/dialog.component';
 import { M3LinearProgressComponent } from '../../../shared/components/progress';
 
 @Component({
   selector: 'app-telemetry-inspect-modal',
   standalone: true,
-  imports: [M3ButtonComponent, M3LinearProgressComponent],
+  imports: [M3DialogComponent, M3ButtonComponent, M3LinearProgressComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'contents'
   },
   template: `
-    <div
-      (click)="close.emit()"
-      [class.m3-dialog-backdrop]="!stageOverlay.hasViewTransitions()"
-      class="fixed inset-0 z-40 bg-scrim cursor-pointer"></div>
+    <m3-dialog
+      variant="basic"
+      size="lg"
+      [open]="open()"
+      [managedClose]="true"
+      [showCloseButton]="false"
+      headline="Diagnóstico CAN-BUS"
+      [viewTransitionName]="viewTransitionName()"
+      customClass="tel-inspect-dialog"
+      (closeRequested)="close.emit()">
 
-    <div
-      id="telemetry-inspect-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tel-inspect-title"
-      [style.view-transition-name]="isDialogTransitionActive() ? 'dialog-transform' : null"
-      [class.m3-dialog-surface]="!stageOverlay.hasViewTransitions()"
-      [class.shadow-m3-level3]="!isDialogTransitionActive()"
-      class="fixed inset-0 m-auto z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-2xl h-fit max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col rounded-m3-xl bg-surface-box">
-
-      <!-- Fixed Tonal Modal Header (Divider-Free) -->
+      <!-- Floating Tonal Modal Header -->
       <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-2.5 shrink-0">
         <header class="bg-surface rounded-m3-xl p-4 flex items-start justify-between gap-3">
           <div class="flex items-center gap-3.5 min-w-0">
@@ -52,22 +44,19 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
                   {{ vehicle().id }}
                 </span>
                 <span
-                  [class]="statusBadgeClass()"
-                  class="px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized">
+                  [class]="'px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized ' + statusBadgeClass()">
                   {{ statusLabel() }}
                 </span>
               </div>
 
-              <h2
-                #modalHeading
+              <h3
                 id="tel-inspect-title"
-                tabindex="-1"
-                class="text-title-lg-emphasized text-main outline-none leading-tight">
+                class="text-title-lg-emphasized text-main leading-tight">
                 Diagnóstico CAN-BUS
-              </h2>
+              </h3>
 
               <p class="text-body-sm text-muted truncate mt-0.5">
-                Placa {{ vehicle().plate }} • Operador: {{ vehicle().driver }} • {{ vehicle().corridor }}
+                Placa {{ vehicle().plate }} • {{ vehicle().driver }} • {{ vehicle().corridor }}
               </p>
             </div>
           </div>
@@ -82,9 +71,10 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
         </header>
       </div>
 
-      <!-- Inner Scrollable Body (Preserves Outer 28px Corner Radii) -->
-      <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar px-5 sm:px-6 py-2 space-y-5">
-        <!-- Dispatch Wave Progress Summary -->
+      <!-- Inner Scrollable Diagnostic Body -->
+      <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar px-5 sm:px-6 py-2 space-y-4">
+
+        <!-- 1. Route Wave Telemetry Summary -->
         <section aria-label="Resumen de despacho de unidad" class="p-4 rounded-m3-xl bg-surface space-y-2.5">
           <div class="flex flex-wrap items-center justify-between gap-2 text-label-md font-mono tabular-nums">
             <span class="text-muted font-sans">
@@ -104,64 +94,118 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
             [ariaLabel]="'Progreso de despacho de ' + vehicle().id" />
 
           <div class="flex items-center justify-between text-label-sm font-mono tabular-nums text-muted pt-0.5">
-            <span>Velocidad actual: {{ vehicle().speedKmh }} km/h</span>
+            <span>Velocidad: {{ vehicle().speedKmh }} km/h</span>
             <span>Último ping: {{ vehicle().lastPingTime }}</span>
           </div>
         </section>
 
-        <!-- 6 Live CAN-BUS Sensor Tiles -->
-        <section aria-label="Lecturas de sensores CAN-BUS" class="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono tabular-nums">
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Régimen Motor</span>
-            <span class="text-title-md-emphasized text-main">{{ vehicle().telemetry.engineRpm }} RPM</span>
-          </div>
+        <!-- 2. Comparative Diagnostic Subsystems (Propulsion/Energy vs Cold-Chain Integrity) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Propulsion & Chassis -->
+          <section aria-label="Subsistema motriz y energía" class="bg-surface rounded-m3-xl p-4 space-y-3.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded text-base text-primary" aria-hidden="true">engineering</span>
+                <h4 class="text-label-md-emphasized uppercase tracking-wider text-muted m-0">Propulsión &amp; Energía</h4>
+              </div>
+              <span class="px-2 py-0.5 rounded-m3-full bg-success-box text-on-success-box text-label-sm-emphasized">
+                {{ propulsionStatus() }}
+              </span>
+            </div>
 
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Nivel Combustible</span>
-            <span class="text-title-md-emphasized text-main">{{ vehicle().telemetry.fuelLevelPercent }}%</span>
-          </div>
+            <div class="space-y-3">
+              <div class="p-3 rounded-m3-lg bg-surface-low space-y-1.5">
+                <div class="flex items-center justify-between text-label-sm font-mono tabular-nums">
+                  <span class="text-muted font-sans">Nivel Combustible</span>
+                  <span class="font-bold text-main">{{ vehicle().telemetry.fuelLevelPercent }}%</span>
+                </div>
+                <div class="h-2 rounded-m3-full bg-surface-high overflow-hidden" aria-hidden="true">
+                  <div
+                    [class]="'h-full rounded-m3-full ' + (vehicle().telemetry.fuelLevelPercent < 45 ? 'bg-warning' : 'bg-primary')"
+                    [style.width.%]="vehicle().telemetry.fuelLevelPercent">
+                  </div>
+                </div>
+              </div>
 
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Voltaje Batería</span>
-            <span class="text-title-md-emphasized text-main">{{ vehicle().telemetry.batteryVolts }} V</span>
-          </div>
+              <div class="grid grid-cols-3 gap-2 font-mono tabular-nums">
+                <div class="p-2.5 rounded-m3-lg bg-surface-low">
+                  <span class="text-label-sm text-muted block font-sans">Motor</span>
+                  <span class="text-title-sm-emphasized text-main">{{ vehicle().telemetry.engineRpm }}</span>
+                  <span class="text-[11px] text-muted block">RPM</span>
+                </div>
+                <div class="p-2.5 rounded-m3-lg bg-surface-low">
+                  <span class="text-label-sm text-muted block font-sans">Batería</span>
+                  <span class="text-title-sm-emphasized text-main">{{ vehicle().telemetry.batteryVolts }}</span>
+                  <span class="text-[11px] text-muted block">Voltios</span>
+                </div>
+                <div class="p-2.5 rounded-m3-lg bg-surface-low">
+                  <span class="text-label-sm text-muted block font-sans">Neumáticos</span>
+                  <span class="text-title-sm-emphasized text-main">{{ vehicle().telemetry.tirePressurePsi }}</span>
+                  <span class="text-[11px] text-muted block">PSI</span>
+                </div>
+              </div>
+            </div>
+          </section>
 
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Presión Neumáticos</span>
-            <span class="text-title-md-emphasized text-main">{{ vehicle().telemetry.tirePressurePsi }} PSI</span>
-          </div>
+          <!-- Thermal & Cold Chain Integrity -->
+          <section aria-label="Integridad térmica de carga" class="bg-surface rounded-m3-xl p-4 space-y-3.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded text-base text-tertiary" aria-hidden="true">ac_unit</span>
+                <h4 class="text-label-md-emphasized uppercase tracking-wider text-muted m-0">Integridad Térmica</h4>
+              </div>
+              <span
+                [class]="'px-2 py-0.5 rounded-m3-full text-label-sm-emphasized ' + thermalBadgeClass()">
+                {{ thermalBadgeLabel() }}
+              </span>
+            </div>
 
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Temp. Cabina</span>
-            <span class="text-title-md-emphasized text-main">{{ vehicle().telemetry.cabinTempC }}°C</span>
-          </div>
+            <div class="grid grid-cols-2 gap-2.5 font-mono tabular-nums">
+              <div class="p-3 rounded-m3-lg bg-surface-low space-y-1">
+                <span class="text-label-sm text-muted block font-sans">Cabina</span>
+                <span class="text-title-lg-emphasized text-main block">{{ vehicle().telemetry.cabinTempC }}°C</span>
+                <span class="text-label-sm text-muted font-sans block">Ambiente</span>
+              </div>
 
-          <div class="p-3.5 rounded-m3-lg bg-surface space-y-1">
-            <span class="text-label-sm text-muted block font-sans">Temp. Carga</span>
-            <span
-              class="text-title-md-emphasized"
-              [class]="vehicle().telemetry.cargoTempC < 0 ? 'text-tertiary' : 'text-main'">
-              {{ vehicle().telemetry.cargoTempC }}°C
-            </span>
-          </div>
-        </section>
+              <div class="p-3 rounded-m3-lg bg-surface-low space-y-1">
+                <span class="text-label-sm text-muted block font-sans">Bodega Carga</span>
+                <span
+                  [class]="'text-title-lg-emphasized block ' +
+                    (isColdAlert() ? 'text-warning' : vehicle().telemetry.cargoTempC < 0 ? 'text-tertiary' : 'text-main')">
+                  {{ vehicle().telemetry.cargoTempC }}°C
+                </span>
+                <span class="text-label-sm text-muted font-sans block">{{ thermalThresholdText() }}</span>
+              </div>
+            </div>
 
-        <!-- Unit Timeline Context -->
-        @if (unitEvents().length > 0) {
-          <section aria-label="Últimos eventos de la unidad" class="space-y-2.5">
-            <h3 class="text-label-md-emphasized uppercase tracking-wider text-muted px-0.5">
-              Bitácora Reciente ({{ vehicle().id }})
-            </h3>
+            <div class="p-3 rounded-m3-lg bg-surface-low flex items-center justify-between gap-2 text-label-sm">
+              <span class="text-muted">Diferencial térmico cabina / carga</span>
+              <span class="font-mono font-bold tabular-nums text-main">{{ thermalDeltaText() }}</span>
+            </div>
+          </section>
+        </div>
+
+        <!-- 3. Unit Timeline Context -->
+        <section aria-label="Últimos eventos de la unidad" class="bg-surface rounded-m3-xl p-4 space-y-2.5">
+          <h4 class="text-label-md-emphasized uppercase tracking-wider text-muted m-0">
+            Bitácora Reciente ({{ vehicle().id }})
+          </h4>
+
+          @if (unitEvents().length > 0) {
             <ul class="list-none m-0 p-0 space-y-2">
               @for (evt of unitEvents(); track evt.id) {
-                <li class="p-3 rounded-m3-lg bg-surface flex items-start justify-between gap-3">
+                <li class="p-3 rounded-m3-lg bg-surface-low flex items-start justify-between gap-3">
                   <span class="text-body-sm text-main leading-snug">{{ evt.message }}</span>
                   <time class="text-label-sm font-mono tabular-nums text-muted shrink-0">{{ evt.timestamp }}</time>
                 </li>
               }
             </ul>
-          </section>
-        }
+          } @else {
+            <p class="text-body-sm text-muted m-0 py-1">
+              Sin incidencias ni alertas registradas para esta unidad durante el turno actual.
+            </p>
+          }
+        </section>
       </div>
 
       <!-- Fixed Divider-Free Action Footer -->
@@ -173,25 +217,53 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
           Exportar Telemetría
         </m3-button>
       </footer>
-    </div>
+    </m3-dialog>
   `
 })
 export class TelemetryInspectModalComponent {
-  readonly stageOverlay = inject(StageOverlayService);
-
+  readonly open = input<boolean>(false);
   readonly vehicle = input.required<Vehicle>();
   readonly events = input<LiveTelemetryEvent[]>([]);
   readonly isLiveTelemetryActive = input.required<boolean>();
-  readonly isDialogTransitionActive = input<boolean>(false);
+  readonly viewTransitionName = input<string | null>(null);
 
   readonly close = output<void>();
   readonly exportTelemetry = output<Vehicle>();
 
-  private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
-
   readonly unitEvents = computed(() => {
     const targetId = this.vehicle().id;
     return this.events().filter(evt => evt.vehicleId === targetId).slice(0, 4);
+  });
+
+  readonly isColdAlert = computed(() => {
+    const v = this.vehicle();
+    return v.status === 'cold_chain_warning' || (v.telemetry.cargoTempC < 0 && v.telemetry.cargoTempC > -16);
+  });
+
+  readonly propulsionStatus = computed(() =>
+    this.vehicle().telemetry.fuelLevelPercent < 45 ? 'Combustible bajo' : 'Nominal'
+  );
+
+  readonly thermalBadgeLabel = computed(() => {
+    const temp = this.vehicle().telemetry.cargoTempC;
+    if (temp >= 0) return 'Carga seca';
+    return temp <= -16 ? 'Cadena intacta' : 'Desvío térmico';
+  });
+
+  readonly thermalBadgeClass = computed(() => {
+    const temp = this.vehicle().telemetry.cargoTempC;
+    if (temp >= 0) return 'bg-surface-high text-main';
+    return temp <= -16 ? 'bg-tertiary-box text-on-tertiary-box' : 'bg-warning-box text-on-warning-box';
+  });
+
+  readonly thermalThresholdText = computed(() =>
+    this.vehicle().telemetry.cargoTempC < 0 ? 'Umbral <= -16°C' : 'Rango ambiente'
+  );
+
+  readonly thermalDeltaText = computed(() => {
+    const { cabinTempC, cargoTempC } = this.vehicle().telemetry;
+    const diff = Math.round(Math.abs(cabinTempC - cargoTempC) * 10) / 10;
+    return `${diff}°C Δ`;
   });
 
   readonly statusBadgeClass = computed(() => {
@@ -226,10 +298,4 @@ export class TelemetryInspectModalComponent {
         return 'En Ruta';
     }
   });
-
-  constructor() {
-    afterNextRender(() => {
-      this.modalHeading()?.nativeElement.focus();
-    });
-  }
 }

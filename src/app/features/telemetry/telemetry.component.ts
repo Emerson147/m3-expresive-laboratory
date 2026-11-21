@@ -1,9 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
+  ApplicationRef,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
   Injector,
   TemplateRef,
@@ -20,11 +20,14 @@ import { Vehicle } from '../../core/telemetry/telemetry.models';
 import { TelemetryService } from '../../core/telemetry/telemetry.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { M3SnackbarComponent } from '../../shared/components/snackbar/snackbar.component';
+import { M3TabItem, M3TabsComponent } from '../../shared/components/tabs/tabs.component';
 import {
   TelemetryAssignModalComponent,
   TelemetryCargoProtocol
 } from './components/telemetry-assign-modal.component';
 import { TelemetryCorridorPanelComponent } from './components/telemetry-corridor-panel.component';
+import { TelemetryCorridorTheaterDialogComponent } from './components/telemetry-corridor-theater-dialog.component';
+import { TelemetryEventsPanelComponent } from './components/telemetry-events-panel.component';
 import { TELEMETRY_EXPRESSIVE_STYLES } from './components/telemetry-expressive.styles';
 import { TelemetryFleetPanelComponent } from './components/telemetry-fleet-panel.component';
 import { TelemetryFocusCardComponent } from './components/telemetry-focus-card.component';
@@ -38,11 +41,14 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
   imports: [
     NgTemplateOutlet,
     M3SnackbarComponent,
+    M3TabsComponent,
     TelemetryHeaderComponent,
     TelemetryKpiStripComponent,
     TelemetryFocusCardComponent,
     TelemetryFleetPanelComponent,
     TelemetryCorridorPanelComponent,
+    TelemetryCorridorTheaterDialogComponent,
+    TelemetryEventsPanelComponent,
     TelemetryInspectModalComponent,
     TelemetryAssignModalComponent
   ],
@@ -55,8 +61,8 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
   template: `
     <div
       [class]="adaptiveLayout.isCompact()
-        ? 'tel-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 space-y-5 m3-scrollbar'
-        : 'tel-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-20 space-y-5 lg:space-y-6 m3-scrollbar'">
+        ? 'tel-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 gap-4 m3-scrollbar'
+        : 'tel-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-16 gap-5 lg:gap-6 m3-scrollbar'">
 
       <!-- 1. Mission Control Command Rail -->
       <app-telemetry-header
@@ -65,7 +71,7 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
         [themes]="themeService.themes"
         [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
         [refreshIntervalSeconds]="telemetryService.refreshIntervalSeconds"
-        [isAssignOriginActive]="!telemetryService.isAssignModalOpen() && telemetryService.activeAssignTrigger() === 'assign-route'"
+        [isAssignOriginActive]="telemetryService.assignMorphOwner() === 'trigger'"
         [isAssignOriginInvisible]="telemetryService.isAssignModalOpen() && telemetryService.activeAssignTrigger() === 'assign-route'"
         (hueChange)="onHueChange($event)"
         (toggleTheme)="themeService.toggleThemeMode($event)"
@@ -75,74 +81,31 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
       <!-- 2. Analytical Mission Control KPI Strip -->
       <app-telemetry-kpi-strip [kpi]="telemetryService.kpiSummary()" />
 
-      <!-- 3. Split-Pane View Switcher (< lg) -->
-      <div
-        role="tablist"
-        aria-label="Secciones de telemetría operativa"
-        class="lg:hidden grid grid-cols-2 gap-1 p-1.5 rounded-m3-full bg-surface-low shadow-m3-level1 shrink-0">
-        <button
-          #fleetTabBtn
-          type="button"
-          role="tab"
-          id="tel-tab-fleet"
-          aria-controls="tel-panel-fleet"
-          [attr.aria-selected]="mobilePane() === 'fleet'"
-          [attr.tabindex]="mobilePane() === 'fleet' ? 0 : -1"
-          (click)="mobilePane.set('fleet')"
-          (keydown)="onMobileTabKeydown($event, 'fleet')"
-          class="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-m3-full text-label-lg-emphasized cursor-pointer m3-transition-fast focus-ring-m3"
-          [class.bg-primary]="mobilePane() === 'fleet'"
-          [class.text-on-primary]="mobilePane() === 'fleet'"
-          [class.shadow-m3-level1]="mobilePane() === 'fleet'"
-          [class.text-muted]="mobilePane() !== 'fleet'"
-          [class.hover:text-main]="mobilePane() !== 'fleet'"
-          [class.hover:bg-surface-high]="mobilePane() !== 'fleet'">
-          <span class="material-symbols-rounded text-lg" aria-hidden="true">local_shipping</span>
-          <span class="truncate">Flota &amp; Unidad</span>
-          <span class="text-label-sm font-mono tabular-nums opacity-85">
-            ({{ telemetryService.filteredVehicles().length }})
-          </span>
-        </button>
-
-        <button
-          #corridorTabBtn
-          type="button"
-          role="tab"
-          id="tel-tab-corridor"
-          aria-controls="tel-panel-corridor"
-          [attr.aria-selected]="mobilePane() === 'corridor'"
-          [attr.tabindex]="mobilePane() === 'corridor' ? 0 : -1"
-          (click)="mobilePane.set('corridor')"
-          (keydown)="onMobileTabKeydown($event, 'corridor')"
-          class="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-m3-full text-label-lg-emphasized cursor-pointer m3-transition-fast focus-ring-m3"
-          [class.bg-primary]="mobilePane() === 'corridor'"
-          [class.text-on-primary]="mobilePane() === 'corridor'"
-          [class.shadow-m3-level1]="mobilePane() === 'corridor'"
-          [class.text-muted]="mobilePane() !== 'corridor'"
-          [class.hover:text-main]="mobilePane() !== 'corridor'"
-          [class.hover:bg-surface-high]="mobilePane() !== 'corridor'">
-          <span class="material-symbols-rounded text-lg" aria-hidden="true">route</span>
-          <span class="truncate">Corredor &amp; Alertas</span>
-          <span class="text-label-sm font-mono tabular-nums opacity-85">
-            ({{ telemetryService.liveEvents().length }})
-          </span>
-        </button>
+      <!-- 3. Split-Pane View Switcher (< lg): Canonical M3 Secondary Tabs -->
+      <div class="lg:hidden shrink-0 rounded-m3-lg overflow-hidden bg-surface">
+        <m3-tabs
+          variant="secondary"
+          idPrefix="tel-tab"
+          ariaLabel="Secciones de telemetría operativa"
+          [tabs]="mobileTabs()"
+          [value]="mobilePane()"
+          (tabChange)="onMobileTabChange($event)" />
       </div>
 
-      <!-- 4. Airy Asymmetric Mission Control Bento (8/4 Split Panes) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+      <!-- 4. Rebalanced 2-Band Mission Control Bento ([7 Focus + 5 Corridor] over [8 Fleet + 4 Events]) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-stretch">
         <div
           id="tel-panel-fleet"
-          [class]="(mobilePane() === 'fleet' ? 'flex' : 'hidden') + ' lg:flex flex-col gap-5 lg:gap-6 lg:col-span-8 min-w-0'">
+          [class]="(mobilePane() === 'fleet' ? 'flex' : 'hidden') + ' lg:contents flex-col gap-5 min-w-0'">
           <app-telemetry-focus-card
+            class="lg:order-1 lg:col-span-7"
             [vehicle]="telemetryService.selectedVehicle()"
             [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
-            [activeInspectTrigger]="telemetryService.activeInspectTrigger()"
-            [isInspectModalOpen]="telemetryService.isInspectModalOpen()"
-            (progressChange)="onProgressManualChange($event)"
-            (inspect)="onInspectVehicle($event, 'focus-inspect-' + $event.id)" />
+            [pauseWavy]="hasAnyModalOpen() || corridorMorphOwner() !== null || telemetryService.isModalTransitioning()"
+            (progressChange)="onProgressManualChange($event)" />
 
           <app-telemetry-fleet-panel
+            class="lg:order-3 lg:col-span-8 lg:self-start"
             [vehicles]="telemetryService.filteredVehicles()"
             [selectedVehicleId]="telemetryService.selectedVehicleId()"
             [currentFilter]="telemetryService.currentFilter()"
@@ -150,6 +113,7 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
             [isFleetFlipActive]="telemetryService.isFleetFlipActive()"
             [activeInspectTrigger]="telemetryService.activeInspectTrigger()"
             [isInspectModalOpen]="telemetryService.isInspectModalOpen()"
+            [inspectMorphOwner]="telemetryService.inspectMorphOwner()"
             (filterChange)="telemetryService.setFilter($event)"
             (selectVehicle)="telemetryService.selectVehicle($event)"
             (inspectVehicle)="onInspectVehicle($event, 'inspect-' + $event.id)" />
@@ -157,16 +121,24 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
 
         <div
           id="tel-panel-corridor"
-          [class]="(mobilePane() === 'corridor' ? 'flex' : 'hidden') + ' lg:flex flex-col lg:col-span-4 min-w-0'">
+          [class]="(mobilePane() === 'corridor' ? 'flex' : 'hidden') + ' lg:contents flex-col gap-5 min-w-0'">
           <app-telemetry-corridor-panel
+            class="lg:order-2 lg:col-span-5"
             [corridorSummary]="telemetryService.activeCorridorSummary()"
             [markers]="telemetryService.corridorMarkers()"
-            [events]="telemetryService.liveEvents()"
+            [waypoints]="telemetryService.waypoints()"
             [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
-            [isInspectModalOpen]="telemetryService.isInspectModalOpen()"
-            [activeInspectTrigger]="telemetryService.activeInspectTrigger()"
+            [isHiddenForMorph]="isCorridorTheaterOpen()"
+            [heroViewTransitionName]="corridorMorphOwner() === 'card' ? 'hero-transform' : null"
             (selectVehicle)="telemetryService.selectVehicle($event)"
-            (inspectCorridor)="onInspectCorridorClick()" />
+            (expandCorridor)="openCorridorTheater()" />
+
+          <app-telemetry-events-panel
+            class="lg:order-4 lg:col-span-4 lg:self-start"
+            [events]="telemetryService.liveEvents()"
+            [selectedVehicleId]="telemetryService.selectedVehicleId()"
+            [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
+            (selectVehicle)="telemetryService.selectVehicle($event)" />
         </div>
       </div>
     </div>
@@ -180,28 +152,39 @@ import { TelemetryKpiStripComponent } from './components/telemetry-kpi-strip.com
 
     <!-- External Portal Template (Renders Outside #app-stage When Hosted in App Root) -->
     <ng-template #telemetryModalsTemplate>
-      @if (telemetryService.isInspectModalOpen() && telemetryService.inspectedVehicle(); as inspected) {
-        <app-telemetry-inspect-modal
-          [vehicle]="inspected"
-          [events]="telemetryService.liveEvents()"
-          [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
-          [isDialogTransitionActive]="telemetryService.isModalTransitioning()"
-          (close)="closeInspectModal()"
-          (exportTelemetry)="onExportTelemetry($event)" />
-      }
+      <app-telemetry-corridor-theater-dialog
+        [open]="isCorridorTheaterOpen()"
+        [viewTransitionName]="corridorMorphOwner() === 'theater' ? 'hero-transform' : null"
+        [corridorSummary]="telemetryService.activeCorridorSummary()"
+        [selectedVehicle]="telemetryService.selectedVehicle()"
+        [vehicles]="telemetryService.vehicles()"
+        [markers]="telemetryService.corridorMarkers()"
+        [waypoints]="telemetryService.waypoints()"
+        [events]="telemetryService.liveEvents()"
+        [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
+        (selectVehicle)="telemetryService.selectVehicle($event)"
+        (closeRequested)="closeCorridorTheater()" />
 
-      @if (telemetryService.isAssignModalOpen()) {
-        <app-telemetry-assign-modal
-          [vehicles]="telemetryService.vehicles()"
-          [(vehicleId)]="assignFormVehicleId"
-          [(corridor)]="assignFormCorridor"
-          [(destination)]="assignFormDestination"
-          [(driver)]="assignFormDriver"
-          [(cargoType)]="assignFormCargoType"
-          [isDialogTransitionActive]="telemetryService.isModalTransitioning()"
-          (close)="closeAssignModal()"
-          (submitRoute)="onSubmitAssignRoute()" />
-      }
+      <app-telemetry-inspect-modal
+        [open]="telemetryService.isInspectModalOpen()"
+        [vehicle]="telemetryService.inspectedVehicle() ?? telemetryService.selectedVehicle()"
+        [events]="telemetryService.liveEvents()"
+        [isLiveTelemetryActive]="telemetryService.isLiveTelemetryActive()"
+        [viewTransitionName]="telemetryService.inspectMorphOwner() === 'modal' ? 'dialog-transform' : null"
+        (close)="closeInspectModal()"
+        (exportTelemetry)="onExportTelemetry($event)" />
+
+      <app-telemetry-assign-modal
+        [open]="telemetryService.isAssignModalOpen()"
+        [vehicles]="telemetryService.vehicles()"
+        [(vehicleId)]="assignFormVehicleId"
+        [(corridor)]="assignFormCorridor"
+        [(destination)]="assignFormDestination"
+        [(driver)]="assignFormDriver"
+        [(cargoType)]="assignFormCargoType"
+        [viewTransitionName]="telemetryService.assignMorphOwner() === 'modal' ? 'dialog-transform' : null"
+        (close)="closeAssignModal()"
+        (submitRoute)="onSubmitAssignRoute()" />
     </ng-template>
 
     @if (!stageOverlay.hasExternalHost()) {
@@ -214,17 +197,35 @@ export class TelemetryComponent {
   readonly themeService = inject(ThemeService);
   readonly adaptiveLayout = inject(AdaptiveLayoutService);
   readonly stageOverlay = inject(StageOverlayService);
+  private readonly appRef = inject(ApplicationRef);
   private readonly injector = inject(Injector);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly telemetryModalsTemplate = viewChild<TemplateRef<unknown>>('telemetryModalsTemplate');
-  private readonly fleetTabBtn = viewChild<ElementRef<HTMLButtonElement>>('fleetTabBtn');
-  private readonly corridorTabBtn = viewChild<ElementRef<HTMLButtonElement>>('corridorTabBtn');
 
   private returnFocusEl: HTMLElement | null = null;
   private wasModalOpen = false;
 
   readonly mobilePane = signal<'fleet' | 'corridor'>('fleet');
+  readonly isCorridorTheaterOpen = signal<boolean>(false);
+  readonly corridorMorphOwner = signal<'card' | 'theater' | null>(null);
+
+  readonly mobileTabs = computed<M3TabItem[]>(() => [
+    {
+      id: 'fleet',
+      label: 'Flota & Unidad',
+      icon: 'local_shipping',
+      badge: this.telemetryService.filteredVehicles().length,
+      panelId: 'tel-panel-fleet'
+    },
+    {
+      id: 'corridor',
+      label: 'Corredor & Alertas',
+      icon: 'route',
+      badge: this.telemetryService.liveEvents().length,
+      panelId: 'tel-panel-corridor'
+    }
+  ]);
 
   private readonly _assignFormVehicleId = signal<string>('TRK-884');
   private readonly _assignFormCorridor = signal<string>('Corredor Panamericana Sur');
@@ -268,7 +269,10 @@ export class TelemetryComponent {
   }
 
   readonly hasAnyModalOpen = computed(
-    () => this.telemetryService.isInspectModalOpen() || this.telemetryService.isAssignModalOpen()
+    () =>
+      this.telemetryService.isInspectModalOpen() ||
+      this.telemetryService.isAssignModalOpen() ||
+      this.isCorridorTheaterOpen()
   );
 
   constructor() {
@@ -281,13 +285,14 @@ export class TelemetryComponent {
 
     effect(() => {
       const open = this.hasAnyModalOpen();
+      const transitioning = this.corridorMorphOwner() !== null || this.telemetryService.isModalTransitioning();
       this.stageOverlay.setOverlayOpen(open);
       if (open) {
         if (!this.wasModalOpen && !this.returnFocusEl) {
           this.captureReturnFocus();
         }
         this.wasModalOpen = true;
-      } else if (this.wasModalOpen) {
+      } else if (this.wasModalOpen && !transitioning) {
         this.wasModalOpen = false;
         this.restoreFocusIfIdle();
       }
@@ -304,7 +309,10 @@ export class TelemetryComponent {
 
   @HostListener('document:keydown.escape', ['$event'])
   onEscapePress(event?: Event): void {
-    if (this.telemetryService.isInspectModalOpen()) {
+    if (this.isCorridorTheaterOpen()) {
+      event?.preventDefault();
+      this.closeCorridorTheater();
+    } else if (this.telemetryService.isInspectModalOpen()) {
       event?.preventDefault();
       this.closeInspectModal();
     } else if (this.telemetryService.isAssignModalOpen()) {
@@ -315,24 +323,10 @@ export class TelemetryComponent {
     }
   }
 
-  onMobileTabKeydown(event: KeyboardEvent, currentPane: 'fleet' | 'corridor'): void {
-    let nextPane: 'fleet' | 'corridor' | null = null;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-      nextPane = currentPane === 'fleet' ? 'corridor' : 'fleet';
-    } else if (event.key === 'Home') {
-      nextPane = 'fleet';
-    } else if (event.key === 'End') {
-      nextPane = 'corridor';
+  onMobileTabChange(tabId: string): void {
+    if (tabId === 'fleet' || tabId === 'corridor') {
+      this.mobilePane.set(tabId);
     }
-    if (!nextPane) return;
-
-    event.preventDefault();
-    this.mobilePane.set(nextPane);
-    queueMicrotask(() => {
-      const targetBtn =
-        nextPane === 'fleet' ? this.fleetTabBtn()?.nativeElement : this.corridorTabBtn()?.nativeElement;
-      targetBtn?.focus();
-    });
   }
 
   onHueChange(hue: number): void {
@@ -345,23 +339,59 @@ export class TelemetryComponent {
     this.telemetryService.setVehicleProgress(sel.id, Number(val));
   }
 
+  openCorridorTheater(): void {
+    if (this.hasAnyModalOpen() || this.corridorMorphOwner() !== null) return;
+
+    this.captureReturnFocus();
+    this.corridorMorphOwner.set('card');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isCorridorTheaterOpen.set(true);
+        this.stageOverlay.setOverlayOpen(true);
+        this.corridorMorphOwner.set('theater');
+      },
+      () => {
+        this.corridorMorphOwner.set(null);
+      },
+      { rootClass: 'vt-hero' }
+    );
+  }
+
+  closeCorridorTheater(): void {
+    if (!this.isCorridorTheaterOpen()) return;
+
+    this.corridorMorphOwner.set('theater');
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isCorridorTheaterOpen.set(false);
+        this.stageOverlay.setOverlayOpen(this.telemetryService.isInspectModalOpen() || this.telemetryService.isAssignModalOpen());
+        this.corridorMorphOwner.set('card');
+      },
+      () => {
+        this.corridorMorphOwner.set(null);
+        this.restoreFocusIfIdle();
+      },
+      { isExiting: true, rootClass: 'vt-hero' }
+    );
+  }
+
   onInspectVehicle(vehicle: Vehicle, triggerId: string): void {
     this.captureReturnFocus();
     this.telemetryService.openInspectModal(vehicle, triggerId);
   }
 
-  onInspectCorridorClick(): void {
-    this.captureReturnFocus();
-    this.telemetryService.openInspectModal(this.telemetryService.selectedVehicle(), 'corridor-inspect');
-  }
-
   closeInspectModal(): void {
+    if (!this.telemetryService.isInspectModalOpen()) return;
     this.telemetryService.closeInspectModal();
   }
 
   onExportTelemetry(vehicle: Vehicle): void {
     this.telemetryService.exportVehicleTelemetry(vehicle);
-    this.telemetryService.closeInspectModal();
+    this.closeInspectModal();
   }
 
   onAssignRouteClick(): void {
@@ -378,6 +408,7 @@ export class TelemetryComponent {
   }
 
   closeAssignModal(): void {
+    if (!this.telemetryService.isAssignModalOpen()) return;
     this.telemetryService.closeAssignModal();
   }
 
