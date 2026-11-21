@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CartItem, PosProduct } from '../../../core/pos/pos.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
@@ -23,42 +23,46 @@ export interface PosShiftSummary {
 @Component({
   selector: 'app-pos-catalog',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, M3ButtonComponent, M3CardComponent, M3ChipComponent, M3TextFieldComponent],
   host: {
-    class: 'flex flex-col h-full min-h-0 space-y-3 overflow-hidden'
+    class: 'pos-catalog-pane flex flex-col h-full min-h-0 gap-3 overflow-hidden'
   },
   template: `
     <div class="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
       <div class="flex flex-wrap items-center gap-2 shrink-0">
         <h2 class="text-2xl font-black text-main tracking-tight">Menú</h2>
-        <span class="text-xs font-mono font-bold text-muted px-2.5 py-0.5 rounded-full bg-surface-box border border-outline-sub shadow-2xs">
-          {{ products().length }} productos
+        <span class="text-xs font-mono font-bold text-muted px-2.5 py-0.5 rounded-full bg-surface-low">
+          {{ products().length }} {{ products().length === 1 ? 'producto' : 'productos' }}
         </span>
         @if (shiftInfo(); as shift) {
-          <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-muted px-2.5 py-0.5 rounded-full bg-surface-high border border-outline-sub">
+          <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-muted px-2.5 py-0.5 rounded-full bg-surface-high">
             <span class="w-1.5 h-1.5 rounded-full bg-success shrink-0" aria-hidden="true"></span>
             <span class="font-mono font-bold text-main">{{ shift.register }}</span>
-            <span>· {{ shift.shift }} · {{ shift.salesCountToday }} ventas</span>
+            <span>· {{ shift.shift }} · {{ shift.salesCountToday }} {{ shift.salesCountToday === 1 ? 'venta' : 'ventas' }}</span>
           </span>
         }
       </div>
 
       <div class="flex items-center gap-2 flex-1 sm:max-w-lg justify-end">
-        <div class="flex-1 min-w-0">
+        <search class="flex-1 min-w-0">
           <m3-text-field
             #searchField
-            variant="outlined"
+            [id]="'pos-search-input'"
+            variant="filled"
+            type="search"
             label="Buscar en menú o SKU [F2]"
             placeholder="Espresso, COF-001..."
             icon="search"
+            enterkeyhint="search"
             [clearable]="true"
             [trailingIcon]="searchQuery() ? null : 'qr_code_scanner'"
             [value]="searchQuery()"
             (valueChange)="searchChange.emit($event)" />
-        </div>
+        </search>
 
         <m3-button
-          variant="outlined"
+          variant="tonal"
           size="md"
           icon="keyboard"
           ariaLabel="Ver atajos de teclado del POS"
@@ -68,7 +72,7 @@ export interface PosShiftSummary {
       </div>
     </div>
 
-    <div class="shrink-0 flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+    <div class="shrink-0 flex items-center gap-2 overflow-x-auto scrollbar-none py-2 -my-2">
       @for (cat of categories(); track cat.id) {
         <m3-chip
           type="filter"
@@ -80,8 +84,8 @@ export interface PosShiftSummary {
       }
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar p-1 pr-1.5 space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+    <div class="flex-1 min-h-0 overflow-y-auto m3-scrollbar p-1 pr-1.5">
+      <div class="pos-catalog-grid grid gap-3.5">
         @for (product of products(); track product.id) {
           @let qty = quantityMap().get(product.id) ?? 0;
           @let isOutOfStock = product.stock <= 0;
@@ -89,14 +93,12 @@ export interface PosShiftSummary {
           @let theme = categoryThemes[product.category];
 
           <m3-card
-            variant="outlined"
+            variant="filled"
+            [surface]="qty > 0 ? 'default' : (isOutOfStock ? 'surface' : 'low')"
+            [tone]="qty > 0 ? 'primary' : 'default'"
             padding="none"
             shape="lg"
-            [customClass]="isOutOfStock
-              ? 'group relative flex flex-col justify-between overflow-hidden bg-surface-box/70 opacity-75 border-outline-sub'
-              : qty > 0
-                ? 'group relative flex flex-col justify-between overflow-hidden ring-2 ring-inset ring-primary border-primary bg-primary/10 shadow-sm'
-                : 'group relative flex flex-col justify-between overflow-hidden bg-surface-box shadow-2xs hover:shadow-md hover:border-outline'">
+            [customClass]="productCardClasses(qty, isOutOfStock)">
 
             @if (qty > 0) {
               <div
@@ -135,11 +137,11 @@ export interface PosShiftSummary {
 
                 <span
                   [class]="isOutOfStock
-                    ? 'bg-error-box text-on-error-box font-black border-error/40'
+                    ? 'bg-error-box text-on-error-box font-black'
                     : product.stock <= 20
-                      ? 'bg-warning-box text-on-warning-box font-black border-warning/40'
-                      : 'bg-surface-box/90 backdrop-blur-xs text-main font-semibold border-outline-sub'"
-                  class="absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] border shadow-xs">
+                      ? 'bg-warning-box text-on-warning-box font-black'
+                      : 'bg-surface-box/90 backdrop-blur-xs text-main font-semibold'"
+                  class="absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] shadow-xs">
                   @if (isOutOfStock) {
                     <span class="material-symbols-rounded text-[12px] leading-none" aria-hidden="true">block</span>
                     <span>Agotado</span>
@@ -161,7 +163,7 @@ export interface PosShiftSummary {
                 </div>
               </div>
 
-              <div class="p-3 pb-2 space-y-0.5 w-full">
+              <div class="p-3 pb-2 flex flex-col gap-0.5 w-full">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-primary block leading-none">
                   {{ product.categoryLabel }}
                 </span>
@@ -174,7 +176,7 @@ export interface PosShiftSummary {
               </div>
             </button>
 
-            <div class="px-3 pb-3 pt-2 flex items-center gap-2 border-t border-outline-sub/60">
+            <div class="px-3 pb-3 pt-1 flex items-center gap-2">
               <m3-button
                 variant="tonal"
                 size="sm"
@@ -222,11 +224,18 @@ export interface PosShiftSummary {
             </div>
           </m3-card>
         } @empty {
-          <div class="col-span-full p-12 text-center bg-surface-box border border-outline-sub rounded-m3-lg space-y-2 m3-anim-fade-through">
-            <span class="material-symbols-rounded text-4xl text-muted" aria-hidden="true">search_off</span>
-            <h4 class="font-bold text-base">No se encontraron productos</h4>
-            <p class="text-xs text-muted">Revisá el término de búsqueda o cambiá de categoría.</p>
-          </div>
+          <m3-card
+            variant="filled"
+            surface="low"
+            shape="xl"
+            padding="xl"
+            customClass="col-span-full text-center m3-anim-fade-through">
+            <div class="flex flex-col items-center gap-2 py-4">
+              <span class="material-symbols-rounded text-4xl text-muted" aria-hidden="true">search_off</span>
+              <h4 class="font-bold text-base text-main">No se encontraron productos</h4>
+              <p class="text-xs text-muted">Revisá el término de búsqueda o cambiá de categoría.</p>
+            </div>
+          </m3-card>
         }
       </div>
     </div>
@@ -261,6 +270,17 @@ export class PosCatalogComponent {
     }
     return map;
   });
+
+  productCardClasses(qty: number, isOutOfStock: boolean): string {
+    const base = 'pos-product-card group relative flex flex-col justify-between overflow-hidden';
+    if (isOutOfStock) {
+      return `${base} is-out-of-stock opacity-75`;
+    }
+    if (qty > 0) {
+      return `${base} is-selected ring-2 ring-inset ring-primary shadow-xs`;
+    }
+    return base;
+  }
 
   focusSearch(): void {
     this.searchField()?.focus();

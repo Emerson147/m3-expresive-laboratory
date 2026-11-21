@@ -1,11 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
   ApplicationRef,
+  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   HostListener,
   Injector,
   TemplateRef,
+  ViewEncapsulation,
   computed,
   effect,
   inject,
@@ -14,10 +16,12 @@ import {
 } from '@angular/core';
 import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
 import { PosCustomer, PosProduct, PosService } from '../../core/pos/pos.service';
+import { M3TabItem, M3TabsComponent } from '../../shared/components/tabs/tabs.component';
 import { PosCatalogComponent } from './components/pos-catalog.component';
 import { PosCheckoutModalComponent } from './components/pos-checkout-modal.component';
 import { PosCustomerModalComponent } from './components/pos-customer-modal.component';
 import { PosCustomizerModalComponent } from './components/pos-customizer-modal.component';
+import { POS_EXPRESSIVE_CSS } from './components/pos-expressive.styles';
 import { PosReceiptModalComponent } from './components/pos-receipt-modal.component';
 import { PosShortcutsModalComponent } from './components/pos-shortcuts-modal.component';
 import { PosServiceChannel, PosTicketComponent } from './components/pos-ticket.component';
@@ -28,8 +32,12 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
 @Component({
   selector: 'app-pos-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  styles: [POS_EXPRESSIVE_CSS],
   imports: [
     NgTemplateOutlet,
+    M3TabsComponent,
     PosCatalogComponent,
     PosTicketComponent,
     PosCheckoutModalComponent,
@@ -42,30 +50,14 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
     class: 'flex-1 h-full min-h-0 flex flex-col overflow-hidden gap-3'
   },
   template: `
-    <div
-      role="tablist"
-      aria-label="Vistas del punto de venta"
-      class="lg:hidden shrink-0 grid grid-cols-2 gap-1 p-1 rounded-full bg-surface-high border border-outline-sub">
-      <button
-        type="button"
-        role="tab"
-        [attr.aria-selected]="mobilePane() === 'catalog'"
-        (click)="mobilePane.set('catalog')"
-        [class]="mobilePane() === 'catalog' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-        class="btn-m3 state-layer focus-ring-m3 min-h-10 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
-        <span class="material-symbols-rounded text-sm" aria-hidden="true">storefront</span>
-        <span>Menú ({{ posService.filteredProducts().length }})</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        [attr.aria-selected]="mobilePane() === 'ticket'"
-        (click)="mobilePane.set('ticket')"
-        [class]="mobilePane() === 'ticket' ? 'bg-primary text-on-primary font-bold shadow-xs' : 'text-muted hover:text-main'"
-        class="btn-m3 state-layer focus-ring-m3 min-h-10 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
-        <span class="material-symbols-rounded text-sm" aria-hidden="true">receipt_long</span>
-        <span>Comanda ({{ posService.cartCount() }})</span>
-      </button>
+    <div class="lg:hidden shrink-0">
+      <m3-tabs
+        variant="secondary"
+        ariaLabel="Vistas del punto de venta"
+        idPrefix="pos-mobile-tab"
+        [tabs]="mobileTabs()"
+        [value]="mobilePane()"
+        (tabChange)="onMobileTabChange($event)" />
     </div>
 
     <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden">
@@ -124,7 +116,7 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
             <span class="material-symbols-rounded text-lg" aria-hidden="true">shopping_bag</span>
             <span>Ver Comanda · {{ posService.cartCount() }} {{ posService.cartCount() === 1 ? 'ítem' : 'ítems' }}</span>
           </div>
-          <div class="flex items-center gap-1.5 font-mono font-black text-sm">
+          <div class="flex items-center gap-1.5 font-mono font-black text-sm tabular-nums">
             <span>S/ {{ posService.total().toFixed(2) }}</span>
             <span class="material-symbols-rounded text-base" aria-hidden="true">arrow_forward</span>
           </div>
@@ -133,42 +125,38 @@ type CheckoutMorphOwner = 'ticket' | 'checkout' | 'receipt' | null;
     }
 
     <ng-template #posModalsTemplate>
-      @if (posService.isCheckoutOpen()) {
-        <app-pos-checkout-modal
-          [channelLabel]="channelLabel()"
-          [isSurfaceTransitionActive]="checkoutMorphOwner() === 'checkout'"
-          (close)="closeCheckout()"
-          (saleConfirmed)="confirmSale()" />
-      }
+      <app-pos-checkout-modal
+        [open]="posService.isCheckoutOpen()"
+        [channelLabel]="channelLabel()"
+        [viewTransitionName]="checkoutMorphOwner() === 'checkout' ? 'dialog-transform' : null"
+        (processingChange)="isCheckoutProcessing.set($event)"
+        (close)="closeCheckout()"
+        (saleConfirmed)="confirmSale()" />
 
-      @if (posService.isReceiptOpen() && posService.lastCompletedSale(); as sale) {
-        <app-pos-receipt-modal
-          [sale]="sale"
-          [channelLabel]="channelLabel()"
-          [isSurfaceTransitionActive]="checkoutMorphOwner() === 'receipt'"
-          (print)="printReceipt()"
-          (newSale)="dismissReceipt(true)" />
-      }
+      <app-pos-receipt-modal
+        [open]="posService.isReceiptOpen()"
+        [sale]="posService.lastCompletedSale()"
+        [channelLabel]="channelLabel()"
+        [viewTransitionName]="checkoutMorphOwner() === 'receipt' ? 'dialog-transform' : null"
+        (print)="printReceipt()"
+        (newSale)="dismissReceipt(true)" />
 
-      @if (isCustomerModalOpen()) {
-        <app-pos-customer-modal
-          [initialCustomer]="posService.customer()"
-          (close)="closeCustomerModal()"
-          (save)="saveCustomer($event)" />
-      }
+      <app-pos-customer-modal
+        [open]="isCustomerModalOpen()"
+        [initialCustomer]="posService.customer()"
+        (close)="closeCustomerModal()"
+        (save)="saveCustomer($event)" />
 
-      @if (isShortcutsModalOpen()) {
-        <app-pos-shortcuts-modal
-          (close)="closeShortcutsModal()" />
-      }
+      <app-pos-shortcuts-modal
+        [open]="isShortcutsModalOpen()"
+        (close)="closeShortcutsModal()" />
 
-      @if (customizingProduct(); as product) {
-        <app-pos-customizer-modal
-          [product]="product"
-          [isDialogTransitionActive]="customizerMorphOwner() === 'modal'"
-          (close)="closeCustomizer()"
-          (confirm)="addCustomizedToCart($event)" />
-      }
+      <app-pos-customizer-modal
+        [open]="customizingProduct() !== null"
+        [product]="customizingProduct()"
+        [viewTransitionName]="customizerMorphOwner() === 'modal' ? 'dialog-transform' : null"
+        (close)="closeCustomizer()"
+        (confirm)="addCustomizedToCart($event)" />
     </ng-template>
 
     @if (!stageOverlay.hasExternalHost()) {
@@ -190,10 +178,26 @@ export class PosComponent {
   readonly mobilePane = signal<'catalog' | 'ticket'>('catalog');
   readonly isCustomerModalOpen = signal<boolean>(false);
   readonly isShortcutsModalOpen = signal<boolean>(false);
+  readonly isCheckoutProcessing = signal<boolean>(false);
   readonly customizingProduct = signal<PosProduct | null>(null);
   readonly customizerMorphOwner = signal<DialogMorphOwner>(null);
   readonly morphProductId = signal<number | null>(null);
   readonly checkoutMorphOwner = signal<CheckoutMorphOwner>(null);
+
+  readonly mobileTabs = computed<M3TabItem[]>(() => [
+    {
+      id: 'catalog',
+      label: 'Menú',
+      icon: 'storefront',
+      badge: this.posService.filteredProducts().length
+    },
+    {
+      id: 'ticket',
+      label: 'Comanda',
+      icon: 'receipt_long',
+      badge: this.posService.cartCount()
+    }
+  ]);
 
   readonly hasAnyModalOpen = computed(() =>
     this.posService.isCheckoutOpen() ||
@@ -243,8 +247,9 @@ export class PosComponent {
       if (this.customizingProduct()) this.closeCustomizer();
       else if (this.isCustomerModalOpen()) this.closeCustomerModal();
       else if (this.isShortcutsModalOpen()) this.closeShortcutsModal();
-      else if (this.posService.isCheckoutOpen()) this.closeCheckout();
-      else if (this.posService.isReceiptOpen()) this.dismissReceipt(false);
+      else if (this.posService.isCheckoutOpen()) {
+        if (!this.isCheckoutProcessing()) this.closeCheckout();
+      } else if (this.posService.isReceiptOpen()) this.dismissReceipt(false);
       else if (this.posService.searchQuery().trim()) {
         this.posService.searchQuery.set('');
       }
@@ -254,6 +259,10 @@ export class PosComponent {
         this.openCheckout();
       }
     }
+  }
+
+  onMobileTabChange(id: string): void {
+    this.mobilePane.set(id === 'ticket' ? 'ticket' : 'catalog');
   }
 
   setChannel(channel: PosServiceChannel): void {
