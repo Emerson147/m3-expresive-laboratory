@@ -96,7 +96,7 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                 </m3-button>
 
                 <m3-button
-                  variant="outlined"
+                  variant="text"
                   size="xs"
                   icon="open_in_new"
                   [invisible]="hideEditButton()"
@@ -212,8 +212,8 @@ export type AgendaInspectorTab = 'steps' | 'plan';
               <section class="space-y-3">
                 <h3 class="text-label-md-emphasized uppercase tracking-wider text-muted">Planificación rápida</h3>
 
-                <div class="space-y-3">
-                  <div class="space-y-1.5">
+                <div class="flex flex-col gap-3.5">
+                  <div class="flex flex-col gap-1.5 min-w-0">
                     <span class="block text-label-md text-muted">Bloque</span>
                     <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
                       <m3-button-group
@@ -226,7 +226,7 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                     </div>
                   </div>
 
-                  <div class="space-y-1.5">
+                  <div class="flex flex-col gap-1.5 min-w-0">
                     <span class="block text-label-md text-muted">Prioridad</span>
                     <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
                       <m3-button-group
@@ -239,7 +239,7 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                     </div>
                   </div>
 
-                  <div class="agenda-inspector-schedule-grid grid grid-cols-1 sm:grid-cols-2 gap-3 items-end pt-1">
+                  <div class="agenda-inspector-schedule-grid grid grid-cols-1 sm:grid-cols-2 gap-3 items-start pt-1">
                     <m3-text-field
                       [id]="'inspector-time-slot'"
                       variant="filled"
@@ -250,7 +250,7 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                       [value]="current.timeSlot"
                       (valueChange)="onTimeValueChange(current.id, $event)" />
 
-                    <div class="space-y-1.5 min-w-0">
+                    <div class="flex flex-col gap-1.5 min-w-0">
                       <span class="block text-label-md text-muted">Estimación</span>
                       <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
                         <m3-button-group

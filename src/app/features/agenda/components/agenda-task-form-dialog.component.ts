@@ -57,7 +57,7 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
       [(open)]="open"
       (closeRequested)="closeRequested.emit($event)"
       (closed)="onDialogClosed()">
-      <form (ngSubmit)="submitForm()" novalidate class="space-y-5">
+      <form (ngSubmit)="submitForm()" novalidate class="flex flex-col gap-5">
         <m3-text-field
           #taskTitleField
           [id]="'agenda-modal-title'"
@@ -75,10 +75,10 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
           (inputBlur)="validateTitleOnBlur()"
           supportingText="Define el objetivo con claridad" />
 
-        <fieldset class="space-y-2 border-0 p-0 m-0">
-          <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+        <div role="group" aria-labelledby="agenda-form-category-label" class="flex flex-col gap-2.5">
+          <span id="agenda-form-category-label" class="block text-label-md-emphasized text-muted uppercase tracking-wider">
             Categoría
-          </legend>
+          </span>
           <m3-button-group
             variant="standard"
             size="sm"
@@ -86,37 +86,41 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
             [options]="categoryOptions"
             [value]="[draftCategory()]"
             (selectionChange)="onCategorySelect($event)" />
-        </fieldset>
+        </div>
 
         <!-- CONTENEDOR TONAL PARA PROGRAMACIÓN Y PRIORIDAD -->
-        <div class="bg-surface-low rounded-m3-lg p-4 sm:p-5 space-y-4">
-          <fieldset class="space-y-2 border-0 p-0 m-0">
-            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+        <div class="bg-surface-low rounded-m3-lg p-4 sm:p-5 flex flex-col gap-4">
+          <div role="group" aria-labelledby="agenda-form-bucket-label" class="flex flex-col gap-2">
+            <span id="agenda-form-bucket-label" class="block text-label-md-emphasized text-muted uppercase tracking-wider">
               Bloque / Día
-            </legend>
-            <m3-button-group
-              variant="connected"
-              size="sm"
-              ariaLabel="Día programado"
-              [options]="dueBucketOptions"
-              [value]="[draftDate()]"
-              (selectionChange)="onDateSelect($event)" />
-          </fieldset>
+            </span>
+            <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+              <m3-button-group
+                variant="connected"
+                size="sm"
+                ariaLabel="Día programado"
+                [options]="dueBucketOptions"
+                [value]="[draftDate()]"
+                (selectionChange)="onDateSelect($event)" />
+            </div>
+          </div>
 
-          <fieldset class="space-y-2 border-0 p-0 m-0">
-            <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+          <div role="group" aria-labelledby="agenda-form-priority-label" class="flex flex-col gap-2">
+            <span id="agenda-form-priority-label" class="block text-label-md-emphasized text-muted uppercase tracking-wider">
               Prioridad
-            </legend>
-            <m3-button-group
-              variant="connected"
-              size="sm"
-              ariaLabel="Prioridad de tarea"
-              [options]="priorityOptions"
-              [value]="[draftPriority()]"
-              (selectionChange)="onPrioritySelect($event)" />
-          </fieldset>
+            </span>
+            <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+              <m3-button-group
+                variant="connected"
+                size="sm"
+                ariaLabel="Prioridad de tarea"
+                [options]="priorityOptions"
+                [value]="[draftPriority()]"
+                (selectionChange)="onPrioritySelect($event)" />
+            </div>
+          </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end pt-1">
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start pt-1">
             <div class="sm:col-span-5">
               <m3-text-field
                 [id]="'agenda-modal-time'"
@@ -129,18 +133,20 @@ import { M3TextFieldComponent } from '../../../shared/components/text-field/text
                 (valueChange)="draftTimeSlot.set($event)" />
             </div>
 
-            <fieldset class="sm:col-span-7 space-y-2 border-0 p-0 m-0">
-              <legend class="text-label-md-emphasized text-muted uppercase tracking-wider">
+            <div role="group" aria-labelledby="agenda-form-duration-label" class="sm:col-span-7 flex flex-col gap-2">
+              <span id="agenda-form-duration-label" class="block text-label-md-emphasized text-muted uppercase tracking-wider">
                 Bloque de enfoque
-              </legend>
-              <m3-button-group
-                variant="connected"
-                size="sm"
-                ariaLabel="Duración en minutos"
-                [options]="durationOptions"
-                [value]="[draftDuration().toString()]"
-                (selectionChange)="onDurationSelect($event)" />
-            </fieldset>
+              </span>
+              <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+                <m3-button-group
+                  variant="connected"
+                  size="sm"
+                  ariaLabel="Duración en minutos"
+                  [options]="durationOptions"
+                  [value]="[draftDuration().toString()]"
+                  (selectionChange)="onDurationSelect($event)" />
+              </div>
+            </div>
           </div>
         </div>
 

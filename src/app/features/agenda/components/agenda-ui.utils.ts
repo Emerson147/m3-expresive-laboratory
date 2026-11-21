@@ -65,6 +65,13 @@ export function getSubtaskCompletionSummary(task: TaskItem): { done: number; tot
   return { done, total, percent: Math.round((done / total) * 100) };
 }
 
+export function formatFocusBlocks(count: number, singularSuffix = '', pluralSuffix = singularSuffix): string {
+  const isOne = count === 1;
+  const noun = isOne ? 'bloque' : 'bloques';
+  const suffix = isOne ? singularSuffix : pluralSuffix;
+  return suffix ? `${count} ${noun} ${suffix}` : `${count} ${noun}`;
+}
+
 /** Prevents form Enter submission while an IME composition session is active. */
 export function preventEnterDuringComposition(event: Event): void {
   if ('isComposing' in event && (event as KeyboardEvent).isComposing) {

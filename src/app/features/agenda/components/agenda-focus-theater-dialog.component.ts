@@ -18,7 +18,7 @@ import { M3DialogComponent } from '../../../shared/components/dialog/dialog.comp
 import { M3CircularProgressComponent } from '../../../shared/components/progress/circular-progress.component';
 import { M3LinearProgressComponent } from '../../../shared/components/progress/linear-progress.component';
 import { AgendaFocusService, FOCUS_PRESETS } from '../agenda-focus.service';
-import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.utils';
+import { formatFocusBlocks, getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.utils';
 
 @Component({
   selector: 'app-agenda-focus-theater-dialog',
@@ -65,7 +65,7 @@ import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.
             <span>{{ current.category }}</span>
           </span>
           <span class="px-3 py-1 rounded-m3-full bg-surface/85 backdrop-blur-md text-primary text-xs font-mono font-bold tabular-nums border border-outline-sub/60">
-            {{ current.focusSessionsCompleted }} bloques hoy
+            {{ formatBlocks(current.focusSessionsCompleted, 'hoy') }}
           </span>
         </div>
       }
@@ -111,7 +111,7 @@ import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.
           <!-- Columna Derecha: Actividad actual + Checklist interactivo -->
           <div class="lg:col-span-6">
             <m3-card
-              variant="outlined"
+              variant="filled"
               surface="surface"
               padding="lg"
               shape="xl"
@@ -200,7 +200,7 @@ import { getSubtaskCompletionSummary, getTaskCategoryVisual } from './agenda-ui.
         @if (task(); as current) {
           <m3-button
             type="button"
-            variant="outlined"
+            variant="tonal"
             icon="verified"
             (action)="completeFocusBlock(current.id)">
             Registrar
@@ -276,6 +276,10 @@ export class AgendaFocusTheaterDialogComponent {
 
   subtaskSummary(task: TaskItem) {
     return getSubtaskCompletionSummary(task);
+  }
+
+  formatBlocks(count: number, suffix = ''): string {
+    return formatFocusBlocks(count, suffix);
   }
 
   onPresetSelect(selected: string[], taskId: number): void {

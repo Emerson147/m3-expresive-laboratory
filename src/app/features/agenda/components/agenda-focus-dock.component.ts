@@ -8,7 +8,7 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3CircularProgressComponent } from '../../../shared/components/progress/circular-progress.component';
 import { AgendaFocusService, FOCUS_PRESETS } from '../agenda-focus.service';
-import { getTaskCategoryVisual } from './agenda-ui.utils';
+import { formatFocusBlocks, getTaskCategoryVisual } from './agenda-ui.utils';
 
 @Component({
   selector: 'app-agenda-focus-dock',
@@ -74,7 +74,7 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
               </div>
               <p class="text-label-sm text-muted tabular-nums">
                 @if (focusedTask(); as current) {
-                  <span>{{ current.focusSessionsCompleted }} bloques hoy · {{ focusService.presetMinutes() }}m</span>
+                  <span>{{ formatBlocks(current.focusSessionsCompleted, 'hoy') }} · {{ focusService.presetMinutes() }}m</span>
                 } @else {
                   <span>Selecciona una tarea para iniciar</span>
                 }
@@ -150,7 +150,7 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
               </span>
             </button>
 
-            <div class="flex-1 min-w-0 w-full space-y-3">
+            <div class="flex-1 min-w-0 w-full flex flex-col gap-3.5">
               <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
                 <m3-button-group
                   variant="connected"
@@ -173,7 +173,7 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
                 }
 
                 <m3-button
-                  variant="outlined"
+                  variant="elevated"
                   size="sm"
                   icon="verified"
                   (action)="completeFocusBlock(target.id)">
@@ -265,6 +265,10 @@ export class AgendaFocusDockComponent {
 
   categoryVisual(category: string) {
     return getTaskCategoryVisual(category);
+  }
+
+  formatBlocks(count: number, suffix = ''): string {
+    return formatFocusBlocks(count, suffix);
   }
 
   startFocus(task: TaskItem): void {

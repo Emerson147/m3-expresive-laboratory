@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { FilterStatus, TaskPriority } from '../../../core/tasks/task.service';
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3LinearProgressComponent } from '../../../shared/components/progress/linear-progress.component';
+import { formatFocusBlocks } from './agenda-ui.utils';
 
 export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'completed';
 
@@ -38,7 +39,7 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
                 </span>
               </div>
               <p class="text-body-sm text-muted tabular-nums">
-                {{ todayPendingCount() }} para hoy · {{ totalPendingMinutes() }} min estimados · {{ totalFocusSessions() }} bloques registrados
+                {{ todayPendingCount() }} para hoy · {{ totalPendingMinutes() }} min estimados · {{ formatRegisteredBlocks(totalFocusSessions()) }}
               </p>
             </div>
           </div>
@@ -156,5 +157,9 @@ export class AgendaKpiRibbonComponent {
     if (this.filterStatus() === 'pending') return 'pending';
     if (this.filterStatus() === 'completed') return 'completed';
     return 'all';
+  }
+
+  formatRegisteredBlocks(count: number): string {
+    return formatFocusBlocks(count, 'registrado', 'registrados');
   }
 }

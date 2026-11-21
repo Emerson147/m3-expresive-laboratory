@@ -50,10 +50,13 @@ describe('AgendaComponent', () => {
       expect(el.querySelector(selector)?.classList.contains('block')).toBe(true);
     }
 
-    // Guard against invalid nested interactive buttons inside cards and legacy !bg-* utility overrides
+    // Guard against invalid nested interactive buttons inside cards, legacy !bg-* overrides, and outlined clutter
     expect(el.querySelectorAll('button button').length).toBe(0);
     expect(el.querySelector('[class*="!bg-"]')).toBeNull();
+    expect(el.querySelectorAll('.m3-btn-outlined').length).toBe(0);
     expect(el.querySelector('app-agenda-focus-dock button.agenda-focus-dial-btn')).toBeTruthy();
+    expect(el.textContent).not.toContain('1 bloques');
+    expect(el.querySelectorAll('app-agenda-task-form-dialog fieldset').length).toBe(0);
   });
 
   it('supports onlyToday switch, split-button preset creation, secondary inspector tabs, and m3-dialog batch cleanup', async () => {

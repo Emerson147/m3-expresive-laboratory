@@ -6,6 +6,7 @@ import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbo
 import { M3LinearProgressComponent } from '../../../shared/components/progress/linear-progress.component';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
 import {
+  formatFocusBlocks,
   getBucketHeaderMeta,
   getPriorityMeta,
   getSubtaskCompletionSummary,
@@ -265,15 +266,15 @@ import {
                               @if (isFocusActive) {
                                 Pomodoro activo en esta tarea
                               } @else if (subSummary.total > 0) {
-                                {{ subSummary.percent }}% de pasos completados · {{ task.focusSessionsCompleted }} bloques hoy
+                                {{ subSummary.percent }}% de pasos completados · {{ formatBlocks(task.focusSessionsCompleted, 'hoy') }}
                               } @else {
-                                {{ task.focusSessionsCompleted }} bloques enfocados hoy · Listo para iniciar
+                                {{ formatBlocks(task.focusSessionsCompleted, 'enfocado hoy', 'enfocados hoy') }} · Listo para iniciar
                               }
                             </span>
                           </span>
 
                           <m3-button
-                            variant="outlined"
+                            variant="tonal"
                             size="xs"
                             [disabled]="!isSelected"
                             [icon]="isFocusActive ? 'pause' : 'play_arrow'"
@@ -298,7 +299,7 @@ import {
               Puedes limpiar la búsqueda o crear una nueva actividad en tu agenda.
             </p>
             <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <m3-button variant="outlined" size="sm" icon="filter_alt_off" (action)="resetFilters.emit()">
+              <m3-button variant="text" size="sm" icon="filter_alt_off" (action)="resetFilters.emit()">
                 Limpiar filtros
               </m3-button>
               <m3-button
@@ -358,6 +359,10 @@ export class AgendaTaskListComponent {
 
   subtaskSummary(task: TaskItem) {
     return getSubtaskCompletionSummary(task);
+  }
+
+  formatBlocks(count: number, singularSuffix = '', pluralSuffix = singularSuffix): string {
+    return formatFocusBlocks(count, singularSuffix, pluralSuffix);
   }
 
   cardSurface(task: TaskItem, isSelected: boolean): 'default' | 'low' | 'surface' {
