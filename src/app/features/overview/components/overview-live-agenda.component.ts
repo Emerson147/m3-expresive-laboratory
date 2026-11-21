@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { RouterLink } from '@angular/router';
 import { TaskItem } from '../../../core/tasks/task.service';
 import { FocusTimerStatus } from '../../agenda/agenda-focus.service';
-import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import {
+  M3ButtonAnchorComponent,
+  M3ButtonComponent
+} from '../../../shared/components/button/button.component';
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbox.component';
 import { priorityBadgeClass } from '../overview.models';
@@ -11,17 +14,18 @@ import { priorityBadgeClass } from '../overview.models';
   selector: 'app-overview-live-agenda',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, M3ButtonComponent, M3CardComponent, M3CheckboxComponent],
+  imports: [RouterLink, M3ButtonAnchorComponent, M3ButtonComponent, M3CardComponent, M3CheckboxComponent],
   host: {
     class: 'block min-w-0 lg:col-span-5'
   },
   template: `
     <m3-card
       variant="filled"
+      surface="low"
       [interactive]="false"
       shape="xl"
       padding="lg"
-      customClass="!bg-surface-low m3-anim-item-in h-full flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]"
+      customClass="overview-agenda-container m3-anim-item-in h-full flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]"
       style="animation-delay: 40ms;">
 
       <div class="space-y-4">
@@ -31,14 +35,18 @@ import { priorityBadgeClass } from '../overview.models';
               <span class="material-symbols-rounded text-base" aria-hidden="true">event_upcoming</span>
               <span>Foco del Día</span>
             </div>
-            <h3 class="text-title-lg font-bold text-main">Agenda en vivo</h3>
+            <h2 class="text-title-lg font-bold text-main">Agenda en vivo</h2>
           </div>
 
           <a
+            m3-button
+            variant="tonal"
+            size="sm"
+            icon="arrow_forward"
+            [iconTrailing]="true"
             routerLink="/agenda"
-            class="btn-m3 overview-link-pill focus-ring-m3 touch-target-48 h-8 px-3.5 bg-sec-box text-on-sec-box text-label-md-emphasized inline-flex items-center gap-1.5 no-underline shrink-0 cursor-pointer">
-            <span>Ver Agenda</span>
-            <span class="material-symbols-rounded overview-link-arrow text-base" aria-hidden="true">arrow_forward</span>
+            customClass="overview-link-pill shrink-0">
+            Ver Agenda
           </a>
         </div>
 
@@ -67,9 +75,8 @@ import { priorityBadgeClass } from '../overview.models';
               </span>
               <m3-button
                 [iconOnly]="true"
-                variant="text"
+                variant="elevated"
                 size="xs"
-                customClass="!bg-surface !text-primary"
                 [icon]="focusStatus() === 'running' ? 'pause' : 'play_arrow'"
                 [ariaLabel]="focusStatus() === 'running' ? 'Pausar sesión de enfoque' : 'Reanudar sesión de enfoque'"
                 (action)="toggleFocusTimer.emit()" />
@@ -109,14 +116,14 @@ import { priorityBadgeClass } from '../overview.models';
               @if (task.completed) {
                 <span
                   [class]="priorityBadgeClass(task.priority, true)"
-                  class="m3-anim-spring-pop px-2.5 py-0.5 rounded-m3-full text-label-sm font-semibold inline-flex items-center gap-1 shrink-0">
+                  class="overview-agenda-priority m3-anim-spring-pop px-2.5 py-0.5 rounded-m3-full text-label-sm font-semibold inline-flex items-center gap-1 shrink-0">
                   <span class="material-symbols-rounded text-xs" aria-hidden="true">done</span>
                   <span>Lista</span>
                 </span>
               } @else {
                 <span
                   [class]="priorityBadgeClass(task.priority, false)"
-                  class="m3-anim-spring-pop px-2.5 py-0.5 rounded-m3-full text-label-sm font-semibold inline-flex items-center gap-1 shrink-0">
+                  class="overview-agenda-priority m3-anim-spring-pop px-2.5 py-0.5 rounded-m3-full text-label-sm font-semibold inline-flex items-center gap-1 shrink-0">
                   <span class="material-symbols-rounded text-xs" aria-hidden="true">
                     {{ task.priority === 'Alta' ? 'priority_high' : 'flag' }}
                   </span>

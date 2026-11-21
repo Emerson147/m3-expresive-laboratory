@@ -34,6 +34,7 @@ import {
   ModulePulseCard,
   OverviewHeroMetric,
   OverviewHeroMorphOwner,
+  OverviewHeroPresetId,
   OverviewModuleFilter,
   OverviewQuickTaskDraft,
   OverviewQuickTaskMorphTarget
@@ -55,7 +56,7 @@ import {
     OverviewQuickTaskDialogComponent
   ],
   template: `
-    <div class="space-y-5">
+    <div class="space-y-5 pb-2">
       <!-- BANDA 1: HERO AURORA OPERATIVO (7 COLS) + AGENDA EN VIVO (5 COLS) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         <app-overview-hero-card
@@ -74,6 +75,7 @@ import {
           [isQuickTaskOriginHidden]="quickTaskOpen()"
           [quickTaskViewTransitionName]="quickTaskMorphTarget() === 'button' ? 'dialog-transform' : null"
           (openQuickTask)="openQuickTaskDialog()"
+          (quickPreset)="onQuickPreset($event)"
           (openDetail)="openHeroDetail()" />
 
         <app-overview-live-agenda
@@ -168,16 +170,9 @@ export class OverviewComponent {
     return this.taskService.tasks().find(t => t.id === activeId)?.title ?? null;
   });
 
-  readonly totalActiveAlerts = computed(() => {
-    const clinicAlerts = this.clinicService.kpiSummary().criticalCases;
-    const invSummary = this.inventoryService.kpiSummary();
-    const stockAlerts = invSummary.lowStockSkus + invSummary.outOfStockSkus > 0 ? 1 : 0;
-    const kanbanAlerts = this.kanbanService.kpis().slaBreachCount;
-    const fleetAlerts = this.telemetryService.kpiSummary().delayedCount;
-    const campusAlerts = this.campusService.pendingAssignmentsCount();
-    const posAlerts = this.posService.shiftInfo().sunatOnline ? 0 : 1;
-    return clinicAlerts + stockAlerts + kanbanAlerts + fleetAlerts + campusAlerts + posAlerts;
-  });
+  readonly totalActiveAlerts = computed(() =>
+    this.modulePulseCards().reduce((sum, card) => sum + card.alertCount, 0)
+  );
 
   readonly heroExecutiveMetrics = computed<readonly OverviewHeroMetric[]>(() => {
     const totalModules = this.modulePulseCards().length;
@@ -239,7 +234,7 @@ export class OverviewComponent {
         iconBgClass: clinic.criticalCases > 0 ? 'bg-error-box text-on-error-box' : 'bg-primary-box text-on-primary-box',
         headline: `${clinic.totalActivePatients} en triaje`,
         detail: `Boxes ${clinic.occupiedBeds}/${clinic.totalBeds} · Shock ${clinic.shockTraumaOccupancy}`,
-        statusLabel: clinic.criticalCases > 0 ? `${clinic.criticalCases} críticos` : 'Estable',
+        statusLabel: clinic.criticalCases > 0 ? this.formatCount(clinic.criticalCases, 'crítico', 'críticos') : 'Estable',
         statusIcon: clinic.criticalCases > 0 ? 'emergency' : 'check_circle',
         statusTone: clinic.criticalCases > 0 ? 'error' : 'success',
         hasAlert: clinic.criticalCases > 0,
@@ -256,7 +251,7 @@ export class OverviewComponent {
         iconBgClass: 'bg-primary-box text-on-primary-box',
         headline: activeClass.code,
         detail: `${activeClass.subject} · ${activeClass.timeRange}`,
-        statusLabel: pendingAssignments > 0 ? `${pendingAssignments} entregas` : 'Al día',
+        statusLabel: pendingAssignments > 0 ? this.formatCount(pendingAssignments, 'entrega', 'entregas') : 'Al día',
         statusIcon: pendingAssignments > 0 ? 'assignment_late' : 'task_alt',
         statusTone: pendingAssignments > 0 ? 'warning' : 'primary',
         hasAlert: pendingAssignments > 0,
@@ -290,7 +285,7 @@ export class OverviewComponent {
         iconBgClass: 'bg-sec-box text-on-sec-box',
         headline: `${inventory.healthRate}% salud`,
         detail: `${inventory.totalUnits} uds · ${inventory.totalSkus} SKUs`,
-        statusLabel: stockIssues > 0 ? `${stockIssues} alertas` : 'Stock OK',
+        statusLabel: stockIssues > 0 ? this.formatCount(stockIssues, 'alerta', 'alertas') : 'Stock OK',
         statusIcon: stockIssues > 0 ? 'warning' : 'inventory',
         statusTone: stockIssues > 0 ? 'warning' : 'success',
         hasAlert: stockIssues > 0,
@@ -307,7 +302,7 @@ export class OverviewComponent {
         iconBgClass: kanban.slaBreachCount > 0 ? 'bg-warning-box text-on-warning-box' : 'bg-primary-box text-on-primary-box',
         headline: `${kanban.totalActive} órdenes`,
         detail: `Prom. ${kanban.avgPrepTimeMin} min · ${kanban.readyCount} listas · ${kanban.throughputPerHour}/h`,
-        statusLabel: kanban.slaBreachCount > 0 ? `${kanban.slaBreachCount} demoradas` : 'En tiempo',
+        statusLabel: kanban.slaBreachCount > 0 ? this.formatCount(kanban.slaBreachCount, 'demorada', 'demoradas') : 'En tiempo',
         statusIcon: kanban.slaBreachCount > 0 ? 'timer_off' : 'timer',
         statusTone: kanban.slaBreachCount > 0 ? 'error' : 'success',
         hasAlert: kanban.slaBreachCount > 0,
@@ -324,7 +319,7 @@ export class OverviewComponent {
         iconBgClass: 'bg-tertiary-box text-on-tertiary-box',
         headline: `${telemetry.activeFleetCount}/${telemetry.totalFleetCount} en ruta`,
         detail: `${telemetry.averageSpeedKmh} km/h · Frío ${telemetry.coldChainAvgTempC}°C`,
-        statusLabel: telemetry.delayedCount > 0 ? `${telemetry.delayedCount} retrasos` : `${telemetry.slaRate}% SLA`,
+        statusLabel: telemetry.delayedCount > 0 ? this.formatCount(telemetry.delayedCount, 'retraso', 'retrasos') : `${telemetry.slaRate}% SLA`,
         statusIcon: telemetry.delayedCount > 0 ? 'schedule' : 'route',
         statusTone: telemetry.delayedCount > 0 ? 'warning' : 'primary',
         hasAlert: telemetry.delayedCount > 0,
@@ -482,6 +477,52 @@ export class OverviewComponent {
     );
   }
 
+  onQuickPreset(preset: OverviewHeroPresetId): void {
+    const drafts: Record<OverviewHeroPresetId, OverviewQuickTaskDraft> = {
+      'deep-work': {
+        title: 'Bloque Deep Work de foco operativo',
+        category: 'Frontend Angular',
+        dueBucket: 'Hoy',
+        priority: 'Alta'
+      },
+      triage: {
+        title: 'Revisión de casos críticos en Clínica & Ops',
+        category: 'Clínica & Ops',
+        dueBucket: 'Hoy',
+        priority: 'Alta'
+      },
+      stock: {
+        title: 'Auditar reposición de SKUs y caja POS',
+        category: 'Backend Spring',
+        dueBucket: 'Hoy',
+        priority: 'Media'
+      },
+      fleet: {
+        title: 'Validar SLA de flota viva y órdenes KDS',
+        category: 'Clínica & Ops',
+        dueBucket: 'Mañana',
+        priority: 'Media'
+      }
+    };
+
+    const draft = drafts[preset];
+    const created = this.taskService.saveTask(
+      {
+        title: draft.title,
+        category: draft.category,
+        dateLabel: draft.dueBucket,
+        dueBucket: draft.dueBucket,
+        timeSlot: '',
+        durationMinutes: 25,
+        priority: draft.priority,
+        notes: 'Creada vía plantilla rápida del Dashboard'
+      },
+      null
+    );
+
+    this.announceSnackbar(`Plantilla agregada en ${draft.dueBucket}: ${created.title}`);
+  }
+
   onSaveQuickTask(draft: OverviewQuickTaskDraft): void {
     const created = this.taskService.saveTask(
       {
@@ -498,7 +539,15 @@ export class OverviewComponent {
     );
 
     this.closeQuickTaskDialog();
-    this.snackbarMessage.set(`Tarea creada en ${draft.dueBucket}: ${created.title}`);
+    this.announceSnackbar(`Tarea creada en ${draft.dueBucket}: ${created.title}`);
+  }
+
+  private formatCount(count: number, singular: string, plural: string): string {
+    return `${count} ${count === 1 ? singular : plural}`;
+  }
+
+  private announceSnackbar(message: string): void {
+    this.snackbarMessage.set(message);
     this.snackbarOpen.set(false);
     queueMicrotask(() => this.snackbarOpen.set(true));
   }

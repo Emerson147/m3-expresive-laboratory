@@ -287,9 +287,94 @@
   flex-wrap: nowrap;
 }
 
+/* Expressive spring transitions inside Button Groups (Expand & Squeeze neighbor interaction) */
+.m3-btn-group .m3-btn {
+  --_m3-item-px: 16px;
+  --_m3-icon-w: 40px;
+  --_m3-expand: 0px;
+  transition:
+    background-color var(--md-sys-motion-spring-expressive-fast-effects-duration, 150ms) var(--md-sys-motion-spring-expressive-fast-effects-curve, cubic-bezier(0.31, 0.94, 0.34, 1)),
+    color var(--md-sys-motion-spring-expressive-fast-effects-duration, 150ms) var(--md-sys-motion-spring-expressive-fast-effects-curve, cubic-bezier(0.31, 0.94, 0.34, 1)),
+    box-shadow var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    border-radius var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, cubic-bezier(0.42, 1.67, 0.21, 0.9)),
+    padding-inline var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, cubic-bezier(0.42, 1.67, 0.21, 0.9)),
+    width var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, cubic-bezier(0.42, 1.67, 0.21, 0.9)),
+    transform var(--md-sys-motion-spring-expressive-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-expressive-fast-spatial-curve, cubic-bezier(0.42, 1.67, 0.21, 0.9));
+}
+
+.m3-btn-group .m3-btn.m3-btn-xs { --_m3-item-px: 12px; }
+.m3-btn-group .m3-btn.m3-btn-sm { --_m3-item-px: 14px; }
+.m3-btn-group .m3-btn.m3-btn-md { --_m3-item-px: 20px; }
+.m3-btn-group .m3-btn.m3-btn-lg { --_m3-item-px: 24px; }
+.m3-btn-group .m3-btn.m3-btn-xl { --_m3-item-px: 28px; }
+
+.m3-btn-group .m3-btn.m3-btn-icon-xs { --_m3-icon-w: 28px; }
+.m3-btn-group .m3-btn.m3-btn-icon-sm { --_m3-icon-w: 32px; }
+.m3-btn-group .m3-btn.m3-btn-icon-md { --_m3-icon-w: 40px; }
+.m3-btn-group .m3-btn.m3-btn-icon-lg { --_m3-icon-w: 48px; }
+.m3-btn-group .m3-btn.m3-btn-icon-xl { --_m3-icon-w: 56px; }
+
+/* Asymmetric Expressive width modifiers (Narrow vs Wide icon pills in Button Groups) */
+.m3-btn-group .m3-btn.m3-group-width-narrow:not(.m3-group-item-icon-only) { --_m3-item-px: 10px; }
+.m3-btn-group .m3-btn.m3-group-width-wide:not(.m3-group-item-icon-only)   { --_m3-item-px: 28px; }
+
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-xs.m3-group-width-narrow { --_m3-icon-w: 24px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-sm.m3-group-width-narrow { --_m3-icon-w: 28px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-md.m3-group-width-narrow { --_m3-icon-w: 32px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-lg.m3-group-width-narrow { --_m3-icon-w: 40px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-xl.m3-group-width-narrow { --_m3-icon-w: 48px; }
+
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-xs.m3-group-width-wide { --_m3-icon-w: 38px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-sm.m3-group-width-wide { --_m3-icon-w: 44px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-md.m3-group-width-wide { --_m3-icon-w: 56px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-lg.m3-group-width-wide { --_m3-icon-w: 68px; }
+.m3-btn-group .m3-btn.m3-group-item-icon-only.m3-btn-icon-xl.m3-group-width-wide { --_m3-icon-w: 76px; }
+
+.m3-btn-group .m3-btn:not(.m3-group-item-icon-only):not(.m3-split-btn-trailing) {
+  padding-inline: max(8px, calc(var(--_m3-item-px) + var(--_m3-expand)));
+}
+
+.m3-btn-group .m3-btn.m3-group-item-icon-only {
+  width: max(24px, calc(var(--_m3-icon-w) + (var(--_m3-expand) * 2)));
+  padding-inline: 0;
+}
+
+/* M3 Expressive Press Expansion & Immediate Neighbor Compression */
+.m3-btn-group > .m3-btn:active:not(:disabled),
+.m3-btn-group-actions .m3-btn:active:not(:disabled) {
+  --_m3-expand: 6px;
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+  transform: scaleY(0.97);
+}
+
+.m3-btn-group > .m3-btn:has(+ .m3-btn:active:not(:disabled)),
+.m3-btn-group > .m3-btn:active:not(:disabled) + .m3-btn,
+.m3-btn-group-actions > m3-split-button:has(.m3-btn:active:not(:disabled)) + m3-button .m3-btn,
+.m3-btn-group-actions > m3-split-button:has(+ m3-button .m3-btn:active:not(:disabled)) .m3-split-btn-leading,
+.m3-btn-group-actions > m3-button:has(+ m3-button .m3-btn:active:not(:disabled)) .m3-btn,
+.m3-btn-group-actions > m3-button:has(.m3-btn:active:not(:disabled)) + m3-button .m3-btn {
+  --_m3-expand: -3px;
+}
+
+.m3-btn-toggle.m3-group-item-icon-only.is-selected.m3-btn-icon-lg,
+.m3-btn-toggle.m3-group-item-icon-only.is-selected.m3-btn-icon-xl {
+  border-radius: var(--md-sys-shape-corner-large, 16px);
+}
+
+@media (hover: hover) {
+  .m3-btn-group > .m3-btn:hover:not(:disabled):not(:active),
+  .m3-btn-group-actions .m3-btn:hover:not(:disabled):not(:active) {
+    --_m3-expand: 2px;
+  }
+
+  .m3-btn-group > .m3-btn:has(+ .m3-btn:hover:not(:disabled):not(:active)),
+  .m3-btn-group > .m3-btn:hover:not(:disabled):not(:active) + .m3-btn {
+    --_m3-expand: -1px;
+  }
+}
+
 .m3-btn-group-connected .m3-group-item {
   border-radius: var(--md-sys-shape-corner-small, 8px);
-  padding-inline: 16px;
 }
 
 .m3-btn-group-connected .m3-group-item:first-child {
@@ -302,18 +387,64 @@
   border-end-end-radius: var(--md-comp-button-shape-pill, 24px);
 }
 
-/* Connected selected item morphs to a full pill to spotlight active choice by shape & color */
+/* Connected selected item morphs to a full solid pill with high-emphasis role contrast (M3E spec) */
 .m3-btn-group-connected .m3-group-item.is-selected {
   border-radius: var(--md-comp-button-shape-pill, 24px);
-  background-color: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
+  background-color: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary);
   border-color: transparent;
 }
 
 .m3-btn-group-connected .m3-group-item:not(.is-selected) {
-  background-color: var(--md-sys-color-surface-container-low);
-  color: var(--md-sys-color-on-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid transparent;
+}
+
+.m3-btn-group-connected .m3-group-item:not(.is-selected):hover:not(:disabled) {
+  border-radius: var(--md-sys-shape-corner-medium, 12px);
+}
+
+@media (forced-colors: active) {
+  .m3-btn-group-connected .m3-group-item:not(.is-selected) {
+    border-color: ButtonText;
+  }
+  .m3-btn-group-connected .m3-group-item.is-selected {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}
+
+.m3-btn-group-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--md-sys-shape-corner-full, 9999px);
+  background-color: color-mix(in oklch, currentColor 14%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.m3-btn-group-actions .m3-btn:hover:not(:disabled) .m3-btn-icon-trailing {
+  transform: translateX(3px);
+}
+
+.m3-btn-icon-trailing {
+  transition: transform var(--md-sys-motion-spring-fast-spatial-duration, 350ms) var(--md-sys-motion-spring-fast-spatial);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-btn-group .m3-btn,
+  .m3-btn-icon-trailing {
+    --_m3-expand: 0px !important;
+    transition: background-color 150ms linear, color 150ms linear;
+    transform: none !important;
+  }
 }
 
 /* --- SPLIT BUTTON (Primary Action + Connected Menu Popover Trigger) --- */

@@ -1,15 +1,26 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FocusTimerStatus } from '../../agenda/agenda-focus.service';
+import {
+  M3ButtonGroupComponent,
+  M3SplitButtonComponent,
+  M3SplitMenuItem
+} from '../../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3LinearProgressComponent } from '../../../shared/components/progress';
-import { OverviewHeroMetric } from '../overview.models';
+import { OverviewHeroMetric, OverviewHeroPresetId } from '../overview.models';
 
 @Component({
   selector: 'app-overview-hero-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [M3ButtonComponent, M3CardComponent, M3LinearProgressComponent],
+  imports: [
+    M3ButtonComponent,
+    M3ButtonGroupComponent,
+    M3SplitButtonComponent,
+    M3CardComponent,
+    M3LinearProgressComponent
+  ],
   host: {
     class: 'block min-w-0 lg:col-span-7'
   },
@@ -17,13 +28,14 @@ import { OverviewHeroMetric } from '../overview.models';
     <section aria-labelledby="overview-hero-heading" class="h-full">
       <m3-card
         variant="filled"
+        surface="box"
         [interactive]="false"
         shape="xl"
         padding="lg"
         [invisible]="isHeroHidden()"
         [attr.aria-hidden]="isHeroHidden() ? 'true' : null"
         [viewTransitionName]="heroViewTransitionName()"
-        customClass="!bg-surface-box hero-mesh-m3 m3-aurora-glow h-full min-w-0 flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]">
+        customClass="hero-mesh-m3 m3-aurora-glow h-full min-w-0 flex flex-col justify-between gap-4 border border-transparent forced-colors:border-[CanvasText]">
 
       <div class="m3-aurora-layer" aria-hidden="true">
         <span class="m3-aurora-orb m3-aurora-orb-1"></span>
@@ -114,25 +126,31 @@ import { OverviewHeroMetric } from '../overview.models';
       }
 
       <div class="relative z-10 pt-1 flex flex-wrap items-center justify-between gap-3">
-        <m3-button
-          id="trigger-overview-quick-task"
-          variant="filled"
-          size="md"
-          icon="add"
-          [invisible]="isQuickTaskOriginHidden()"
-          [viewTransitionName]="quickTaskViewTransitionName()"
-          (action)="openQuickTask.emit()">
-          Nueva tarea
-        </m3-button>
+        <m3-button-group
+          variant="standard"
+          ariaLabel="Acciones ejecutivas del sistema">
+          <m3-split-button
+            id="trigger-overview-quick-task"
+            label="Nueva tarea"
+            icon="add"
+            variant="filled"
+            size="md"
+            menuAriaLabel="Plantillas rápidas de tarea"
+            [invisible]="isQuickTaskOriginHidden()"
+            [viewTransitionName]="quickTaskViewTransitionName()"
+            [menuItems]="presetMenuItems"
+            (primaryAction)="openQuickTask.emit()"
+            (itemAction)="onPresetAction($event)" />
 
-        <m3-button
-          id="trigger-overview-hero-detail"
-          variant="tonal"
-          size="md"
-          icon="open_in_full"
-          (action)="openDetail.emit()">
-          Ver desglose
-        </m3-button>
+          <m3-button
+            id="trigger-overview-hero-detail"
+            variant="tonal"
+            size="md"
+            icon="open_in_full"
+            (action)="openDetail.emit()">
+            Ver desglose
+          </m3-button>
+        </m3-button-group>
       </div>
       </m3-card>
     </section>
@@ -156,5 +174,17 @@ export class OverviewHeroCardComponent {
   readonly quickTaskViewTransitionName = input<string | null>(null);
 
   readonly openQuickTask = output<void>();
+  readonly quickPreset = output<OverviewHeroPresetId>();
   readonly openDetail = output<void>();
+
+  readonly presetMenuItems: M3SplitMenuItem[] = [
+    { id: 'deep-work', label: 'Bloque Deep Work (Hoy)', icon: 'bolt' },
+    { id: 'triage', label: 'Revisión Triaje & Clínica', icon: 'local_hospital' },
+    { id: 'stock', label: 'Auditoría Inventario & POS', icon: 'inventory_2' },
+    { id: 'fleet', label: 'Seguimiento Flota & KDS', icon: 'local_shipping' }
+  ];
+
+  onPresetAction(id: string): void {
+    this.quickPreset.emit(id as OverviewHeroPresetId);
+  }
 }

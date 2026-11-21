@@ -26,23 +26,24 @@ describe('OverviewComponent', () => {
 
     const el = fixture.nativeElement as HTMLElement;
 
-    // 1. Aurora Hero & Live Agenda built cleanly on m3-card tokens
+    // 1. Aurora Hero & Live Agenda built cleanly on m3-card tokens (zero !bg-* / .btn-m3 hacks)
     const heroCard = el.querySelector('app-overview-hero-card m3-card') as HTMLElement;
     expect(heroCard).toBeTruthy();
     expect(heroCard.classList.contains('hero-mesh-m3')).toBe(true);
-    expect(heroCard.classList.contains('!bg-surface-box')).toBe(true);
+    expect(heroCard.classList.contains('m3-card-surface-box')).toBe(true);
     expect(heroCard.querySelectorAll('.m3-aurora-orb').length).toBe(3);
     expect(heroCard.querySelector('m3-linear-progress')).toBeTruthy();
 
     const agendaCard = el.querySelector('app-overview-live-agenda m3-card') as HTMLElement;
     expect(agendaCard).toBeTruthy();
     expect(agendaCard.classList.contains('m3-card-filled')).toBe(true);
-    expect(agendaCard.classList.contains('!bg-surface-low')).toBe(true);
+    expect(agendaCard.classList.contains('m3-card-surface-low')).toBe(true);
 
     expect(el.querySelectorAll('app-overview-modules-grid m3-card m3-linear-progress .m3-linear-progress-md').length).toBe(6);
     expect(el.querySelectorAll('.overview-module-card').length).toBe(6);
     expect(el.querySelectorAll('.overview-hero-kpi-tile').length).toBe(3);
     expect(el.querySelectorAll('.overview-agenda-row').length).toBe(4);
+    expect(el.querySelector('.btn-m3')).toBeNull();
 
     // 2. Zero WCAG nested interactive elements
     expect(el.querySelector('[role="button"] button')).toBeNull();
@@ -50,27 +51,34 @@ describe('OverviewComponent', () => {
     expect(el.querySelector('a button')).toBeNull();
     expect(el.querySelector('a [role="button"]')).toBeNull();
 
-    // 3. At most 1 primary filled CTA visible outside <dialog>
-    const visibleFilledButtons = Array.from(el.querySelectorAll('.m3-btn-filled')).filter(
-      btn => !btn.closest('dialog')
+    // 3. Single primary filled <m3-split-button> CTA visible inside Hero standard button group
+    expect(el.querySelector('app-overview-hero-card m3-button-group m3-split-button')).toBeTruthy();
+    const standaloneFilledButtons = Array.from(el.querySelectorAll('.m3-btn-filled')).filter(
+      btn => !btn.closest('dialog') && !btn.closest('m3-split-button')
     );
-    expect(visibleFilledButtons.length).toBe(1);
-    expect(visibleFilledButtons[0].textContent).toContain('Nueva tarea');
+    expect(standaloneFilledButtons.length).toBe(0);
+    const splitLeading = el.querySelector('#trigger-overview-quick-task .m3-split-btn-leading') as HTMLButtonElement;
+    expect(splitLeading.textContent).toContain('Nueva tarea');
 
-    // 4. Touch target 48dp on editorial links
-    const agendaLink = el.querySelector('a[href="/agenda"]');
-    const dsLink = el.querySelector('a[href="/design-system/styles"]');
+    // 4. Touch target 48dp on semantic <a m3-button> editorial links
+    const agendaLink = el.querySelector('a[m3-button][href="/agenda"]');
+    const dsLink = el.querySelector('a[m3-button][href="/design-system/styles"]');
     expect(agendaLink?.classList.contains('touch-target-48')).toBe(true);
     expect(dsLink?.classList.contains('touch-target-48')).toBe(true);
   });
 
-  it('renders 6 outlined m3-cards for modules and filters them cleanly via M3 filter chips', () => {
+  it('renders 6 subgrid tonal filled m3-cards (matching Agenda en vivo) with stretched links, matches alert sum, and filters via M3 filter chips', () => {
     const fixture = TestBed.createComponent(OverviewComponent);
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
-    const outlinedCards = el.querySelectorAll('app-overview-modules-grid m3-card.m3-card-outlined');
-    expect(outlinedCards.length).toBe(6);
+    const filledCards = el.querySelectorAll('app-overview-modules-grid article.overview-module-slot m3-card.m3-card-filled.m3-card-surface-low');
+    expect(filledCards.length).toBe(6);
+    expect(el.querySelectorAll('app-overview-modules-grid m3-card.m3-card-outlined').length).toBe(0);
+    expect(el.querySelectorAll('app-overview-modules-grid m3-card a.overview-module-stretched-link').length).toBe(6);
+
+    const sumAlerts = fixture.componentInstance.modulePulseCards().reduce((acc, card) => acc + card.alertCount, 0);
+    expect(fixture.componentInstance.totalActiveAlerts()).toBe(sumAlerts);
 
     const chips = Array.from(
       el.querySelectorAll('app-overview-modules-grid m3-chip button')
@@ -91,15 +99,15 @@ describe('OverviewComponent', () => {
 
     alertsChip!.click();
     fixture.detectChanges();
-    expect(el.querySelectorAll('app-overview-modules-grid a m3-card').length).toBe(expectedAlerts);
+    expect(el.querySelectorAll('app-overview-modules-grid m3-card.m3-card-filled').length).toBe(expectedAlerts);
 
     stableChip!.click();
     fixture.detectChanges();
-    expect(el.querySelectorAll('app-overview-modules-grid a m3-card').length).toBe(expectedStable);
+    expect(el.querySelectorAll('app-overview-modules-grid m3-card.m3-card-filled').length).toBe(expectedStable);
 
     allChip!.click();
     fixture.detectChanges();
-    expect(el.querySelectorAll('app-overview-modules-grid a m3-card').length).toBe(6);
+    expect(el.querySelectorAll('app-overview-modules-grid m3-card.m3-card-filled').length).toBe(6);
   });
 
   it('toggles live agenda tasks via real <m3-checkbox> inputs and reflects active Pomodoro state', () => {
@@ -160,7 +168,7 @@ describe('OverviewComponent', () => {
         finished: Promise.resolve(),
         ready: Promise.resolve(),
         updateCallbackDone: Promise.resolve(),
-        skipTransition: () => {},
+        skipTransition: () => { },
         types: new Set<string>()
       } as unknown as ViewTransition;
     });
@@ -200,8 +208,9 @@ describe('OverviewComponent', () => {
       expect(stageOverlay.isOverlayOpen()).toBe(false);
       expect(heroCardEl.classList.contains('invisible')).toBe(false);
 
-      // 2. Nueva tarea Button -> Quick Task <m3-dialog> (dialog-transform)
-      const newTaskBtn = el.querySelector('#trigger-overview-quick-task button') as HTMLButtonElement;
+      // 2. Nueva tarea Split Button -> Quick Task <m3-dialog> (dialog-transform)
+      const newTaskBtn = el.querySelector('#trigger-overview-quick-task .m3-split-btn-leading') as HTMLButtonElement;
+      const newTaskWrapper = el.querySelector('#trigger-overview-quick-task .m3-split-btn') as HTMLElement;
       newTaskBtn.click();
       await Promise.resolve();
       fixture.detectChanges();
@@ -210,7 +219,7 @@ describe('OverviewComponent', () => {
       expect(snapshots[2].dlgBefore).toBe(1);
       expect(snapshots[2].dlgAfter).toBe(1);
       expect(fixture.componentInstance.quickTaskOpen()).toBe(true);
-      expect(newTaskBtn.classList.contains('invisible')).toBe(true);
+      expect(newTaskWrapper.classList.contains('invisible')).toBe(true);
 
       // Submit valid quick task
       const initialCount = taskService.tasks().length;
@@ -229,9 +238,33 @@ describe('OverviewComponent', () => {
       expect(taskService.tasks().length).toBe(initialCount + 1);
       expect(taskService.tasks()[0].title).toBe('Auditar contraste OKLCH en Overview');
       expect(fixture.componentInstance.quickTaskOpen()).toBe(false);
-      expect(newTaskBtn.classList.contains('invisible')).toBe(false);
+      expect(newTaskWrapper.classList.contains('invisible')).toBe(false);
     } finally {
       doc.startViewTransition = originalStartVt;
     }
+  });
+
+  it('creates a preset task directly from Hero <m3-split-button> popover menu', () => {
+    const fixture = TestBed.createComponent(OverviewComponent);
+    const taskService = TestBed.inject(TaskService);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const initialCount = taskService.tasks().length;
+
+    const trigger = el.querySelector('#trigger-overview-quick-task .m3-split-btn-trailing') as HTMLButtonElement;
+    trigger.click();
+    fixture.detectChanges();
+
+    const deepWorkItem = Array.from(el.querySelectorAll('#trigger-overview-quick-task [role="menuitem"]')).find(
+      item => item.textContent?.includes('Bloque Deep Work')
+    ) as HTMLButtonElement;
+    expect(deepWorkItem).toBeTruthy();
+    deepWorkItem.click();
+    fixture.detectChanges();
+
+    expect(taskService.tasks().length).toBe(initialCount + 1);
+    expect(taskService.tasks()[0].title).toContain('Deep Work');
+    expect(fixture.componentInstance.quickTaskOpen()).toBe(false);
   });
 });

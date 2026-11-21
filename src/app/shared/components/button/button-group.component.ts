@@ -10,12 +10,17 @@ import {
   signal,
   viewChild
 } from '@angular/core';
-import { M3ButtonSize } from './button.component';
+import { M3ButtonSize, M3_BUTTON_ICON_SIZE_CLASSES } from './button.component';
+
+export type M3ButtonGroupItemWidth = 'narrow' | 'default' | 'wide';
 
 export interface M3ButtonGroupOption {
   id: string;
   label: string;
   icon?: string;
+  badge?: number | string | null;
+  iconOnly?: boolean;
+  width?: M3ButtonGroupItemWidth;
   disabled?: boolean;
 }
 
@@ -39,20 +44,36 @@ let nextOverlaySeq = 0;
       role="group"
       [attr.aria-label]="ariaLabel()"
       [class]="groupClasses()">
-      @for (option of options(); track option.id) {
-        <button
-          type="button"
-          [disabled]="option.disabled || disabled()"
-          [attr.aria-pressed]="isSelected(option.id)"
-          [class]="itemClasses(option.id)"
-          (click)="onSelect(option)">
-          @if (isSelected(option.id)) {
-            <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">check</span>
-          } @else if (option.icon) {
-            <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">{{ option.icon }}</span>
-          }
-          <span class="truncate">{{ option.label }}</span>
-        </button>
+      @if (options().length > 0) {
+        @for (option of options(); track option.id) {
+          <button
+            type="button"
+            [disabled]="option.disabled || disabled()"
+            [attr.aria-pressed]="isSelected(option.id)"
+            [attr.aria-label]="option.iconOnly ? option.label : null"
+            [class]="itemClasses(option)"
+            (click)="onSelect(option)">
+            @if (option.iconOnly) {
+              @if (option.icon) {
+                <span [class]="'material-symbols-rounded shrink-0 ' + iconSizeClass()" aria-hidden="true">{{ option.icon }}</span>
+              } @else {
+                <span class="truncate">{{ option.label }}</span>
+              }
+            } @else {
+              @if (isSelected(option.id)) {
+                <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">check</span>
+              } @else if (option.icon) {
+                <span class="material-symbols-rounded text-base shrink-0" aria-hidden="true">{{ option.icon }}</span>
+              }
+              <span class="truncate">{{ option.label }}</span>
+              @if (option.badge !== undefined && option.badge !== null) {
+                <span class="m3-btn-group-badge shrink-0">{{ option.badge }}</span>
+              }
+            }
+          </button>
+        }
+      } @else {
+        <ng-content />
       }
     </div>
   `
@@ -66,21 +87,33 @@ export class M3ButtonGroupComponent {
   readonly value = model<string[]>([]);
   readonly disabled = input<boolean>(false);
   readonly ariaLabel = input<string>('Button group');
+  readonly customClass = input<string>('');
 
   readonly selectionChange = output<string[]>();
 
-  readonly groupClasses = computed(() =>
-    this.variant() === 'standard'
-      ? 'm3-btn-group m3-btn-group-standard'
-      : 'm3-btn-group m3-btn-group-connected'
-  );
+  readonly isActionMode = computed(() => this.options().length === 0);
+  readonly iconSizeClass = computed(() => M3_BUTTON_ICON_SIZE_CLASSES[this.size()]);
+
+  readonly groupClasses = computed(() => {
+    const classes = [
+      'm3-btn-group',
+      this.variant() === 'standard' ? 'm3-btn-group-standard' : 'm3-btn-group-connected'
+    ];
+    if (this.isActionMode()) {
+      classes.push('m3-btn-group-actions');
+    }
+    if (this.customClass()) {
+      classes.push(this.customClass());
+    }
+    return classes.join(' ');
+  });
 
   isSelected(id: string): boolean {
     return this.value().includes(id);
   }
 
-  itemClasses(id: string): string {
-    const selected = this.isSelected(id);
+  itemClasses(option: M3ButtonGroupOption): string {
+    const selected = this.isSelected(option.id);
     const baseVariant =
       this.variant() === 'standard'
         ? selected
@@ -88,15 +121,27 @@ export class M3ButtonGroupComponent {
           : 'm3-btn-tonal'
         : 'm3-group-item';
 
+    const sizeClass = option.iconOnly
+      ? `m3-btn-icon-${this.size()}`
+      : `m3-btn-${this.size()}`;
+
     const classes = [
       'm3-btn',
       'm3-btn-toggle',
       'state-layer',
       'focus-ring-m3',
       'touch-target-48',
-      `m3-btn-${this.size()}`,
+      sizeClass,
       baseVariant
     ];
+
+    if (option.iconOnly) {
+      classes.push('m3-group-item-icon-only');
+    }
+
+    if (option.width === 'narrow' || option.width === 'wide') {
+      classes.push(`m3-group-width-${option.width}`);
+    }
 
     if (selected) {
       classes.push('is-selected');

@@ -118,4 +118,12 @@ describe('M3CardComponent', () => {
     expect(el.classList.contains('invisible')).toBe(true);
     expect(el.style.getPropertyValue('view-transition-name')).toBe('dialog-transform');
   });
+
+  it('should apply semantic surface tier class without !important overrides', () => {
+    fixture.componentRef.setInput('surface', 'low');
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.classList.contains('m3-card-surface-low')).toBe(true);
+  });
 });

@@ -47,6 +47,32 @@ dialog.m3-dialog.m3-dialog-xl {
   width: min(760px, calc(100vw - 2rem));
 }
 
+dialog.m3-dialog.m3-dialog-fullscreen {
+  width: calc(100vw - 2rem);
+  height: calc(100dvh - 2rem);
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+
+@media (min-width: 768px) {
+  dialog.m3-dialog.m3-dialog-fullscreen {
+    width: calc(100vw - 5rem);
+    height: calc(100dvh - 5rem);
+  }
+}
+
+dialog.m3-dialog.m3-aurora-glow {
+  position: fixed;
+  background-color: var(--md-sys-color-surface-container);
+}
+
+dialog.m3-dialog.m3-dialog-fullscreen > .m3-dialog-inner {
+  height: 100%;
+  max-height: none;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
 dialog.m3-dialog:modal {
   overscroll-behavior: contain;
 }

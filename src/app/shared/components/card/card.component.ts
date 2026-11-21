@@ -4,6 +4,7 @@ export type M3CardVariant = 'elevated' | 'filled' | 'outlined';
 export type M3CardPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 export type M3CardShape = 'md' | 'lg' | 'xl';
 export type M3CardTone = 'default' | 'primary' | 'secondary' | 'tertiary' | 'error';
+export type M3CardSurface = 'default' | 'surface' | 'low' | 'box' | 'high' | 'highest';
 
 @Component({
   selector: 'm3-card',
@@ -40,6 +41,9 @@ export class M3CardComponent {
   /** Semantic theme tone override via M3 component tokens (default adapts automatically to --seed-hue) */
   readonly tone = input<M3CardTone>('default');
 
+  /** Surface container tier override without utility !important hacks */
+  readonly surface = input<M3CardSurface>('default');
+
   /** Disables interaction on clickable cards using 12% / 38% M3 tokens */
   readonly disabled = input<boolean>(false);
 
@@ -70,6 +74,11 @@ export class M3CardComponent {
       classes.push('rounded-m3-lg');
     } else if (this.shape() === 'md') {
       classes.push('rounded-m3-md');
+    }
+
+    // Surface container hierarchy override
+    if (this.surface() !== 'default') {
+      classes.push(`m3-card-surface-${this.surface()}`);
     }
 
     // Semantic Tone Override (if non-default)

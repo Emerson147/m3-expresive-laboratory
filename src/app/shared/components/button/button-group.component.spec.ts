@@ -1,9 +1,23 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   M3ButtonGroupComponent,
   M3SplitButtonComponent
 } from './button-group.component';
+import { M3ButtonComponent } from './button.component';
 import { M3FabComponent } from './fab.component';
+
+@Component({
+  standalone: true,
+  imports: [M3ButtonGroupComponent, M3ButtonComponent],
+  template: `
+    <m3-button-group variant="standard" ariaLabel="Acciones proyectadas">
+      <m3-button variant="filled">Primario</m3-button>
+      <m3-button variant="tonal">Secundario</m3-button>
+    </m3-button-group>
+  `
+})
+class ProjectedButtonGroupHostComponent {}
 
 describe('M3 Expressive Button Extensions (ButtonGroup, SplitButton, FAB)', () => {
   describe('M3ButtonGroupComponent', () => {
@@ -48,6 +62,59 @@ describe('M3 Expressive Button Extensions (ButtonGroup, SplitButton, FAB)', () =
       buttons[2].click();
       fixture.detectChanges();
       expect(component.value()).toEqual(['day', 'month']);
+    });
+
+    it('renders optional numeric/text badge inside option buttons', () => {
+      fixture.componentRef.setInput('options', [
+        { id: 'all', label: 'Todas', badge: 6 },
+        { id: 'alerts', label: 'Alertas', badge: 2 }
+      ]);
+      fixture.detectChanges();
+
+      const badges = fixture.nativeElement.querySelectorAll('.m3-btn-group-badge') as NodeListOf<HTMLElement>;
+      expect(badges.length).toBe(2);
+      expect(badges[0].textContent?.trim()).toBe('6');
+      expect(badges[1].textContent?.trim()).toBe('2');
+    });
+
+    it('projects action buttons via ng-content when options array is empty', async () => {
+      await TestBed.resetTestingModule()
+        .configureTestingModule({
+          imports: [ProjectedButtonGroupHostComponent]
+        })
+        .compileComponents();
+
+      const hostFixture = TestBed.createComponent(ProjectedButtonGroupHostComponent);
+      hostFixture.detectChanges();
+
+      const group = hostFixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+      expect(group.classList.contains('m3-btn-group-standard')).toBe(true);
+      expect(group.classList.contains('m3-btn-group-actions')).toBe(true);
+      expect(group.querySelectorAll('button.m3-btn').length).toBe(2);
+    });
+
+    it('supports mixed iconOnly and narrow/wide expressive standard groups keeping icon when selected', () => {
+      fixture.componentRef.setInput('variant', 'standard');
+      fixture.componentRef.setInput('selectionMode', 'multi');
+      fixture.componentRef.setInput('options', [
+        { id: 'bt', label: 'Bluetooth', icon: 'bluetooth', iconOnly: true },
+        { id: 'alarm', label: 'Alarma', icon: 'alarm', iconOnly: true, width: 'wide' },
+        { id: 'focus', label: 'Focus', icon: 'do_not_disturb_on' },
+        { id: 'torch', label: 'Linterna', icon: 'flashlight_on', iconOnly: true, width: 'narrow' },
+        { id: 'wifi', label: 'Wi-Fi', icon: 'wifi', iconOnly: true }
+      ]);
+      fixture.componentRef.setInput('value', ['wifi']);
+      fixture.detectChanges();
+
+      const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+      expect(buttons.length).toBe(5);
+      expect(buttons[0].getAttribute('aria-label')).toBe('Bluetooth');
+      expect(buttons[0].classList.contains('m3-group-item-icon-only')).toBe(true);
+      expect(buttons[1].classList.contains('m3-group-width-wide')).toBe(true);
+      expect(buttons[2].getAttribute('aria-label')).toBeNull();
+      expect(buttons[3].classList.contains('m3-group-width-narrow')).toBe(true);
+      expect(buttons[4].classList.contains('is-selected')).toBe(true);
+      expect(buttons[4].querySelector('.material-symbols-rounded')?.textContent?.trim()).toBe('wifi');
     });
   });
 

@@ -9,6 +9,8 @@ export type OverviewHeroMorphOwner = 'card' | 'detail';
 
 export type OverviewQuickTaskMorphTarget = 'button' | 'dialog';
 
+export type OverviewHeroPresetId = 'deep-work' | 'triage' | 'stock' | 'fleet';
+
 export interface OverviewQuickTaskDraft {
   readonly title: string;
   readonly category: string;

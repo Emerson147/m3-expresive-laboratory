@@ -65,6 +65,33 @@
   transform: scale(0.992);
 }
 
+/* --- SURFACE CONTAINER OVERRIDES (Replaces !bg-surface-* utility hacks) --- */
+.m3-card-surface-surface {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface);
+}
+.m3-card-surface-low {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface-container-low);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface-container-low);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface-container-low);
+}
+.m3-card-surface-box {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface-container);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface-container);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface-container);
+}
+.m3-card-surface-high {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface-container-high);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface-container-high);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface-container-high);
+}
+.m3-card-surface-highest {
+  --md-comp-elevated-card-container-color: var(--md-sys-color-surface-container-highest);
+  --md-comp-filled-card-container-color: var(--md-sys-color-surface-container-highest);
+  --md-comp-outlined-card-container-color: var(--md-sys-color-surface-container-highest);
+}
+
 /* --- SEMANTIC TONE OVERRIDES (M3 Component Token Customization via Theme Roles) ---
    Default keeps neutral --seed-hue surface hierarchy; tones swap --md-comp-* tokens cleanly */
 .m3-card-tone-primary {

@@ -11,7 +11,7 @@ import {
 import { M3ButtonComponent } from '../button/button.component';
 
 export type M3DialogVariant = 'basic' | 'expressive';
-export type M3DialogSize = 'sm' | 'md' | 'lg' | 'xl';
+export type M3DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'fullscreen';
 export type M3DialogTone = 'primary' | 'secondary' | 'tertiary' | 'error';
 
 let nextDialogId = 0;
@@ -56,13 +56,21 @@ const TONE_ICON_CLASSES: Record<M3DialogTone, string> = {
       (close)="onNativeClose()"
       (pointerdown)="onPointerDown($event)"
       (pointerup)="onPointerUp($event)">
+      @if (aurora()) {
+        <div class="m3-aurora-layer" aria-hidden="true">
+          <span class="m3-aurora-orb m3-aurora-orb-1"></span>
+          <span class="m3-aurora-orb m3-aurora-orb-2"></span>
+          <span class="m3-aurora-orb m3-aurora-orb-3"></span>
+        </div>
+      }
+
       <div
-        [class]="isExpressive()
-          ? 'p-6 flex flex-col gap-4 max-h-[calc(100dvh-2rem)]'
-          : 'p-6 flex flex-col gap-4 max-h-[calc(100dvh-2rem)] relative'">
+        class="m3-dialog-inner relative z-10 p-6 flex flex-col gap-4 max-h-[calc(100dvh-2rem)]"
+        [class.md:p-8]="size() === 'fullscreen'"
+        [class.relative]="!isExpressive() && !aurora()">
         @if (isExpressive()) {
-          <!-- EXPRESSIVE HEADER (Icon Pill + Headline + Subtitle + Close Button) -->
-          <header class="flex items-start justify-between gap-3 pb-3.5 border-b border-outline-sub shrink-0">
+          <!-- EXPRESSIVE HEADER (Icon Pill + Headline + Subtitle + Extra Badges + Close Button) -->
+          <header class="flex flex-wrap items-start justify-between gap-3 pb-3.5 border-b border-outline-sub shrink-0">
             <div class="flex items-start gap-3 min-w-0">
               @if (icon()) {
                 <div
@@ -87,15 +95,18 @@ const TONE_ICON_CLASSES: Record<M3DialogTone, string> = {
               </div>
             </div>
 
-            @if (hasCloseButton()) {
-              <m3-button
-                [iconOnly]="true"
-                variant="text"
-                size="sm"
-                icon="close"
-                [ariaLabel]="closeLabel()"
-                (action)="dismiss('close')" />
-            }
+            <div class="flex items-center gap-2 shrink-0 ml-auto">
+              <ng-content select="[dialog-header-extra]" />
+              @if (hasCloseButton()) {
+                <m3-button
+                  [iconOnly]="true"
+                  variant="text"
+                  size="sm"
+                  icon="close"
+                  [ariaLabel]="closeLabel()"
+                  (action)="dismiss('close')" />
+              }
+            </div>
           </header>
 
           @if (subtitle() && ariaDescription()) {
@@ -175,6 +186,8 @@ export class M3DialogComponent {
   readonly closeLabel = input<string>('Cerrar diálogo');
   readonly viewTransitionName = input<string | null>(null);
   readonly managedClose = input<boolean>(false);
+  readonly aurora = input<boolean>(false);
+  readonly customClass = input<string>('');
 
   readonly closed = output<string>();
   readonly closeRequested = output<string>();
@@ -209,8 +222,14 @@ export class M3DialogComponent {
     if (this.variant() === 'expressive' || this.size() !== 'md') {
       classes.push(`m3-dialog-${this.size()}`);
     }
+    if (this.aurora()) {
+      classes.push('hero-mesh-m3', 'm3-aurora-glow');
+    }
     if (this.viewTransitionName()) {
       classes.push('is-vt-managed');
+    }
+    if (this.customClass()) {
+      classes.push(this.customClass());
     }
     return classes.join(' ');
   });

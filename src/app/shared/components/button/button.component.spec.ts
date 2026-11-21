@@ -1,5 +1,27 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { M3ButtonComponent } from './button.component';
+import { provideRouter } from '@angular/router';
+import { M3ButtonAnchorComponent, M3ButtonComponent } from './button.component';
+
+@Component({
+  standalone: true,
+  imports: [M3ButtonAnchorComponent],
+  template: `
+    <a
+      m3-button
+      variant="tonal"
+      size="sm"
+      icon="arrow_forward"
+      [iconTrailing]="true"
+      [disabled]="disabled()"
+      href="/agenda">
+      Ver Agenda
+    </a>
+  `
+})
+class ButtonAnchorHostComponent {
+  readonly disabled = signal(false);
+}
 
 describe('M3ButtonComponent', () => {
   let component: M3ButtonComponent;
@@ -107,5 +129,34 @@ describe('M3ButtonComponent', () => {
     fixture.componentRef.setInput('size', 'xl');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('button').classList.contains('m3-btn-xl')).toBe(true);
+  });
+
+  it('supports semantic <a m3-button> anchor styling, trailing icon, and disabled link prevention', async () => {
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [ButtonAnchorHostComponent],
+        providers: [provideRouter([])]
+      })
+      .compileComponents();
+
+    const hostFixture = TestBed.createComponent(ButtonAnchorHostComponent);
+    hostFixture.detectChanges();
+
+    const anchor = hostFixture.nativeElement.querySelector('a[m3-button]') as HTMLAnchorElement;
+    expect(anchor).toBeTruthy();
+    expect(anchor.classList.contains('m3-btn')).toBe(true);
+    expect(anchor.classList.contains('m3-btn-tonal')).toBe(true);
+    expect(anchor.classList.contains('m3-btn-sm')).toBe(true);
+    expect(anchor.classList.contains('has-icon-trailing')).toBe(true);
+    expect(anchor.classList.contains('touch-target-48')).toBe(true);
+    expect(anchor.querySelector('.m3-btn-icon-trailing')?.textContent?.trim()).toBe('arrow_forward');
+
+    hostFixture.componentInstance.disabled.set(true);
+    hostFixture.detectChanges();
+    expect(anchor.getAttribute('aria-disabled')).toBe('true');
+
+    const ev = new MouseEvent('click', { cancelable: true });
+    anchor.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(true);
   });
 });

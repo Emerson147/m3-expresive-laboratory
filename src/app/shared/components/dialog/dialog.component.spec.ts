@@ -11,6 +11,7 @@ import { M3DialogComponent, M3DialogVariant } from './dialog.component';
       headline="Host test"
       subtitle="Subtítulo"
       icon="info">
+      <span dialog-header-extra class="projected-header-extra">Estado</span>
       <p class="projected-body">Contenido real proyectado</p>
       <button dialog-actions-start type="button">Eliminar</button>
       <button dialog-actions type="button">Confirmar</button>
@@ -117,6 +118,7 @@ describe('M3DialogComponent', () => {
     expect(hostEl.querySelector('.m3-dialog-footer [dialog-actions]')?.textContent?.trim()).toBe(
       'Confirmar'
     );
+    expect(hostEl.querySelector('header .projected-header-extra')?.textContent?.trim()).toBe('Estado');
 
     hostFixture.componentInstance.variant.set('basic');
     hostFixture.detectChanges();
@@ -126,6 +128,19 @@ describe('M3DialogComponent', () => {
     expect(hostEl.querySelector('.m3-dialog-footer [dialog-actions]')?.textContent?.trim()).toBe(
       'Confirmar'
     );
+  });
+
+  it('supports fullscreen size with GPU aurora orbs when aurora is enabled', () => {
+    fixture.componentRef.setInput('variant', 'expressive');
+    fixture.componentRef.setInput('size', 'fullscreen');
+    fixture.componentRef.setInput('aurora', true);
+    fixture.detectChanges();
+
+    const dialog = fixture.nativeElement.querySelector('dialog.m3-dialog') as HTMLDialogElement;
+    expect(dialog.classList.contains('m3-dialog-fullscreen')).toBe(true);
+    expect(dialog.classList.contains('hero-mesh-m3')).toBe(true);
+    expect(dialog.classList.contains('m3-aurora-glow')).toBe(true);
+    expect(dialog.querySelectorAll('.m3-aurora-orb').length).toBe(3);
   });
 
   it('defers close to closeRequested when managedClose is enabled so View Transitions can snapshot before closing', () => {

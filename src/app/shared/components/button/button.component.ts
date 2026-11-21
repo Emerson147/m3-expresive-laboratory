@@ -4,6 +4,65 @@ import { M3CircularProgressComponent } from '../progress/circular-progress.compo
 export type M3ButtonVariant = 'filled' | 'tonal' | 'elevated' | 'outlined' | 'text';
 export type M3ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
+export const M3_BUTTON_ICON_SIZE_CLASSES: Record<M3ButtonSize, string> = {
+  xs: 'text-sm',
+  sm: 'text-base',
+  md: 'text-lg',
+  lg: 'text-xl',
+  xl: 'text-2xl'
+};
+
+export interface M3ButtonClassConfig {
+  variant: M3ButtonVariant;
+  size: M3ButtonSize;
+  iconOnly: boolean;
+  icon: string | null;
+  iconTrailing: boolean;
+  morph: boolean;
+  toggle?: boolean;
+  selected?: boolean;
+  customClass: string;
+}
+
+export function buildM3ButtonClasses(config: M3ButtonClassConfig): string {
+  const classes = [
+    'm3-btn',
+    'state-layer',
+    'focus-ring-m3',
+    'touch-target-48',
+    `m3-btn-${config.variant}`
+  ];
+
+  if (config.iconOnly) {
+    classes.push(`m3-btn-icon-${config.size}`);
+  } else {
+    classes.push(`m3-btn-${config.size}`);
+    if (config.icon && !config.iconTrailing) {
+      classes.push('has-icon-leading');
+    }
+    if (config.icon && config.iconTrailing) {
+      classes.push('has-icon-trailing');
+    }
+  }
+
+  if (config.morph) {
+    classes.push('m3-btn-morph');
+  }
+
+  if (config.toggle) {
+    classes.push('m3-btn-toggle');
+    if (config.selected) {
+      classes.push('is-selected');
+    }
+  }
+
+  if (config.customClass) {
+    classes.push(config.customClass);
+  }
+
+  return classes.join(' ');
+}
+
 @Component({
   selector: 'm3-button',
   standalone: true,
@@ -34,13 +93,7 @@ export type M3ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
           [diameter]="loadingDiameter()"
           ariaLabel="Procesando..." />
       } @else if (icon() && !iconTrailing()) {
-        <span 
-          class="material-symbols-rounded shrink-0"
-          [class.text-sm]="size() === 'xs'"
-          [class.text-base]="size() === 'sm'"
-          [class.text-lg]="size() === 'md'"
-          [class.text-xl]="size() === 'lg'"
-          [class.text-2xl]="size() === 'xl'">
+        <span [class]="'material-symbols-rounded m3-btn-icon shrink-0 ' + iconSizeClass()" aria-hidden="true">
           {{ icon() }}
         </span>
       }
@@ -54,13 +107,7 @@ export type M3ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
       <!-- Trailing Icon -->
       @if (!loading() && icon() && iconTrailing()) {
-        <span 
-          class="material-symbols-rounded shrink-0"
-          [class.text-sm]="size() === 'xs'"
-          [class.text-base]="size() === 'sm'"
-          [class.text-lg]="size() === 'md'"
-          [class.text-xl]="size() === 'lg'"
-          [class.text-2xl]="size() === 'xl'">
+        <span [class]="'material-symbols-rounded m3-btn-icon m3-btn-icon-trailing shrink-0 ' + iconSizeClass()" aria-hidden="true">
           {{ icon() }}
         </span>
       }
@@ -113,6 +160,8 @@ export class M3ButtonComponent {
   /** Custom class string */
   readonly customClass = input<string>('');
 
+  readonly iconSizeClass = computed(() => M3_BUTTON_ICON_SIZE_CLASSES[this.size()]);
+
   readonly loadingDiameter = computed(() => {
     switch (this.size()) {
       case 'xs':
@@ -131,50 +180,19 @@ export class M3ButtonComponent {
   /** Emitted when the button is clicked and not disabled */
   readonly action = output<MouseEvent>();
 
-  readonly computedClasses = computed(() => {
-    const classes = [
-      'm3-btn',
-      'state-layer',
-      'focus-ring-m3',
-      'touch-target-48'
-    ];
-
-    // Variant
-    classes.push(`m3-btn-${this.variant()}`);
-
-    // Size vs Icon-Only Size
-    if (this.iconOnly()) {
-      classes.push(`m3-btn-icon-${this.size()}`);
-    } else {
-      classes.push(`m3-btn-${this.size()}`);
-      if (this.icon() && !this.iconTrailing()) {
-        classes.push('has-icon-leading');
-      }
-      if (this.icon() && this.iconTrailing()) {
-        classes.push('has-icon-trailing');
-      }
-    }
-
-    // Expressive Shape Morphing
-    if (this.morph()) {
-      classes.push('m3-btn-morph');
-    }
-
-    // M3 Expressive Toggle Mode
-    if (this.toggle()) {
-      classes.push('m3-btn-toggle');
-      if (this.selected()) {
-        classes.push('is-selected');
-      }
-    }
-
-    // Custom utility overrides
-    if (this.customClass()) {
-      classes.push(this.customClass());
-    }
-
-    return classes.join(' ');
-  });
+  readonly computedClasses = computed(() =>
+    buildM3ButtonClasses({
+      variant: this.variant(),
+      size: this.size(),
+      iconOnly: this.iconOnly(),
+      icon: this.icon(),
+      iconTrailing: this.iconTrailing(),
+      morph: this.morph(),
+      toggle: this.toggle(),
+      selected: this.selected(),
+      customClass: this.customClass()
+    })
+  );
 
   onClick(event: MouseEvent): void {
     if (this.disabled() || this.loading()) {
@@ -186,5 +204,77 @@ export class M3ButtonComponent {
       this.selected.update((v) => !v);
     }
     this.action.emit(event);
+  }
+}
+
+/**
+ * Semantic Material 3 Expressive anchor button (`<a m3-button routerLink="...">`)
+ * preserving native link navigation semantics alongside canonical M3 tokens,
+ * 48dp touch targets, and spring corner morphing.
+ */
+@Component({
+  selector: 'a[m3-button]',
+  standalone: true,
+  host: {
+    '[class]': 'computedClasses()',
+    '[class.invisible]': 'invisible()',
+    '[style.view-transition-name]': 'viewTransitionName()',
+    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-disabled]': "disabled() ? 'true' : null",
+    '[attr.tabindex]': 'disabled() ? -1 : null',
+    '(click)': 'onClick($event)'
+  },
+  template: `
+    @if (icon() && !iconTrailing()) {
+      <span [class]="'material-symbols-rounded m3-btn-icon shrink-0 ' + iconSizeClass()" aria-hidden="true">
+        {{ icon() }}
+      </span>
+    }
+
+    @if (!iconOnly()) {
+      <span class="inline-flex items-center truncate">
+        <ng-content></ng-content>
+      </span>
+    }
+
+    @if (icon() && iconTrailing()) {
+      <span [class]="'material-symbols-rounded m3-btn-icon m3-btn-icon-trailing shrink-0 ' + iconSizeClass()" aria-hidden="true">
+        {{ icon() }}
+      </span>
+    }
+  `
+})
+export class M3ButtonAnchorComponent {
+  readonly variant = input<M3ButtonVariant>('tonal');
+  readonly size = input<M3ButtonSize>('md');
+  readonly icon = input<string | null>(null);
+  readonly iconTrailing = input<boolean>(false);
+  readonly iconOnly = input<boolean>(false);
+  readonly morph = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
+  readonly ariaLabel = input<string | null>(null);
+  readonly invisible = input<boolean>(false);
+  readonly viewTransitionName = input<string | null>(null);
+  readonly customClass = input<string>('');
+
+  readonly iconSizeClass = computed(() => M3_BUTTON_ICON_SIZE_CLASSES[this.size()]);
+
+  readonly computedClasses = computed(() =>
+    buildM3ButtonClasses({
+      variant: this.variant(),
+      size: this.size(),
+      iconOnly: this.iconOnly(),
+      icon: this.icon(),
+      iconTrailing: this.iconTrailing(),
+      morph: this.morph(),
+      customClass: this.customClass()
+    })
+  );
+
+  onClick(event: MouseEvent): void {
+    if (this.disabled()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   }
 }
