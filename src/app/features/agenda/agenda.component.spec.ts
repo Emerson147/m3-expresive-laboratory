@@ -50,8 +50,10 @@ describe('AgendaComponent', () => {
       expect(el.querySelector(selector)?.classList.contains('block')).toBe(true);
     }
 
-    // Guard against invalid nested interactive buttons inside cards
+    // Guard against invalid nested interactive buttons inside cards and legacy !bg-* utility overrides
     expect(el.querySelectorAll('button button').length).toBe(0);
+    expect(el.querySelector('[class*="!bg-"]')).toBeNull();
+    expect(el.querySelector('app-agenda-focus-dock button.agenda-focus-dial-btn')).toBeTruthy();
   });
 
   it('supports onlyToday switch, split-button preset creation, secondary inspector tabs, and m3-dialog batch cleanup', async () => {
@@ -175,6 +177,11 @@ describe('AgendaComponent', () => {
     fixture.detectChanges();
 
     expect(taskService.selectedTask()?.subtasks.some(s => s.title === 'Verificar roving tabindex')).toBe(true);
+    const subtaskLabel = Array.from(el.querySelectorAll('app-agenda-inspector-pane label')).find(lbl =>
+      lbl.textContent?.includes('Verificar roving tabindex')
+    ) as HTMLLabelElement | undefined;
+    expect(subtaskLabel?.getAttribute('for')).toBeTruthy();
+    expect(el.querySelector(`#${subtaskLabel!.getAttribute('for')}`)).toBeTruthy();
 
     // Delete task and undo via M3Snackbar
     fixture.componentInstance.onDeleteTask(created.id);
@@ -289,9 +296,10 @@ describe('AgendaComponent', () => {
       expect(snapshots.at(-1)).toEqual({ heroBefore: 1, heroAfter: 1, dlgBefore: 0, dlgAfter: 0 });
       expect(fixture.componentInstance.focusTheaterOpen()).toBe(true);
       expect(fixture.componentInstance.stageOverlay.isOverlayOpen()).toBe(true);
-      expect(
-        el.querySelector('app-agenda-focus-theater-dialog [role="dialog"] .m3-aurora-layer')
-      ).toBeTruthy();
+      const theaterDialog = el.querySelector('app-agenda-focus-theater-dialog dialog.m3-dialog.m3-dialog-fullscreen') as HTMLDialogElement;
+      expect(theaterDialog).toBeTruthy();
+      expect(theaterDialog.hasAttribute('open')).toBe(true);
+      expect(theaterDialog.querySelectorAll('.m3-aurora-orb').length).toBe(3);
 
       pendingResolvers.pop()?.();
       await Promise.resolve();

@@ -16,10 +16,11 @@ export type AgendaKpiQuickFilter = 'all' | 'pending' | 'high-priority' | 'comple
   template: `
     <m3-card
       variant="filled"
+      surface="low"
       shape="xl"
       padding="md"
       [interactive]="false"
-      customClass="!bg-surface-low rounded-m3-xl-inc space-y-3.5">
+      customClass="agenda-kpi-ribbon rounded-m3-xl-inc space-y-3.5">
       <!-- FILA 1: RESUMEN EJECUTIVO COMPACTO + BARRA ONDULADA M3 EXPRESSIVE -->
       <div class="space-y-2.5">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">

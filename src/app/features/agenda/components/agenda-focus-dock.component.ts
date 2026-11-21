@@ -5,6 +5,7 @@ import {
   M3ButtonGroupOption
 } from '../../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3CardComponent } from '../../../shared/components/card/card.component';
 import { M3CircularProgressComponent } from '../../../shared/components/progress/circular-progress.component';
 import { AgendaFocusService, FOCUS_PRESETS } from '../agenda-focus.service';
 import { getTaskCategoryVisual } from './agenda-ui.utils';
@@ -16,6 +17,7 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
   imports: [
     M3ButtonComponent,
     M3ButtonGroupComponent,
+    M3CardComponent,
     M3CircularProgressComponent
   ],
   host: {
@@ -24,24 +26,30 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
   template: `
     <section
       aria-labelledby="agenda-focus-dock-heading"
-      [class]="dockClasses()"
       [class.invisible]="isHiddenForMorph()"
       [attr.aria-hidden]="isHiddenForMorph() ? 'true' : null"
       [style.view-transition-name]="viewTransitionName()">
+      <m3-card
+        variant="filled"
+        surface="low"
+        [interactive]="false"
+        shape="xl"
+        padding="none"
+        [customClass]="dockClasses()">
 
-      <!-- Capa Aurora GPU (activa en compositor al correr el Pomodoro) -->
-      <div
-        class="m3-aurora-layer transition-opacity duration-300"
-        [class.opacity-95]="isRunning()"
-        [class.opacity-25]="focusService.status() === 'paused'"
-        [class.opacity-0]="focusService.status() === 'idle' || focusService.status() === 'completed'"
-        aria-hidden="true">
-        <span class="m3-aurora-orb m3-aurora-orb-1"></span>
-        <span class="m3-aurora-orb m3-aurora-orb-2"></span>
-        <span class="m3-aurora-orb m3-aurora-orb-3"></span>
-      </div>
+        <!-- Capa Aurora GPU (activa en compositor al correr el Pomodoro) -->
+        <div
+          class="m3-aurora-layer transition-opacity duration-300"
+          [class.opacity-95]="isRunning()"
+          [class.opacity-25]="focusService.status() === 'paused'"
+          [class.opacity-0]="focusService.status() === 'idle' || focusService.status() === 'completed'"
+          aria-hidden="true">
+          <span class="m3-aurora-orb m3-aurora-orb-1"></span>
+          <span class="m3-aurora-orb m3-aurora-orb-2"></span>
+          <span class="m3-aurora-orb m3-aurora-orb-3"></span>
+        </div>
 
-      <div class="relative z-10 p-5 sm:p-6 space-y-4">
+        <div class="relative z-10 p-5 sm:p-6 space-y-4">
         <!-- Cabecera protagonista con estado vivo + Morph Viajero a Modo Enfoque -->
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -118,10 +126,12 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
           </div>
 
           <!-- Reloj Wavy M3 Expressive + Controles -->
-          <div class="flex flex-col sm:flex-row items-center gap-5 pt-1">
-            <div
+          <div class="agenda-focus-dock-body flex flex-col sm:flex-row items-center gap-5 pt-1">
+            <button
+              type="button"
               (click)="expandTheater.emit()"
-              class="relative grid place-items-center shrink-0 cursor-pointer">
+              [attr.aria-label]="'Abrir Modo Enfoque inmersivo: ' + displayedTimerText()"
+              class="agenda-focus-dial-btn focus-ring-m3 rounded-full relative grid place-items-center shrink-0 cursor-pointer p-1">
               <m3-circular-progress
                 [diameter]="124"
                 [wavy]="isRunning()"
@@ -130,24 +140,26 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
                 color="primary"
                 ariaLabel="Progreso de sesión de enfoque" />
 
-              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span class="text-headline-sm-emphasized font-mono tabular-nums text-main tracking-tight">
                   {{ displayedTimerText() }}
                 </span>
                 <span class="text-label-sm-emphasized uppercase tracking-wider text-muted mt-0.5">
                   {{ timerStatusLabel() }}
                 </span>
-              </div>
-            </div>
+              </span>
+            </button>
 
             <div class="flex-1 min-w-0 w-full space-y-3">
-              <m3-button-group
-                variant="connected"
-                size="xs"
-                ariaLabel="Duración de sesión de enfoque"
-                [options]="focusPresetOptions"
-                [value]="[focusService.presetMinutes().toString()]"
-                (selectionChange)="onPresetSelect($event, target.id)" />
+              <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+                <m3-button-group
+                  variant="connected"
+                  size="xs"
+                  ariaLabel="Duración de sesión de enfoque"
+                  [options]="focusPresetOptions"
+                  [value]="[focusService.presetMinutes().toString()]"
+                  (selectionChange)="onPresetSelect($event, target.id)" />
+              </div>
 
               <div class="flex flex-wrap items-center gap-2">
                 @if (isRunning()) {
@@ -185,7 +197,8 @@ import { getTaskCategoryVisual } from './agenda-ui.utils';
             </p>
           </div>
         }
-      </div>
+        </div>
+      </m3-card>
     </section>
   `
 })
@@ -233,9 +246,9 @@ export class AgendaFocusDockComponent {
       return `${base} border-primary/40${showElevation ? ' shadow-m3-level2' : ''}`;
     }
     if (this.focusService.status() === 'completed') {
-      return `${base} !bg-success-box/20 border-success/40`;
+      return `${base} is-completed border-success/40`;
     }
-    return `${base} !bg-surface-low border-outline-sub/60`;
+    return `${base} border-outline-sub/60`;
   });
 
   displayedTimerText(): string {

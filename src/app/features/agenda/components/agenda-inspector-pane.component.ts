@@ -46,10 +46,11 @@ export type AgendaInspectorTab = 'steps' | 'plan';
     <section aria-labelledby="agenda-inspector-heading">
       <m3-card
         variant="filled"
+        surface="low"
         [interactive]="false"
         shape="xl"
         padding="lg"
-        customClass="!bg-surface-low rounded-m3-xl-inc space-y-4">
+        customClass="agenda-inspector-card rounded-m3-xl-inc space-y-4">
         @if (task(); as current) {
           @let catMeta = categoryVisual(current.category);
           @let prioMeta = priorityMeta(current);
@@ -147,15 +148,17 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                     <li class="flex items-center justify-between gap-2 bg-surface rounded-m3-md px-2.5 py-1">
                       <div class="flex items-center gap-1 flex-1 min-w-0">
                         <m3-checkbox
+                          [customId]="'inspector-subtask-' + current.id + '-' + st.id"
                           [checked]="st.done"
                           [ariaLabel]="'Paso ' + st.title"
                           (checkedChange)="toggleSubtask.emit({ taskId: current.id, subtaskId: st.id })" />
-                        <span
+                        <label
+                          [attr.for]="'inspector-subtask-' + current.id + '-' + st.id"
                           [class.line-through]="st.done"
                           [class.opacity-60]="st.done"
-                          class="text-body-md text-main truncate">
+                          class="text-body-md text-main truncate flex-1 cursor-pointer select-none">
                           {{ st.title }}
-                        </span>
+                        </label>
                       </div>
                       <m3-button
                         [iconOnly]="true"
@@ -212,27 +215,31 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                 <div class="space-y-3">
                   <div class="space-y-1.5">
                     <span class="block text-label-md text-muted">Bloque</span>
-                    <m3-button-group
-                      variant="connected"
-                      size="xs"
-                      ariaLabel="Mover actividad de día"
-                      [options]="bucketOptions"
-                      [value]="[current.dueBucket]"
-                      (selectionChange)="onBucketSelect(current.id, $event)" />
+                    <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+                      <m3-button-group
+                        variant="connected"
+                        size="xs"
+                        ariaLabel="Mover actividad de día"
+                        [options]="bucketOptions"
+                        [value]="[current.dueBucket]"
+                        (selectionChange)="onBucketSelect(current.id, $event)" />
+                    </div>
                   </div>
 
                   <div class="space-y-1.5">
                     <span class="block text-label-md text-muted">Prioridad</span>
-                    <m3-button-group
-                      variant="connected"
-                      size="xs"
-                      ariaLabel="Cambiar prioridad"
-                      [options]="priorityOptions"
-                      [value]="[current.priority]"
-                      (selectionChange)="onPrioritySelect(current.id, $event)" />
+                    <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+                      <m3-button-group
+                        variant="connected"
+                        size="xs"
+                        ariaLabel="Cambiar prioridad"
+                        [options]="priorityOptions"
+                        [value]="[current.priority]"
+                        (selectionChange)="onPrioritySelect(current.id, $event)" />
+                    </div>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end pt-1">
+                  <div class="agenda-inspector-schedule-grid grid grid-cols-1 sm:grid-cols-2 gap-3 items-end pt-1">
                     <m3-text-field
                       [id]="'inspector-time-slot'"
                       variant="filled"
@@ -243,15 +250,17 @@ export type AgendaInspectorTab = 'steps' | 'plan';
                       [value]="current.timeSlot"
                       (valueChange)="onTimeValueChange(current.id, $event)" />
 
-                    <div class="space-y-1.5">
+                    <div class="space-y-1.5 min-w-0">
                       <span class="block text-label-md text-muted">Estimación</span>
-                      <m3-button-group
-                        variant="connected"
-                        size="xs"
-                        ariaLabel="Cambiar duración estimada"
-                        [options]="durationOptions"
-                        [value]="[current.durationMinutes.toString()]"
-                        (selectionChange)="onDurationSelect(current.id, $event)" />
+                      <div class="overflow-x-auto scrollbar-none py-2.5 -my-2.5 max-w-full">
+                        <m3-button-group
+                          variant="connected"
+                          size="xs"
+                          ariaLabel="Cambiar duración estimada"
+                          [options]="durationOptions"
+                          [value]="[current.durationMinutes.toString()]"
+                          (selectionChange)="onDurationSelect(current.id, $event)" />
+                      </div>
                     </div>
                   </div>
                 </div>

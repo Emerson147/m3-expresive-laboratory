@@ -135,13 +135,14 @@ import {
 
               <li>
                 <m3-card
-                  [variant]="cardVariant(task, isSelected)"
+                  variant="filled"
+                  [surface]="cardSurface(task, isSelected)"
                   [tone]="isSelected ? 'primary' : 'default'"
                   [interactive]="false"
                   shape="lg"
                   padding="md"
                   [customClass]="rowCardClasses(task, isSelected, isFocusActive)">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                  <div class="agenda-task-main-row flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
                     <div class="flex items-start gap-2 flex-1 min-w-0">
                       <m3-checkbox
                         [checked]="task.completed"
@@ -239,49 +240,47 @@ import {
                     </div>
                   </div>
 
-                  <!-- MORPH IN-PLACE AL SELECCIONAR: BARRA RÁPIDA DE ENFOQUE -->
+                  <!-- MORPH IN-PLACE AL SELECCIONAR: BARRA RÁPIDA DE ENFOQUE TONAL -->
                   <div
                     class="agenda-expand-grid"
                     [class.is-open]="isSelected"
                     [attr.inert]="!isSelected ? '' : null"
                     [attr.aria-hidden]="!isSelected ? 'true' : null">
                     <div class="agenda-expand-inner">
-                      @if (subSummary.total > 0) {
-                        <div class="mt-3 pt-2.5 border-t border-outline-sub/50 space-y-2">
+                      <div class="mt-3 rounded-m3-lg bg-surface-lowest/85 text-main px-3.5 py-2.5 space-y-2.5">
+                        @if (subSummary.total > 0) {
                           <m3-linear-progress
                             [wavy]="false"
                             size="sm"
                             [value]="subSummary.percent"
                             color="secondary"
                             [ariaLabel]="'Progreso de subtareas de ' + task.title" />
-                        </div>
-                      }
-                      <div
-                        [class]="subSummary.total > 0 ? 'mt-2.5' : 'mt-3 pt-2.5 border-t border-outline-sub/50'"
-                        class="flex flex-wrap items-center justify-between gap-2.5">
-                        <span class="text-label-sm text-muted tabular-nums inline-flex items-center gap-1.5">
-                          <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">
-                            {{ isFocusActive ? 'graphic_eq' : 'bolt' }}
+                        }
+                        <div class="flex flex-wrap items-center justify-between gap-2.5">
+                          <span class="text-label-sm text-muted tabular-nums inline-flex items-center gap-1.5">
+                            <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">
+                              {{ isFocusActive ? 'graphic_eq' : 'bolt' }}
+                            </span>
+                            <span>
+                              @if (isFocusActive) {
+                                Pomodoro activo en esta tarea
+                              } @else if (subSummary.total > 0) {
+                                {{ subSummary.percent }}% de pasos completados · {{ task.focusSessionsCompleted }} bloques hoy
+                              } @else {
+                                {{ task.focusSessionsCompleted }} bloques enfocados hoy · Listo para iniciar
+                              }
+                            </span>
                           </span>
-                          <span>
-                            @if (isFocusActive) {
-                              Pomodoro activo en esta tarea
-                            } @else if (subSummary.total > 0) {
-                              {{ subSummary.percent }}% de pasos completados · {{ task.focusSessionsCompleted }} bloques hoy
-                            } @else {
-                              {{ task.focusSessionsCompleted }} bloques enfocados hoy · Listo para iniciar
-                            }
-                          </span>
-                        </span>
 
-                        <m3-button
-                          variant="outlined"
-                          size="xs"
-                          [disabled]="!isSelected"
-                          [icon]="isFocusActive ? 'pause' : 'play_arrow'"
-                          (action)="focusTask.emit(task)">
-                          {{ isFocusActive ? 'Pausar enfoque' : 'Enfocar bloque' }}
-                        </m3-button>
+                          <m3-button
+                            variant="outlined"
+                            size="xs"
+                            [disabled]="!isSelected"
+                            [icon]="isFocusActive ? 'pause' : 'play_arrow'"
+                            (action)="focusTask.emit(task)">
+                            {{ isFocusActive ? 'Pausar enfoque' : 'Enfocar bloque' }}
+                          </m3-button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -291,7 +290,7 @@ import {
           </ul>
         </div>
       } @empty {
-        <m3-card variant="filled" [interactive]="false" shape="xl" padding="xl" customClass="!bg-surface-low text-center">
+        <m3-card variant="filled" surface="low" [interactive]="false" shape="xl" padding="xl" customClass="text-center">
           <div class="space-y-3.5 py-2">
             <span class="material-symbols-rounded text-4xl text-muted" aria-hidden="true">event_busy</span>
             <h3 class="text-title-md-emphasized text-main">Sin actividades para estos filtros</h3>
@@ -361,9 +360,9 @@ export class AgendaTaskListComponent {
     return getSubtaskCompletionSummary(task);
   }
 
-  cardVariant(task: TaskItem, isSelected: boolean): 'elevated' | 'filled' | 'outlined' {
-    if (isSelected) return 'filled';
-    return task.completed ? 'outlined' : 'elevated';
+  cardSurface(task: TaskItem, isSelected: boolean): 'default' | 'low' | 'surface' {
+    if (isSelected) return 'default';
+    return task.completed ? 'surface' : 'low';
   }
 
   rowCardClasses(task: TaskItem, isSelected: boolean, isFocusActive = false): string {
@@ -372,9 +371,9 @@ export class AgendaTaskListComponent {
       return `agenda-task-tile is-selected shadow-xs${focusRing}`;
     }
     if (task.completed) {
-      return `agenda-task-tile opacity-80 text-muted${focusRing}`;
+      return `agenda-task-tile is-completed text-muted${focusRing}`;
     }
-    return `agenda-task-tile hover:bg-surface-box${focusRing}`;
+    return `agenda-task-tile${focusRing}`;
   }
 
   onQuickKeyEnter(event: Event): void {

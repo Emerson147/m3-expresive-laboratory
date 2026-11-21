@@ -9,10 +9,17 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
     interpolate-size: allow-keywords;
   }
 
+  .agenda-kpi-ribbon,
+  .agenda-focus-dock,
+  .agenda-inspector-card,
+  .agenda-task-tile {
+    container-type: inline-size;
+  }
+
   /* Interactive KPI summary tiles (concentric 16px inside container -> 12px active) */
   .agenda-kpi-btn {
     border-radius: var(--md-sys-shape-corner-large, 16px);
-    min-height: 44px;
+    min-height: 48px;
     transition:
       border-radius 260ms var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
       background-color 200ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
@@ -32,7 +39,7 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
     transform: scale(0.985);
   }
 
-  /* Task cards in grouped agenda list (neutral surface hierarchy + concentric token morph) */
+  /* Task cards in grouped agenda list (consistent tonal hierarchy + concentric morph) */
   .agenda-task-tile {
     border-radius: var(--md-sys-shape-corner-large, 16px);
     transition:
@@ -42,12 +49,37 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
       transform 180ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
   }
 
-  .agenda-task-tile:hover {
+  .agenda-task-tile:not(.is-selected):hover {
+    --md-comp-filled-card-container-color: var(--md-sys-color-surface-container);
     border-radius: var(--md-sys-shape-corner-large-increased, 20px);
+  }
+
+  .agenda-task-tile.is-completed:not(.is-selected) {
+    --md-comp-filled-card-container-color: var(--md-sys-color-surface);
+    border: 1px solid color-mix(in oklch, var(--md-sys-color-outline-variant) 55%, transparent);
+    opacity: 0.84;
   }
 
   .agenda-task-tile.is-selected {
     border-radius: var(--md-sys-shape-corner-large-increased, 20px);
+  }
+
+  @container (max-width: 420px) {
+    .agenda-task-main-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  @container (max-width: 340px) {
+    .agenda-focus-dock-body {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .agenda-inspector-schedule-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   /* In-place container morph (pill <-> expanded quick capture, bounded shape without 9999px deadzone) */
@@ -90,6 +122,14 @@ export const AGENDA_EXPRESSIVE_CSS = /* css */ `
       border-color 260ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
       background-color 260ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
       box-shadow 260ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
+  }
+
+  .agenda-focus-dock.is-completed {
+    --md-comp-filled-card-container-color: color-mix(
+      in oklch,
+      var(--md-sys-color-success-container) 22%,
+      var(--md-sys-color-surface-container-low)
+    );
   }
 
   @keyframes agendaPulseDot {
