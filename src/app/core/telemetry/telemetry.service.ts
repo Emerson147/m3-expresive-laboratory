@@ -280,15 +280,19 @@ export class TelemetryService {
   readonly isFleetFlipActive = signal<boolean>(false);
   readonly toastMessage = signal<string | null>(null);
 
-  // Modal inspection state
+  // Modal inspection state (strict single-owner dialog-transform choreography)
   readonly inspectedVehicle = signal<Vehicle | null>(null);
   readonly isInspectModalOpen = signal<boolean>(false);
   readonly activeInspectTrigger = signal<string | null>(null);
+  readonly inspectMorphOwner = signal<'trigger' | 'modal' | null>(null);
 
-  // Modal route assignment state
+  // Modal route assignment state (strict single-owner dialog-transform choreography)
   readonly isAssignModalOpen = signal<boolean>(false);
   readonly activeAssignTrigger = signal<string | null>(null);
-  readonly isModalTransitioning = signal<boolean>(false);
+  readonly assignMorphOwner = signal<'trigger' | 'modal' | null>(null);
+  readonly isModalTransitioning = computed(
+    () => this.inspectMorphOwner() !== null || this.assignMorphOwner() !== null
+  );
 
   readonly selectedVehicle = computed(() => {
     return this.vehicles().find(v => v.id === this.selectedVehicleId()) ?? this.vehicles()[0];
@@ -422,33 +426,36 @@ export class TelemetryService {
     const trigger = triggerId || ('inspect-' + vehicle.id);
     this.activeInspectTrigger.set(trigger);
     this.inspectedVehicle.set(vehicle);
-    this.isModalTransitioning.set(true);
+    this.inspectMorphOwner.set('trigger');
     this.appRef.tick();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isInspectModalOpen.set(true);
         this.stageOverlay.setOverlayOpen(true);
+        this.inspectMorphOwner.set('modal');
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.inspectMorphOwner.set(null);
       }
     );
   }
 
   closeInspectModal(): void {
-    this.isModalTransitioning.set(true);
+    if (!this.isInspectModalOpen()) return;
+    this.inspectMorphOwner.set('modal');
     this.appRef.tick();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isInspectModalOpen.set(false);
         this.stageOverlay.setOverlayOpen(this.isAssignModalOpen());
+        this.inspectMorphOwner.set('trigger');
       },
       () => {
+        this.inspectMorphOwner.set(null);
         this.activeInspectTrigger.set(null);
         this.inspectedVehicle.set(null);
-        this.isModalTransitioning.set(false);
       },
       { isExiting: true }
     );
@@ -456,32 +463,35 @@ export class TelemetryService {
 
   openAssignModal(triggerId = 'assign-route'): void {
     this.activeAssignTrigger.set(triggerId);
-    this.isModalTransitioning.set(true);
+    this.assignMorphOwner.set('trigger');
     this.appRef.tick();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isAssignModalOpen.set(true);
         this.stageOverlay.setOverlayOpen(true);
+        this.assignMorphOwner.set('modal');
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.assignMorphOwner.set(null);
       }
     );
   }
 
   closeAssignModal(): void {
-    this.isModalTransitioning.set(true);
+    if (!this.isAssignModalOpen()) return;
+    this.assignMorphOwner.set('modal');
     this.appRef.tick();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isAssignModalOpen.set(false);
         this.stageOverlay.setOverlayOpen(this.isInspectModalOpen());
+        this.assignMorphOwner.set('trigger');
       },
       () => {
+        this.assignMorphOwner.set(null);
         this.activeAssignTrigger.set(null);
-        this.isModalTransitioning.set(false);
       },
       { isExiting: true }
     );

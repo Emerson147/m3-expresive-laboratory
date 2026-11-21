@@ -1,9 +1,10 @@
 /**
  * Scoped Material 3 Expressive styles for Live Telemetry (Mission Control).
  * Loaded via ViewEncapsulation.None on TelemetryComponent so View Transitions
- * pseudo-elements, @starting-style popovers, and range fallbacks work cleanly
- * without leaking outside `.tel-*` or editing global stylesheets.
+ * pseudo-elements, CSS Anchor Positioning popovers, Top-Layer dialogs, and
+ * M3 shape morphs work cleanly without leaking outside `.tel-*`.
  */
+
 /**
  * Shared M3 Expressive Filled Select styles for Live Telemetry dialogs.
  * Aligns 58px height and 16px corner radius with `<m3-text-field variant="filled">`
@@ -296,11 +297,14 @@ export const TELEMETRY_EXPRESSIVE_STYLES = /* css */ `
     border-radius: var(--radius-m3-xl, 28px);
   }
 
-  /* ── Top-Layer Theme Calibration Popover & Progressive Fallback ──────────── */
+  /* ── Top-Layer Theme Calibration Popover & CSS Anchor Positioning ────────── */
+  .tel-calibration-trigger {
+    anchor-name: --tel-calibration-trigger;
+  }
+
   .tel-calibration-popover {
-    margin: 0;
     padding: 16px;
-    width: min(320px, calc(100vw - 24px));
+    width: min(328px, calc(100vw - 24px));
     border-radius: var(--md-sys-shape-corner-extra-large, 28px);
     background-color: var(--md-sys-color-surface-container);
     color: var(--md-sys-color-on-surface);
@@ -314,8 +318,21 @@ export const TELEMETRY_EXPRESSIVE_STYLES = /* css */ `
     transition-behavior: allow-discrete;
   }
 
+  @supports (position-area: block-end) {
+    [popover].tel-calibration-popover {
+      position: fixed;
+      position-anchor: --tel-calibration-trigger;
+      inset: auto;
+      margin: 0;
+      margin-block-start: 8px;
+      position-area: block-end span-inline-start;
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    }
+  }
+
   .tel-calibration-popover.is-fallback {
     position: fixed;
+    margin: 0;
     z-index: 60;
     display: none;
   }
@@ -334,75 +351,93 @@ export const TELEMETRY_EXPRESSIVE_STYLES = /* css */ `
     }
   }
 
-  /* ── Brand-Consistent Range Controls (accent-color + legacy fallback) ────── */
-  .tel-range-input {
-    accent-color: var(--md-sys-color-primary);
-    height: 20px;
-    cursor: pointer;
-    background: transparent;
-  }
-
-  @supports not (accent-color: var(--md-sys-color-primary)) {
-    .tel-range-input {
-      -webkit-appearance: none;
-      appearance: none;
-    }
-
-    .tel-range-input::-webkit-slider-runnable-track {
-      height: 6px;
-      border-radius: 999px;
-      background: linear-gradient(
-        to right,
-        var(--md-sys-color-primary) var(--tel-range-progress, 50%),
-        var(--md-sys-color-surface-container-highest) var(--tel-range-progress, 50%)
-      );
-    }
-
-    .tel-range-input::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      margin-top: -5px;
-      border-radius: 50%;
-      background-color: var(--md-sys-color-primary);
-    }
-
-    .tel-range-input::-moz-range-track {
-      height: 6px;
-      border-radius: 999px;
-      background-color: var(--md-sys-color-surface-container-highest);
-    }
-
-    .tel-range-input::-moz-range-progress {
-      height: 6px;
-      border-radius: 999px;
-      background-color: var(--md-sys-color-primary);
-    }
-
-    .tel-range-input::-moz-range-thumb {
-      width: 16px;
-      height: 16px;
-      border: none;
-      border-radius: 50%;
-      background-color: var(--md-sys-color-primary);
-    }
-  }
-
   /* ── Interactive Vector Corridor Nodes ───────────────────────────────────── */
   .tel-corridor-node {
     cursor: pointer;
     outline: none;
   }
 
-  .tel-corridor-node:focus-visible circle {
+  .tel-corridor-node:focus-visible .tel-corridor-dot {
     stroke: var(--md-sys-color-primary);
-    stroke-width: 3px;
+    stroke-width: 2.5px;
   }
 
   .tel-corridor-pulse {
     transform-box: fill-box;
     transform-origin: center;
+  }
+
+  /* ── Native Top-Layer <m3-dialog> Shells (Inspect & Assign Route) ────────── */
+  dialog.m3-dialog.tel-inspect-dialog {
+    width: min(48rem, calc(100vw - 1.5rem));
+    max-width: min(48rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.tel-assign-dialog {
+    width: min(42rem, calc(100vw - 1.5rem));
+    max-width: min(42rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.tel-inspect-dialog > .m3-dialog-inner,
+  dialog.m3-dialog.tel-assign-dialog > .m3-dialog-inner {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.tel-inspect-dialog > .m3-dialog-inner > h2,
+  dialog.m3-dialog.tel-assign-dialog > .m3-dialog-inner > h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    margin: 0;
+  }
+
+  dialog.m3-dialog.tel-inspect-dialog > .m3-dialog-inner > .m3-dialog-body,
+  dialog.m3-dialog.tel-assign-dialog > .m3-dialog-inner > .m3-dialog-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.tel-inspect-dialog > .m3-dialog-inner > .m3-dialog-footer,
+  dialog.m3-dialog.tel-assign-dialog > .m3-dialog-inner > .m3-dialog-footer {
+    padding: 0;
+    display: none;
+  }
+
+  /* ── Connected Full-Row Cargo Protocol Selector in Assign Modal ──────────── */
+  m3-button-group.tel-cargo-group-host {
+    display: block;
+    width: 100%;
+  }
+
+  .tel-cargo-group {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  @media (min-width: 520px) {
+    .tel-cargo-group {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    .tel-cargo-group .m3-btn {
+      width: 100%;
+      justify-content: center;
+      padding-inline: 12px;
+    }
   }
 
   /* ── Accessibility & Reduced Motion ──────────────────────────────────────── */
