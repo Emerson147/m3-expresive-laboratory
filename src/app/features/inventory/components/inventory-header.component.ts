@@ -9,30 +9,66 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
   standalone: true,
   imports: [M3ButtonComponent, M3ButtonGroupComponent, M3LinearProgressComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'inv-header-shell block shrink-0'
+  },
   template: `
     <div class="flex flex-col gap-2.5 shrink-0">
-      <!-- Clean Editorial Command Rail -->
-      <header class="bg-surface-low rounded-m3-xl px-4 py-3 sm:px-5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
-            <span class="material-symbols-rounded text-xl" aria-hidden="true">inventory_2</span>
+      <!-- Structured Two-Tier Editorial Command Rail (Title + Primary CTAs above Warehouse Strip) -->
+      <header class="bg-surface-low rounded-m3-xl px-4 py-3 sm:px-5 flex flex-col gap-3">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0">
+              <span class="material-symbols-rounded text-xl" aria-hidden="true">inventory_2</span>
+            </div>
+
+            <div class="min-w-0">
+              <h1 class="text-title-lg-emphasized sm:text-headline-sm-emphasized text-main flex flex-wrap items-center gap-2">
+                <span class="truncate">Matriz Multidimensional de Stock</span>
+                <span class="text-label-md-emphasized text-muted bg-surface px-2.5 py-0.5 rounded-m3-full">
+                  {{ activeWarehouseName() }}
+                </span>
+              </h1>
+              <p class="text-label-md text-muted truncate mt-0.5">
+                Control por talla, color y sede en tiempo real
+              </p>
+            </div>
           </div>
 
-          <div class="min-w-0">
-            <h1 class="text-title-lg-emphasized sm:text-headline-sm-emphasized text-main flex flex-wrap items-center gap-2.5">
-              <span class="truncate">Matriz Multidimensional de Stock</span>
-              <span class="text-label-md-emphasized text-muted bg-surface px-2.5 py-0.5 rounded-m3-full">
-                {{ activeWarehouseName() }}
-              </span>
-            </h1>
-            <p class="text-label-md text-muted truncate mt-0.5">
-              Control por talla, color y sede en tiempo real
-            </p>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <m3-button
+              variant="tonal"
+              size="sm"
+              icon="add_box"
+              (action)="batchReplenish.emit()">
+              Reabastecer Lote
+            </m3-button>
+
+            <m3-button
+              [variant]="isAuditHistoryOpen() ? 'filled' : 'tonal'"
+              size="sm"
+              icon="history"
+              [toggle]="true"
+              [selected]="isAuditHistoryOpen()"
+              (action)="toggleAuditHistory.emit()">
+              Movimientos ({{ transfersCount() }})
+            </m3-button>
+
+            <m3-button
+              variant="filled"
+              size="sm"
+              icon="add_circle"
+              [morph]="true"
+              [invisible]="isCreateOriginInvisible()"
+              [viewTransitionName]="isCreateOriginActive() ? 'dialog-transform' : null"
+              (action)="openCreate.emit()">
+              Nueva Prenda
+            </m3-button>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="overflow-x-auto max-w-full py-0.5">
+        <div class="flex items-center justify-between gap-3">
+          <div class="overflow-x-auto scrollbar-none py-2 -my-2 max-w-full">
             <m3-button-group
               variant="connected"
               selectionMode="single"
@@ -42,35 +78,6 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
               [value]="[selectedWarehouseId()]"
               (selectionChange)="onWarehouseSelection($event)" />
           </div>
-
-          <m3-button
-            variant="tonal"
-            size="sm"
-            icon="add_box"
-            (action)="batchReplenish.emit()">
-            Reabastecer Lote
-          </m3-button>
-
-          <m3-button
-            [variant]="isAuditHistoryOpen() ? 'filled' : 'tonal'"
-            size="sm"
-            icon="history"
-            [toggle]="true"
-            [selected]="isAuditHistoryOpen()"
-            (action)="toggleAuditHistory.emit()">
-            Movimientos ({{ transfersCount() }})
-          </m3-button>
-
-          <m3-button
-            variant="filled"
-            size="sm"
-            icon="add_circle"
-            [morph]="true"
-            [invisible]="isCreateOriginInvisible()"
-            [viewTransitionName]="isCreateOriginActive() ? 'dialog-transform' : null"
-            (action)="openCreate.emit()">
-            + Nueva Prenda
-          </m3-button>
         </div>
       </header>
 
@@ -108,10 +115,10 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
 
           <div class="flex items-center gap-1.5 shrink-0">
             <span class="px-2.5 py-1 rounded-m3-md bg-error-box text-on-error-box text-label-sm-emphasized font-mono tabular-nums">
-              {{ kpiSummary().outOfStockSkus }} agotados
+              {{ kpiSummary().outOfStockSkus }} {{ kpiSummary().outOfStockSkus === 1 ? 'agotado' : 'agotados' }}
             </span>
             <span class="px-2.5 py-1 rounded-m3-md bg-warning-box text-on-warning-box text-label-sm-emphasized font-mono tabular-nums">
-              {{ kpiSummary().lowStockSkus }} bajos
+              {{ kpiSummary().lowStockSkus }} {{ kpiSummary().lowStockSkus === 1 ? 'bajo' : 'bajos' }}
             </span>
           </div>
         </article>

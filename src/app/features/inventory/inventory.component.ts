@@ -4,7 +4,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
   Injector,
   TemplateRef,
@@ -21,6 +20,7 @@ import { InventoryService } from '../../core/inventory/inventory.service';
 import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
 import { M3FabComponent } from '../../shared/components/button/fab.component';
 import { M3SnackbarComponent } from '../../shared/components/snackbar/snackbar.component';
+import { M3TabItem, M3TabsComponent } from '../../shared/components/tabs/tabs.component';
 import { InventoryAuditDrawerComponent } from './components/inventory-audit-drawer.component';
 import {
   InventoryCatalogComponent,
@@ -42,6 +42,7 @@ import {
     NgTemplateOutlet,
     M3FabComponent,
     M3SnackbarComponent,
+    M3TabsComponent,
     InventoryHeaderComponent,
     InventoryCatalogComponent,
     InventoryMatrixComponent,
@@ -58,8 +59,8 @@ import {
   template: `
     <div
       [class]="adaptiveLayout.isCompact()
-        ? 'inv-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 space-y-4 m3-scrollbar'
-        : 'inv-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto lg:overflow-hidden px-4 sm:px-6 py-4 gap-3.5 m3-scrollbar'">
+        ? 'inv-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 py-4 pb-24 gap-4 m3-scrollbar'
+        : 'inv-workbench flex-1 min-h-0 flex flex-col h-full overflow-y-auto px-4 sm:px-6 py-4 pb-10 gap-3.5 m3-scrollbar'">
 
       <app-inventory-header
         [warehouses]="inventoryService.warehouses()"
@@ -76,64 +77,21 @@ import {
         (toggleAuditHistory)="inventoryService.toggleAuditHistory()" />
 
       <!-- M3 Split-Pane Mobile/Medium View Switcher (< lg) -->
-      <div
-        role="tablist"
-        aria-label="Vistas del módulo de inventario"
-        class="lg:hidden grid grid-cols-2 gap-1 p-1.5 rounded-m3-full bg-surface-low shadow-m3-level1 shrink-0">
-        <button
-          #catalogTabBtn
-          type="button"
-          role="tab"
-          id="inv-tab-catalog"
-          aria-controls="inv-panel-catalog"
-          [attr.aria-selected]="mobilePane() === 'catalog'"
-          [attr.tabindex]="mobilePane() === 'catalog' ? 0 : -1"
-          (click)="mobilePane.set('catalog')"
-          (keydown)="onMobileTabKeydown($event, 'catalog')"
-          class="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-m3-full text-label-lg-emphasized cursor-pointer m3-transition-fast focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          [class.bg-primary]="mobilePane() === 'catalog'"
-          [class.text-on-primary]="mobilePane() === 'catalog'"
-          [class.shadow-m3-level1]="mobilePane() === 'catalog'"
-          [class.text-muted]="mobilePane() !== 'catalog'"
-          [class.hover:text-main]="mobilePane() !== 'catalog'"
-          [class.hover:bg-surface-high]="mobilePane() !== 'catalog'">
-          <span class="material-symbols-rounded text-lg" aria-hidden="true">inventory_2</span>
-          <span class="truncate">Catálogo</span>
-          <span class="text-label-sm font-mono tabular-nums opacity-85">
-            ({{ inventoryService.filteredProducts().length }})
-          </span>
-        </button>
-
-        <button
-          #matrixTabBtn
-          type="button"
-          role="tab"
-          id="inv-tab-matrix"
-          aria-controls="inv-panel-matrix"
-          [attr.aria-selected]="mobilePane() === 'matrix'"
-          [attr.tabindex]="mobilePane() === 'matrix' ? 0 : -1"
-          (click)="mobilePane.set('matrix')"
-          (keydown)="onMobileTabKeydown($event, 'matrix')"
-          class="inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 rounded-m3-full text-label-lg-emphasized cursor-pointer m3-transition-fast focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          [class.bg-primary]="mobilePane() === 'matrix'"
-          [class.text-on-primary]="mobilePane() === 'matrix'"
-          [class.shadow-m3-level1]="mobilePane() === 'matrix'"
-          [class.text-muted]="mobilePane() !== 'matrix'"
-          [class.hover:text-main]="mobilePane() !== 'matrix'"
-          [class.hover:bg-surface-high]="mobilePane() !== 'matrix'">
-          <span class="material-symbols-rounded text-lg" aria-hidden="true">grid_on</span>
-          <span class="truncate">Matriz 2D</span>
-          <span class="text-label-sm font-mono tabular-nums opacity-85 hidden sm:inline">
-            {{ inventoryService.selectedProduct().sku }}
-          </span>
-        </button>
+      <div class="lg:hidden shrink-0">
+        <m3-tabs
+          variant="secondary"
+          ariaLabel="Vistas del módulo de inventario"
+          idPrefix="inv-tab"
+          [tabs]="mobileTabs()"
+          [value]="mobilePane()"
+          (tabChange)="onMobileTabChange($event)" />
       </div>
 
       <!-- Expressive Split Workbench Body -->
-      <div class="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3.5 items-stretch">
+      <div class="flex flex-col lg:flex-row gap-3.5 items-stretch lg:items-start">
         <app-inventory-catalog
           id="inv-panel-catalog"
-          [class]="(mobilePane() === 'catalog' ? 'flex' : 'hidden') + ' lg:flex flex-col lg:w-[320px] xl:w-[340px] shrink-0 lg:h-full lg:min-h-0'"
+          [class]="(mobilePane() === 'catalog' ? 'flex' : 'hidden') + ' lg:flex flex-col lg:w-[320px] xl:w-[340px] shrink-0'"
           [products]="inventoryService.filteredProducts()"
           [categories]="categories"
           [selectedProductId]="inventoryService.selectedProductId()"
@@ -149,7 +107,7 @@ import {
 
         <app-inventory-matrix
           id="inv-panel-matrix"
-          [class]="(mobilePane() === 'matrix' ? 'flex' : 'hidden') + ' lg:flex flex-col flex-1 min-w-0 lg:h-full lg:min-h-0'"
+          [class]="(mobilePane() === 'matrix' ? 'flex' : 'hidden') + ' lg:flex flex-col flex-1 min-w-0 w-full'"
           [product]="inventoryService.selectedProduct()"
           [rows]="inventoryService.matrixRows()"
           [columns]="inventoryService.matrixColumns()"
@@ -165,7 +123,7 @@ import {
 
         @if (inventoryService.isAuditHistoryOpen()) {
           <app-inventory-audit-drawer
-            class="shrink-0 xl:h-full xl:min-h-0"
+            class="shrink-0 2xl:sticky 2xl:top-0 2xl:max-h-[calc(100dvh-2.5rem)]"
             [transfers]="inventoryService.stockTransfers()"
             [warehouses]="inventoryService.warehouses()"
             (close)="inventoryService.toggleAuditHistory()" />
@@ -187,25 +145,23 @@ import {
     </div>
 
     <ng-template #inventoryModalsTemplate>
-      @if (inventoryService.isTransferModalOpen() && inventoryService.activeTransferVariant(); as variant) {
-        <app-inventory-transfer-modal
-          [variant]="variant"
-          [product]="inventoryService.selectedProduct()"
-          [warehouses]="inventoryService.warehouses()"
-          [selectedWarehouseId]="inventoryService.selectedWarehouseId()"
-          [isDialogTransitionActive]="transferMorphOwner() === 'modal'"
-          (close)="closeTransferModal()"
-          (confirmTransfer)="submitTransfer($event)" />
-      }
+      <app-inventory-transfer-modal
+        [open]="inventoryService.isTransferModalOpen()"
+        [variant]="inventoryService.activeTransferVariant()"
+        [product]="inventoryService.selectedProduct()"
+        [warehouses]="inventoryService.warehouses()"
+        [selectedWarehouseId]="inventoryService.selectedWarehouseId()"
+        [isDialogTransitionActive]="transferMorphOwner() === 'modal'"
+        (close)="closeTransferModal()"
+        (confirmTransfer)="submitTransfer($event)" />
 
-      @if (inventoryService.isCreateModalOpen()) {
-        <app-inventory-create-modal
-          [warehouses]="inventoryService.warehouses()"
-          [existingProducts]="inventoryService.masterProducts()"
-          [isDialogTransitionActive]="createMorphOwner() === 'modal'"
-          (close)="closeCreateModal()"
-          (createProduct)="submitCreateProduct($event)" />
-      }
+      <app-inventory-create-modal
+        [open]="inventoryService.isCreateModalOpen()"
+        [warehouses]="inventoryService.warehouses()"
+        [existingProducts]="inventoryService.masterProducts()"
+        [isDialogTransitionActive]="createMorphOwner() === 'modal'"
+        (close)="closeCreateModal()"
+        (createProduct)="submitCreateProduct($event)" />
     </ng-template>
 
     @if (!stageOverlay.hasExternalHost()) {
@@ -228,8 +184,6 @@ export class InventoryComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly inventoryModalsTemplate = viewChild<TemplateRef<unknown>>('inventoryModalsTemplate');
-  private readonly catalogTabBtn = viewChild<ElementRef<HTMLButtonElement>>('catalogTabBtn');
-  private readonly matrixTabBtn = viewChild<ElementRef<HTMLButtonElement>>('matrixTabBtn');
   private returnFocusEl: HTMLElement | null = null;
 
   readonly mobilePane = signal<'catalog' | 'matrix'>('catalog');
@@ -239,6 +193,23 @@ export class InventoryComponent {
   readonly createTriggerOrigin = signal<'header' | 'catalog' | 'fab' | null>(null);
   readonly transferMorphOwner = signal<'matrix' | 'modal' | null>(null);
   readonly transferOriginSku = signal<string | null>(null);
+
+  readonly mobileTabs = computed<M3TabItem[]>(() => [
+    {
+      id: 'catalog',
+      label: 'Catálogo',
+      icon: 'inventory_2',
+      badge: this.inventoryService.filteredProducts().length,
+      panelId: 'inv-panel-catalog'
+    },
+    {
+      id: 'matrix',
+      label: 'Matriz 2D',
+      icon: 'grid_on',
+      badge: this.inventoryService.selectedProduct().sku,
+      panelId: 'inv-panel-matrix'
+    }
+  ]);
 
   readonly hasAnyModalOpen = computed(() =>
     this.inventoryService.isTransferModalOpen() || this.inventoryService.isCreateModalOpen()
@@ -293,6 +264,10 @@ export class InventoryComponent {
     }
   }
 
+  onMobileTabChange(tabId: string): void {
+    this.mobilePane.set(tabId === 'matrix' ? 'matrix' : 'catalog');
+  }
+
   onCategoryChange(category: string): void {
     if (category === this.inventoryService.selectedCategory()) return;
     this.isCatalogFlipActive.set(true);
@@ -328,26 +303,6 @@ export class InventoryComponent {
     if (this.adaptiveLayout.isCompact() || this.isBelowLgViewport()) {
       this.mobilePane.set('matrix');
     }
-  }
-
-  onMobileTabKeydown(event: KeyboardEvent, currentPane: 'catalog' | 'matrix'): void {
-    let nextPane: 'catalog' | 'matrix' | null = null;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-      nextPane = currentPane === 'catalog' ? 'matrix' : 'catalog';
-    } else if (event.key === 'Home') {
-      nextPane = 'catalog';
-    } else if (event.key === 'End') {
-      nextPane = 'matrix';
-    }
-    if (!nextPane) return;
-
-    event.preventDefault();
-    this.mobilePane.set(nextPane);
-    queueMicrotask(() => {
-      const targetBtn =
-        nextPane === 'catalog' ? this.catalogTabBtn()?.nativeElement : this.matrixTabBtn()?.nativeElement;
-      targetBtn?.focus();
-    });
   }
 
   openCreateModal(origin: 'header' | 'catalog' | 'fab' = 'header'): void {

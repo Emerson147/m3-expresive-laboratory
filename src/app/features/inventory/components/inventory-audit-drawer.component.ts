@@ -9,7 +9,7 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
   imports: [DatePipe, M3ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block xl:h-full xl:min-h-0'
+    class: 'block 2xl:min-h-0'
   },
   styles: [`
     .audit-table-wrapper {
@@ -98,13 +98,13 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
     }
   `],
   template: `
-    <!-- Responsive M3 Side Sheet: Scrim Modal < xl, Docked Split Column >= xl -->
+    <!-- Responsive M3 Side Sheet: Scrim Modal < 2xl, Docked Split Column >= 2xl -->
     <div
       (click)="onScrimClick($event)"
-      class="inv-side-sheet-scrim fixed inset-0 z-40 bg-scrim/45 backdrop-blur-xs flex justify-end xl:contents">
+      class="inv-side-sheet-scrim fixed inset-0 z-40 bg-scrim/45 backdrop-blur-xs flex justify-end 2xl:contents">
       <aside
         aria-labelledby="inventory-audit-heading"
-        class="inv-side-sheet-panel w-full max-w-[400px] xl:w-[390px] xl:max-w-none h-full bg-surface-low rounded-s-m3-xl xl:rounded-m3-xl-inc shadow-m3-level3 xl:shadow-m3-level1 p-4 flex flex-col gap-3.5 min-h-0">
+        class="inv-side-sheet-panel w-full max-w-[400px] 2xl:w-[390px] 2xl:max-w-none h-full 2xl:h-auto 2xl:max-h-[calc(100dvh-2.5rem)] bg-surface-low rounded-s-m3-xl 2xl:rounded-m3-xl-inc shadow-m3-level3 2xl:shadow-m3-level1 p-4 flex flex-col gap-3.5 min-h-0">
 
         <!-- Side Sheet Editorial Header -->
         <div class="bg-surface rounded-m3-lg-inc p-3.5 flex items-start justify-between gap-3 shrink-0">
