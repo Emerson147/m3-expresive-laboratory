@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CampusAnnouncement } from '../../../core/campus/campus.models';
+import { AnnouncementFilter, CampusAnnouncement } from '../../../core/campus/campus.models';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
 
 @Component({
   selector: 'app-campus-announcements-card',
-  imports: [M3ButtonComponent],
+  imports: [M3ButtonComponent, M3ChipComponent],
   host: { class: 'block' },
   template: `
     <section
@@ -38,7 +39,33 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
         }
       </div>
 
-      <div class="space-y-3">
+      <div class="flex items-center flex-wrap gap-1.5" role="group" aria-label="Filtrar comunicados">
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'all'"
+          [count]="totalCount()"
+          (action)="filterChange.emit('all')"
+        >
+          Todos
+        </m3-chip>
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'unread'"
+          [count]="unreadCount()"
+          (action)="filterChange.emit('unread')"
+        >
+          Sin leer
+        </m3-chip>
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'important'"
+          (action)="filterChange.emit('important')"
+        >
+          Prioritarios
+        </m3-chip>
+      </div>
+
+      <div class="flex flex-col gap-3">
         @for (ann of announcements(); track ann.id) {
           <article
             class="campus-surface-tile rounded-m3-lg p-4 space-y-2.5"
@@ -92,6 +119,16 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
               </m3-button>
             </div>
           </article>
+        } @empty {
+          <div class="rounded-m3-xl bg-surface p-5 text-center space-y-2">
+            <span class="material-symbols-rounded text-2xl text-muted" aria-hidden="true">
+              mark_email_read
+            </span>
+            <p class="text-title-sm-emphasized text-main">Sin avisos en este filtro</p>
+            <m3-button variant="tonal" size="sm" (action)="filterChange.emit('all')">
+              Ver todos
+            </m3-button>
+          </div>
         }
       </div>
     </section>
@@ -101,6 +138,9 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
 export class CampusAnnouncementsCardComponent {
   readonly announcements = input.required<CampusAnnouncement[]>();
   readonly unreadCount = input.required<number>();
+  readonly totalCount = input<number>(0);
+  readonly filter = input<AnnouncementFilter>('all');
 
+  readonly filterChange = output<AnnouncementFilter>();
   readonly toggleAck = output<string>();
 }

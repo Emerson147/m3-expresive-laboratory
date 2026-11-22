@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TeacherClass } from '../../../core/campus/campus.models';
+import { M3ButtonGroupComponent, M3ButtonGroupOption } from '../../../shared/components/button/button-group.component';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3LinearProgressComponent } from '../../../shared/components/progress/linear-progress.component';
 import { TeacherRosterSummary } from './campus-teacher-kpi-ribbon.component';
 
 @Component({
   selector: 'app-campus-teacher-hero',
-  imports: [M3ButtonComponent, M3LinearProgressComponent],
+  imports: [M3ButtonComponent, M3ButtonGroupComponent, M3LinearProgressComponent],
   host: { class: 'block' },
   template: `
     @if (teacherClass(); as cls) {
@@ -15,6 +16,23 @@ import { TeacherRosterSummary } from './campus-teacher-kpi-ribbon.component';
         aria-label="Cátedra en curso"
         class="rounded-m3-xl bg-surface-low p-5 sm:p-6 space-y-5"
       >
+        @if (sectionOptions().length > 1) {
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <span class="text-label-sm-emphasized uppercase tracking-wider text-muted">
+              Sección activa de cátedra
+            </span>
+            <m3-button-group
+              variant="connected"
+              selectionMode="single"
+              size="sm"
+              ariaLabel="Seleccionar sección docente"
+              [options]="sectionOptions()"
+              [value]="[cls.id]"
+              (selectionChange)="onSectionSelection($event)"
+            />
+          </div>
+        }
+
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div class="min-w-0 space-y-1.5">
             <div class="flex items-center gap-2 flex-wrap">
@@ -34,7 +52,7 @@ import { TeacherRosterSummary } from './campus-teacher-kpi-ribbon.component';
             </h2>
 
             <p class="text-body-sm text-muted">
-              Bloque horario {{ cls.timeRange }} · Registro sincrónico de aula
+              {{ cls.timeRange }} · Registro sincrónico de aula
             </p>
           </div>
 
@@ -106,9 +124,19 @@ import { TeacherRosterSummary } from './campus-teacher-kpi-ribbon.component';
 })
 export class CampusTeacherHeroComponent {
   readonly teacherClass = input.required<TeacherClass>();
+  readonly sections = input<TeacherClass[]>([]);
   readonly rosterSummary = input<TeacherRosterSummary | null>(null);
 
   readonly markAllPresent = output<void>();
+  readonly selectSection = output<string>();
+
+  protected readonly sectionOptions = computed<M3ButtonGroupOption[]>(() =>
+    this.sections().map((s) => ({
+      id: s.id,
+      label: s.code,
+      icon: 'class'
+    }))
+  );
 
   protected readonly quorum = computed(() => {
     const cls = this.teacherClass();
@@ -143,4 +171,11 @@ export class CampusTeacherHeroComponent {
     const q = this.quorum();
     return `Quórum de asistencia en vivo: ${q.present} presentes, ${q.late} tardanzas, ${q.absent} faltas de ${q.total} estudiantes`;
   });
+
+  protected onSectionSelection(selected: string[]): void {
+    const next = selected[0];
+    if (next) {
+      this.selectSection.emit(next);
+    }
+  }
 }

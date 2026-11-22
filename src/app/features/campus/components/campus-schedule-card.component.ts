@@ -55,8 +55,7 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
             <div class="flex items-start justify-between gap-2.5">
               <div class="flex items-center gap-2.5 min-w-0">
                 <div
-                  class="w-9 h-9 rounded-m3-md grid place-items-center shrink-0"
-                  [class]="isSelected ? 'bg-surface/30 text-current' : meta.tileTintClass"
+                  [class]="'w-9 h-9 rounded-m3-md grid place-items-center shrink-0 ' + (isSelected ? 'bg-surface/30 text-current' : meta.tileTintClass)"
                   aria-hidden="true"
                 >
                   <span class="material-symbols-rounded text-lg">{{ meta.icon }}</span>
@@ -77,12 +76,7 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
 
               @if (item.isActiveNow) {
                 <span
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-m3-full text-label-sm-emphasized shrink-0"
-                  [class]="
-                    isSelected
-                      ? 'bg-surface text-main'
-                      : 'bg-success-box text-on-success-box'
-                  "
+                  [class]="'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-m3-full text-label-sm-emphasized shrink-0 ' + (isSelected ? 'bg-surface text-main' : 'bg-success-box text-on-success-box')"
                 >
                   <span class="campus-live-dot bg-success" aria-hidden="true"></span>
                   En vivo

@@ -1,9 +1,9 @@
 /**
  * Campus Module — Scoped Material 3 Expressive Styles & Motion Tokens
  *
- * Loaded with ViewEncapsulation.None on CampusComponent (matching Telemetry & Inventory)
- * using real `--md-sys-*` design tokens from `_token.css`, OKLCH tonal stepping,
- * bounded corner-radius shape morphing (never 9999px), and transient VT hooks.
+ * Loaded with ViewEncapsulation.None on CampusComponent using `--md-sys-*` design tokens,
+ * OKLCH tonal stepping, bounded corner-radius shape morphing (never 9999px),
+ * native Top-Layer <m3-dialog> shells, and root-isolated vt-campus-swap View Transitions.
  */
 export const CAMPUS_EXPRESSIVE_CSS = /* css */ `
   .campus-workbench {
@@ -70,11 +70,11 @@ export const CAMPUS_EXPRESSIVE_CSS = /* css */ `
     outline-offset: 2px;
   }
 
-  /* Bounded h/2 pill morphing (40px height -> max 20px radius, never 9999px) */
+  /* Bounded h/2 pill morphing (44px height -> max 22px radius, never 9999px) */
   .campus-att-btn {
-    border-radius: 10px;
-    min-height: 40px;
-    min-width: 40px;
+    border-radius: 12px;
+    min-height: 44px;
+    min-width: 44px;
     transition:
       border-radius 240ms var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
       background-color 180ms var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
@@ -83,11 +83,11 @@ export const CAMPUS_EXPRESSIVE_CSS = /* css */ `
   }
 
   .campus-att-btn:hover:not(:disabled) {
-    border-radius: 14px;
+    border-radius: 16px;
   }
 
   .campus-att-btn[aria-pressed='true'] {
-    border-radius: 20px;
+    border-radius: 22px;
   }
 
   .campus-att-btn:active:not(:disabled) {
@@ -131,7 +131,89 @@ export const CAMPUS_EXPRESSIVE_CSS = /* css */ `
     }
   }
 
-  /* Transient View Transition hooks */
+  /* ── Top-Layer M3 Native Modal Dialog Shells (<m3-dialog>) ─────────────── */
+  dialog.m3-dialog.campus-modal-dialog {
+    width: min(38rem, calc(100vw - 1.5rem));
+    max-width: min(38rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.campus-modal-dialog > .m3-dialog-inner {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.campus-modal-dialog > .m3-dialog-inner > h2 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    margin: 0;
+  }
+
+  dialog.m3-dialog.campus-modal-dialog > .m3-dialog-inner > .m3-dialog-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.campus-modal-dialog > .m3-dialog-inner > .m3-dialog-footer {
+    padding: 0;
+    display: none;
+  }
+
+  /* Full-width connected button-group containers inside Campus modals */
+  m3-button-group.campus-connected-group-host {
+    display: block !important;
+    width: 100%;
+  }
+
+  .campus-connected-group {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  @media (min-width: 520px) {
+    .campus-connected-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    .campus-connected-group .m3-btn {
+      width: 100%;
+      justify-content: center;
+      padding-inline: 10px;
+    }
+  }
+
+  /* ── Scoped View Transitions (Suppress root cross-fade flicker) ────────── */
+  html.vt-campus-swap:not(.theme-transition) {
+    view-transition-name: none;
+  }
+
+  html.vt-campus-swap:not(.theme-transition)::view-transition {
+    pointer-events: none;
+  }
+
+  html.vt-campus-swap:not(.theme-transition)::view-transition-old(root) {
+    display: none;
+    animation: none;
+  }
+
+  html.vt-campus-swap:not(.theme-transition)::view-transition-new(root) {
+    animation: none;
+  }
+
   .vt-role-stage {
     view-transition-name: campus-role-stage;
   }

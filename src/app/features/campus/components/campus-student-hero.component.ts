@@ -34,8 +34,7 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
               }
 
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-m3-full text-label-sm-emphasized font-mono"
-                [class]="categoryMeta().badgeClass"
+                [class]="'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-m3-full text-label-sm-emphasized font-mono ' + categoryMeta().badgeClass"
               >
                 <span class="material-symbols-rounded text-[14px]" aria-hidden="true">
                   {{ categoryMeta().icon }}
@@ -59,11 +58,12 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
               [variant]="c.isActiveNow ? 'filled' : 'tonal'"
               size="md"
               icon="videocam"
+              [morph]="true"
               [invisible]="
                 isDialogOpen() && activeDialogTrigger() === 'campus-hero-classroom-btn'
               "
               [viewTransitionName]="
-                !isDialogOpen() && activeDialogTrigger() === 'campus-hero-classroom-btn'
+                dialogMorphOwner() === 'trigger' && activeDialogTrigger() === 'campus-hero-classroom-btn'
                   ? 'dialog-transform'
                   : null
               "
@@ -177,10 +177,10 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
           </div>
           <div class="bg-surface rounded-m3-lg px-3.5 py-3">
             <p class="text-label-sm text-muted uppercase tracking-wider">
-              Tiempo restante
+              Recursos listos
             </p>
             <p class="text-title-sm-emphasized font-mono tabular-nums text-main mt-1">
-              {{ c.remainingMinutes > 0 ? c.remainingMinutes + ' min' : 'Próxima sesión' }}
+              {{ completedResourcesLabel() }}
             </p>
           </div>
         </div>
@@ -193,12 +193,22 @@ export class CampusStudentHeroComponent {
   readonly course = input.required<ClassScheduleItem>();
   readonly activeDialogTrigger = input<string | null>(null);
   readonly isDialogOpen = input<boolean>(false);
+  readonly dialogMorphOwner = input<'trigger' | 'modal' | null>(null);
 
   readonly enterClassroom = output<string>();
 
   protected readonly categoryMeta = computed(
     () => SUBJECT_CATEGORY_META[this.course().category]
   );
+
+  protected readonly completedResourcesLabel = computed(() => {
+    const resources = this.course().resources ?? [];
+    if (resources.length === 0) {
+      return this.course().remainingMinutes > 0 ? `${this.course().remainingMinutes} min` : 'Sin archivos';
+    }
+    const done = resources.filter((r) => Boolean(r.completed)).length;
+    return `${done} / ${resources.length} archivos`;
+  });
 
   protected readonly sessionMilestones = computed(() => {
     const pct = this.course().progressPercent;

@@ -7,7 +7,9 @@ import { M3LinearProgressComponent } from '../../shared/components/progress/line
 import { CampusComponent } from './campus.component';
 import { CampusAnnouncementModalComponent } from './components/campus-announcement-modal.component';
 import { CampusAssignmentModalComponent } from './components/campus-assignment-modal.component';
+import { CampusEvaluationModalComponent } from './components/campus-evaluation-modal.component';
 import { CampusGradingModalComponent } from './components/campus-grading-modal.component';
+import { CampusSimulatorDialogComponent } from './components/campus-simulator-dialog.component';
 
 describe('CampusComponent', () => {
   let component: CampusComponent;
@@ -93,10 +95,10 @@ describe('CampusComponent', () => {
     );
   });
 
-  it('should support WAI-ARIA mobile tablist navigation with ArrowRight and ArrowLeft keys', () => {
+  it('should support WAI-ARIA primary M3 mobile tablist navigation with ArrowRight, End and Home keys', () => {
     const hostEl: HTMLElement = fixture.nativeElement;
     const tabs = Array.from(
-      hostEl.querySelectorAll('[role="tablist"] [role="tab"]')
+      hostEl.querySelectorAll('m3-tabs [role="tablist"] [role="tab"]')
     ) as HTMLButtonElement[];
     expect(tabs.length).toBe(3);
     expect(component.mobileTab()).toBe('overview');
@@ -114,7 +116,7 @@ describe('CampusComponent', () => {
     expect(component.mobileTab()).toBe('overview');
   });
 
-  it('should open portaled classroom dialog with dialog-transform trigger and close on Escape', () => {
+  it('should open native <m3-dialog> classroom portal with resource checklist and close on Escape', () => {
     const hostEl: HTMLElement = fixture.nativeElement;
     const heroBtn = hostEl.querySelector(
       '#campus-hero-classroom-btn button'
@@ -127,7 +129,21 @@ describe('CampusComponent', () => {
     expect(service.isClassroomDialogOpen()).toBe(true);
     expect(stageOverlay.isOverlayOpen()).toBe(true);
     expect(service.activeDialogTrigger()).toBe('campus-hero-classroom-btn');
-    expect(hostEl.querySelector('#campus-classroom-heading')).toBeTruthy();
+
+    const classroomDialog = hostEl.querySelector(
+      'app-campus-classroom-modal dialog.m3-dialog.campus-modal-dialog[open]'
+    ) as HTMLDialogElement | null;
+    expect(classroomDialog).toBeTruthy();
+    expect(classroomDialog?.querySelector('#campus-classroom-heading')).toBeTruthy();
+
+    const resourceCheck = classroomDialog?.querySelector(
+      'm3-checkbox input[type="checkbox"]'
+    ) as HTMLInputElement | null;
+    expect(resourceCheck).toBeTruthy();
+    const initialDone = service.selectedClass().resources?.[0].completed;
+    resourceCheck?.click();
+    fixture.detectChanges();
+    expect(service.selectedClass().resources?.[0].completed).toBe(!initialDone);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     fixture.detectChanges();
@@ -136,7 +152,7 @@ describe('CampusComponent', () => {
     expect(stageOverlay.isOverlayOpen()).toBe(false);
   });
 
-  it('should open assignment modal and confirm delivery submission', () => {
+  it('should open assignment modal and confirm delivery submission, plus open Student GPA Simulator', () => {
     const pending = service.assignments().find((a) => a.submissionStatus === 'pending');
     expect(pending).toBeTruthy();
 
@@ -162,9 +178,21 @@ describe('CampusComponent', () => {
     const updated = service.assignments().find((a) => a.id === pending!.id);
     expect(updated?.submissionStatus).toBe('submitted');
     expect(service.selectedAssignment()).toBeNull();
+
+    // Open weighted GPA Simulator dialog
+    const simBtn = fixture.nativeElement.querySelector(
+      '#campus-gpa-simulator-btn button'
+    ) as HTMLButtonElement | null;
+    expect(simBtn).toBeTruthy();
+    simBtn?.click();
+    fixture.detectChanges();
+
+    const simDbg = fixture.debugElement.query(By.directive(CampusSimulatorDialogComponent));
+    expect(simDbg.nativeElement.querySelector('dialog.m3-dialog.campus-modal-dialog[open]')).toBeTruthy();
+    expect(simDbg.nativeElement.querySelector('m3-slider')).toBeTruthy();
   });
 
-  it('should filter deliverables when clicking filter chips', () => {
+  it('should filter deliverables and official board announcements', () => {
     const hostEl: HTMLElement = fixture.nativeElement;
     const pendingChipBtn = Array.from(
       hostEl.querySelectorAll('app-campus-assignments-card button')
@@ -178,13 +206,23 @@ describe('CampusComponent', () => {
     expect(
       service.filteredAssignments().every((a) => a.submissionStatus === 'pending')
     ).toBe(true);
+
+    const priorityAnnChip = Array.from(
+      hostEl.querySelectorAll('app-campus-announcements-card button')
+    ).find((btn) => btn.textContent?.includes('Prioritarios')) as HTMLButtonElement | undefined;
+    priorityAnnChip?.click();
+    fixture.detectChanges();
+    expect(service.announcementsFilter()).toBe('important');
+    expect(service.filteredAnnouncements().every((a) => a.important)).toBe(true);
   });
 
-  it('should switch to Teacher mode, filter roster KPIs, grade work and publish announcement without native checkboxes', () => {
+  it('should switch to Teacher mode, support section switching, batch Undo, grading validation, and new evaluations', () => {
     service.switchRole('teacher');
     fixture.detectChanges();
 
     const hostEl: HTMLElement = fixture.nativeElement;
+    expect(hostEl.querySelector('app-campus-attendance-roster search')).toBeTruthy();
+
     const kpiButtons = Array.from(
       hostEl.querySelectorAll('app-campus-teacher-kpi-ribbon button')
     ) as HTMLButtonElement[];
@@ -196,7 +234,24 @@ describe('CampusComponent', () => {
     expect(service.rosterFilter()).toBe('late');
     expect(service.filteredRoster().every((s) => s.status === 'late')).toBe(true);
 
-    // Open grading modal via portaled trigger
+    // Batch mark all present & undo via Top-Layer <m3-snackbar>
+    service.setRosterFilter('all');
+    fixture.detectChanges();
+    const markAllBtn = Array.from(
+      hostEl.querySelectorAll('app-campus-teacher-hero button')
+    ).find((b) => b.textContent?.includes('Marcar Todos Presentes')) as HTMLButtonElement | undefined;
+    expect(markAllBtn).toBeTruthy();
+    markAllBtn?.click();
+    fixture.detectChanges();
+    expect(service.canUndoBatchAttendance()).toBe(true);
+
+    const snackbarUndo = hostEl.querySelector('m3-snackbar .m3-snackbar-action') as HTMLButtonElement | null;
+    expect(snackbarUndo?.textContent).toContain('Deshacer');
+    snackbarUndo?.click();
+    fixture.detectChanges();
+    expect(service.canUndoBatchAttendance()).toBe(false);
+
+    // Open grading modal via portaled trigger and verify connected presets + 0-20 validation
     const pendingGrade = service.gradingQueue().find((g) => g.status === 'pending');
     expect(pendingGrade).toBeTruthy();
     const gradeBtn = hostEl.querySelector(
@@ -206,16 +261,38 @@ describe('CampusComponent', () => {
     fixture.detectChanges();
 
     const gradingModalDbg = fixture.debugElement.query(By.directive(CampusGradingModalComponent));
-    expect(gradingModalDbg).toBeTruthy();
+    expect(gradingModalDbg.nativeElement.querySelector('dialog.m3-dialog[open]')).toBeTruthy();
     const gradingModal = gradingModalDbg.componentInstance as CampusGradingModalComponent;
-    gradingModal.score.set('19 / 20');
     const gradeForm = gradingModalDbg.nativeElement.querySelector('form') as HTMLFormElement;
+
+    // Invalid out-of-range score stays open
+    gradingModal.score.set('25 / 20');
+    gradeForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(service.selectedGradingItem()).not.toBeNull();
+
+    gradingModal.score.set('19 / 20');
     gradeForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
 
     const updatedGrade = service.gradingQueue().find((g) => g.id === pendingGrade!.id);
     expect(updatedGrade?.status).toBe('reviewed');
     expect(updatedGrade?.score).toBe('19 / 20');
+
+    // Open evaluation modal from Quick Actions and assign real deliverable to student list
+    const evalTrigger = hostEl.querySelector('#campus-new-evaluation-btn') as HTMLButtonElement | null;
+    evalTrigger?.click();
+    fixture.detectChanges();
+    const evalModalDbg = fixture.debugElement.query(By.directive(CampusEvaluationModalComponent));
+    const evalModal = evalModalDbg.componentInstance as CampusEvaluationModalComponent;
+    const evalForm = evalModalDbg.nativeElement.querySelector('form') as HTMLFormElement;
+    const prevAssignTotal = service.assignments().length;
+    evalModal.title.set('Laboratorio 5: Osciladores');
+    evalModal.urgent.set(true);
+    evalForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(service.assignments().length).toBe(prevAssignTotal + 1);
+    expect(service.assignments()[0].title).toBe('Laboratorio 5: Osciladores');
 
     // Open announcement modal and ensure M3Switch is used (zero native checkboxes)
     const annTrigger = hostEl.querySelector('#campus-announcement-btn') as HTMLButtonElement | null;
@@ -231,13 +308,11 @@ describe('CampusComponent', () => {
     const annForm = annModalDbg.nativeElement.querySelector('form') as HTMLFormElement;
     const beforeCount = service.announcements().length;
 
-    // Empty submit stays open and triggers error state
     annForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
     expect(service.announcements().length).toBe(beforeCount);
     expect(annModal.submitAttempted()).toBe(true);
 
-    // Fill fields and publish
     annModal.title.set('Evaluación corta');
     annModal.summary.set('Mañana evaluamos espectroscopía práctica.');
     annModal.important.set(true);

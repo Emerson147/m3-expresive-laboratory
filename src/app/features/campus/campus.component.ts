@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
   HostListener,
   Injector,
   TemplateRef,
@@ -13,14 +12,14 @@ import {
   effect,
   inject,
   signal,
-  viewChild,
-  viewChildren
+  viewChild
 } from '@angular/core';
 import {
   AttendanceStatus,
   CampusRole,
   ClassScheduleItem,
   CreateAnnouncementDto,
+  CreateAssignmentDto,
   StudentAssignment,
   SubmitAssignmentDto,
   SubmitGradeDto,
@@ -29,14 +28,16 @@ import {
 import { CampusService } from '../../core/campus/campus.service';
 import { StageOverlayService } from '../../core/dialog/stage-overlay.service';
 import { AdaptiveLayoutService } from '../../core/layout/adaptive-layout.service';
-import { M3ButtonComponent } from '../../shared/components/button/button.component';
 import { M3FabComponent } from '../../shared/components/button/fab.component';
+import { M3SnackbarComponent } from '../../shared/components/snackbar/snackbar.component';
+import { M3TabItem, M3TabsComponent } from '../../shared/components/tabs/tabs.component';
 import { CampusAnnouncementsCardComponent } from './components/campus-announcements-card.component';
 import { CampusAnnouncementModalComponent } from './components/campus-announcement-modal.component';
 import { CampusAssignmentModalComponent } from './components/campus-assignment-modal.component';
 import { CampusAssignmentsCardComponent } from './components/campus-assignments-card.component';
 import { CampusAttendanceRosterComponent } from './components/campus-attendance-roster.component';
 import { CampusClassroomModalComponent } from './components/campus-classroom-modal.component';
+import { CampusEvaluationModalComponent } from './components/campus-evaluation-modal.component';
 import { CAMPUS_EXPRESSIVE_CSS } from './components/campus-expressive.styles';
 import { CampusGradingModalComponent } from './components/campus-grading-modal.component';
 import { CampusGradingQueueComponent } from './components/campus-grading-queue.component';
@@ -44,25 +45,18 @@ import { CampusHeaderComponent } from './components/campus-header.component';
 import { CampusMetricsCardComponent } from './components/campus-metrics-card.component';
 import { CampusQuickActionsComponent } from './components/campus-quick-actions.component';
 import { CampusScheduleCardComponent } from './components/campus-schedule-card.component';
+import { CampusSimulatorDialogComponent } from './components/campus-simulator-dialog.component';
 import { CampusStudentHeroComponent } from './components/campus-student-hero.component';
 import { CampusTeacherHeroComponent } from './components/campus-teacher-hero.component';
 import { CampusTeacherKpiRibbonComponent } from './components/campus-teacher-kpi-ribbon.component';
-
-type CampusMobileTabId = 'overview' | 'agenda' | 'board';
-
-interface MobileTabOption {
-  id: CampusMobileTabId;
-  label: string;
-  icon: string;
-  count: number | null;
-}
 
 @Component({
   selector: 'app-campus',
   imports: [
     NgTemplateOutlet,
-    M3ButtonComponent,
     M3FabComponent,
+    M3SnackbarComponent,
+    M3TabsComponent,
     CampusHeaderComponent,
     CampusMetricsCardComponent,
     CampusStudentHeroComponent,
@@ -77,7 +71,9 @@ interface MobileTabOption {
     CampusClassroomModalComponent,
     CampusAssignmentModalComponent,
     CampusGradingModalComponent,
-    CampusAnnouncementModalComponent
+    CampusAnnouncementModalComponent,
+    CampusEvaluationModalComponent,
+    CampusSimulatorDialogComponent
   ],
   encapsulation: ViewEncapsulation.None,
   styles: [CAMPUS_EXPRESSIVE_CSS],
@@ -100,6 +96,7 @@ interface MobileTabOption {
         [activeCourse]="campus.activeClass()"
         [activeDialogTrigger]="campus.activeDialogTrigger()"
         [isDialogOpen]="campus.isAnyDialogOpen()"
+        [dialogMorphOwner]="campus.dialogMorphOwner()"
         (roleChange)="onSwitchRole($event)"
         (openClassroom)="onOpenClassroom($event)"
         (openAnnouncement)="onOpenAnnouncement($event)"
@@ -112,6 +109,10 @@ interface MobileTabOption {
           [creditProgress]="campus.creditProgress().percent"
           [pendingAssignments]="campus.pendingAssignmentsCount()"
           [unreadAnnouncements]="campus.unreadAnnouncementsCount()"
+          [activeDialogTrigger]="campus.activeDialogTrigger()"
+          [isDialogOpen]="campus.isAnyDialogOpen()"
+          [dialogMorphOwner]="campus.dialogMorphOwner()"
+          (openSimulator)="onOpenSimulator($event)"
         />
       } @else {
         <app-campus-teacher-kpi-ribbon
@@ -121,53 +122,16 @@ interface MobileTabOption {
         />
       }
 
-      <!-- Mobile WAI-ARIA Tab Switcher (< lg) -->
-      <nav aria-label="Navegación de secciones" class="lg:hidden flex justify-center">
-        <div
-          role="tablist"
-          aria-label="Vistas móviles de campus"
-          class="inline-flex items-center gap-1 p-1.5 rounded-m3-full bg-surface-low shadow-m3-level1 max-w-full overflow-x-auto"
-        >
-          @for (tab of mobileTabs(); track tab.id; let idx = $index) {
-            @let selected = mobileTab() === tab.id;
-
-            <button
-              #mobileTabBtn
-              type="button"
-              role="tab"
-              [id]="'campus-mobile-tab-' + tab.id"
-              [attr.aria-selected]="selected"
-              [attr.aria-controls]="'campus-panel-' + tab.id"
-              [attr.tabindex]="selected ? 0 : -1"
-              (click)="mobileTab.set(tab.id)"
-              (keydown)="onMobileTabKeydown($event, idx)"
-              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-m3-full text-label-md-emphasized whitespace-nowrap cursor-pointer transition-colors"
-              [class]="
-                selected
-                  ? 'bg-primary-box text-on-primary-box'
-                  : 'text-muted hover:bg-surface'
-              "
-            >
-              <span class="material-symbols-rounded text-[16px]" aria-hidden="true">
-                {{ tab.icon }}
-              </span>
-              <span>{{ tab.label }}</span>
-              @if (tab.count !== null && tab.count > 0) {
-                <span
-                  class="px-1.5 py-0.5 rounded-m3-full text-[10px] leading-none font-bold tabular-nums"
-                  [class]="
-                    selected
-                      ? 'bg-surface/40 text-current'
-                      : 'bg-surface text-main'
-                  "
-                >
-                  {{ tab.count }}
-                </span>
-              }
-            </button>
-          }
-        </div>
-      </nav>
+      <!-- Mobile WAI-ARIA Primary M3 Tabs (< lg) -->
+      <div class="lg:hidden shrink-0">
+        <m3-tabs
+          variant="primary"
+          ariaLabel="Vistas móviles de campus"
+          idPrefix="campus-mobile-tab"
+          [tabs]="mobileTabs()"
+          [(value)]="mobileTab"
+        />
+      </div>
 
       <!-- Responsive 8/4 Mission Control Bento Grid -->
       <div
@@ -185,6 +149,7 @@ interface MobileTabOption {
                 [course]="campus.selectedClass()"
                 [activeDialogTrigger]="campus.activeDialogTrigger()"
                 [isDialogOpen]="campus.isAnyDialogOpen()"
+                [dialogMorphOwner]="campus.dialogMorphOwner()"
                 (enterClassroom)="onOpenClassroom($event)"
               />
 
@@ -207,6 +172,7 @@ interface MobileTabOption {
                 [isFilterTransitioning]="campus.isAssignmentsTransitioning()"
                 [activeDialogTrigger]="campus.activeDialogTrigger()"
                 [isDialogOpen]="campus.isAnyDialogOpen()"
+                [dialogMorphOwner]="campus.dialogMorphOwner()"
                 (filterChange)="campus.setAssignmentsFilter($event)"
                 (submitAssignment)="campus.submitAssignment($event)"
                 (inspectAssignment)="onOpenAssignment($event)"
@@ -221,8 +187,11 @@ interface MobileTabOption {
             [class]="(mobileTab() === 'board' ? 'flex' : 'hidden') + ' lg:flex flex-col gap-5 lg:gap-6 lg:col-span-4 min-w-0'"
           >
             <app-campus-announcements-card
-              [announcements]="campus.announcements()"
+              [announcements]="campus.filteredAnnouncements()"
               [unreadCount]="campus.unreadAnnouncementsCount()"
+              [totalCount]="campus.announcements().length"
+              [filter]="campus.announcementsFilter()"
+              (filterChange)="campus.setAnnouncementsFilter($event)"
               (toggleAck)="campus.toggleAnnouncementAck($event)"
             />
           </aside>
@@ -234,8 +203,10 @@ interface MobileTabOption {
           >
             <app-campus-teacher-hero
               [teacherClass]="campus.teacherClass()"
+              [sections]="campus.teacherSections()"
               [rosterSummary]="campus.rosterSummary()"
               (markAllPresent)="campus.markAllPresent()"
+              (selectSection)="campus.selectTeacherSection($event)"
             />
 
             <app-campus-attendance-roster
@@ -246,6 +217,8 @@ interface MobileTabOption {
               (searchChange)="campus.setRosterSearch($event)"
               (resetFilters)="onResetTeacherFilters()"
               (statusChange)="onRosterStatusChange($event)"
+              (justifyStudent)="campus.updateAttendanceNote($event.studentId, $event.note)"
+              (tutoringAlert)="campus.sendRiskTutoringAlert($event)"
             />
           </div>
 
@@ -259,10 +232,14 @@ interface MobileTabOption {
               [class]="(mobileTab() === 'agenda' ? 'flex' : 'hidden') + ' lg:flex flex-col min-w-0'"
             >
               <app-campus-grading-queue
-                [items]="campus.gradingQueue()"
+                [items]="campus.filteredGradingQueue()"
                 [pendingCount]="campus.pendingGradingCount()"
+                [totalCount]="campus.gradingQueue().length"
+                [filter]="campus.gradingFilter()"
                 [activeDialogTrigger]="campus.activeDialogTrigger()"
                 [isDialogOpen]="campus.isAnyDialogOpen()"
+                [dialogMorphOwner]="campus.dialogMorphOwner()"
+                (filterChange)="campus.setGradingFilter($event)"
                 (openGrade)="onOpenGrading($event)"
               />
             </div>
@@ -274,6 +251,8 @@ interface MobileTabOption {
               <app-campus-quick-actions
                 [activeDialogTrigger]="campus.activeDialogTrigger()"
                 [isDialogOpen]="campus.isAnyDialogOpen()"
+                [dialogMorphOwner]="campus.dialogMorphOwner()"
+                (openEvaluation)="onOpenEvaluation($event)"
                 (openAnnouncement)="onOpenAnnouncement($event)"
                 (downloadCsv)="onDownloadAttendanceCsv()"
               />
@@ -303,7 +282,7 @@ interface MobileTabOption {
             : 'visible'
         "
         [style.view-transition-name]="
-          !campus.isAnyDialogOpen() &&
+          campus.dialogMorphOwner() === 'trigger' &&
           campus.activeDialogTrigger() === 'campus-mobile-fab-announcement'
             ? 'dialog-transform'
             : null
@@ -329,7 +308,7 @@ interface MobileTabOption {
             : 'visible'
         "
         [style.view-transition-name]="
-          !campus.isAnyDialogOpen() &&
+          campus.dialogMorphOwner() === 'trigger' &&
           campus.activeDialogTrigger() === 'campus-mobile-fab-classroom'
             ? 'dialog-transform'
             : null
@@ -346,65 +325,67 @@ interface MobileTabOption {
       </div>
     }
 
-    <!-- Non-blocking Floating Confirmation Toast -->
-    @if (campus.toastMessage(); as message) {
-      <div
-        role="status"
-        class="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[calc(100vw-2rem)] bg-surface-highest text-main shadow-m3-level3 rounded-m3-full pl-4 pr-2 py-2 flex items-center gap-2.5"
-      >
-        <span class="material-symbols-rounded text-[18px] text-primary shrink-0" aria-hidden="true">
-          notifications_active
-        </span>
-        <span class="text-xs sm:text-sm font-semibold truncate">{{ message }}</span>
-        <m3-button
-          variant="text"
-          size="xs"
-          icon="close"
-          [iconOnly]="true"
-          ariaLabel="Cerrar notificación"
-          (action)="campus.dismissToast()"
-        />
-      </div>
-    }
+    <!-- Native Popover Top-Layer Feedback Snackbar with Batch Undo -->
+    <m3-snackbar
+      [open]="campus.toastMessage() !== null"
+      [message]="campus.toastMessage() ?? ''"
+      [actionLabel]="campus.canUndoBatchAttendance() ? 'Deshacer' : null"
+      (action)="campus.undoBatchAttendance()"
+      (dismissed)="campus.dismissToast()"
+    />
 
-    <!-- StageOverlay Modal Portal Template -->
+    <!-- StageOverlay Always-Mounted Native Dialogs Template -->
     <ng-template #campusModalsTemplate>
-      @if (campus.isClassroomDialogOpen()) {
-        <app-campus-classroom-modal
-          [course]="campus.selectedClass()"
-          [isTransitioning]="campus.isDialogTransitioning()"
-          (close)="campus.closeClassroomDialog()"
-          (copyLink)="onCopyClassroomLink($event)"
-          (enterRoom)="onEnterClassroom($event)"
-        />
-      }
+      <app-campus-classroom-modal
+        [open]="campus.isClassroomDialogOpen()"
+        [course]="campus.selectedClass()"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.isClassroomDialogOpen() ? 'dialog-transform' : null"
+        (close)="campus.closeClassroomDialog()"
+        (copyLink)="onCopyClassroomLink($event)"
+        (enterRoom)="onEnterClassroom($event)"
+        (toggleResource)="campus.toggleClassResourceCompleted($event.courseId, $event.resourceId)"
+      />
 
-      @if (campus.selectedAssignment(); as assignment) {
-        <app-campus-assignment-modal
-          [assignment]="assignment"
-          [isTransitioning]="campus.isDialogTransitioning()"
-          (close)="campus.closeAssignmentDialog()"
-          (submitDelivery)="onSubmitAssignmentFromModal($event)"
-        />
-      }
+      <app-campus-assignment-modal
+        [open]="campus.selectedAssignment() !== null"
+        [assignment]="campus.selectedAssignment()"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.selectedAssignment() !== null ? 'dialog-transform' : null"
+        (close)="campus.closeAssignmentDialog()"
+        (submitDelivery)="onSubmitAssignmentFromModal($event)"
+      />
 
-      @if (campus.selectedGradingItem(); as gradingItem) {
-        <app-campus-grading-modal
-          [item]="gradingItem"
-          [isTransitioning]="campus.isDialogTransitioning()"
-          (close)="campus.closeGradingDialog()"
-          (submitGrade)="onSubmitGrade($event)"
-        />
-      }
+      <app-campus-grading-modal
+        [open]="campus.selectedGradingItem() !== null"
+        [item]="campus.selectedGradingItem()"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.selectedGradingItem() !== null ? 'dialog-transform' : null"
+        (close)="campus.closeGradingDialog()"
+        (submitGrade)="onSubmitGrade($event)"
+      />
 
-      @if (campus.isAnnouncementDialogOpen()) {
-        <app-campus-announcement-modal
-          [enrolledCount]="campus.teacherClass().enrolledCount"
-          [isTransitioning]="campus.isDialogTransitioning()"
-          (close)="campus.closeAnnouncementDialog()"
-          (publish)="onPublishAnnouncement($event)"
-        />
-      }
+      <app-campus-announcement-modal
+        [open]="campus.isAnnouncementDialogOpen()"
+        [enrolledCount]="campus.teacherClass().enrolledCount"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.isAnnouncementDialogOpen() ? 'dialog-transform' : null"
+        (close)="campus.closeAnnouncementDialog()"
+        (publish)="onPublishAnnouncement($event)"
+      />
+
+      <app-campus-evaluation-modal
+        [open]="campus.isEvaluationDialogOpen()"
+        [defaultSubject]="campus.teacherClass().subject"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.isEvaluationDialogOpen() ? 'dialog-transform' : null"
+        (close)="campus.closeEvaluationDialog()"
+        (createEvaluation)="onCreateEvaluation($event)"
+      />
+
+      <app-campus-simulator-dialog
+        [open]="campus.isSimulatorDialogOpen()"
+        [courses]="campus.courseGrades()"
+        [projection]="campus.simulatedGpaProjection()"
+        [(projectedFinalScore)]="campus.simulatedFinalScore"
+        [viewTransitionName]="campus.dialogMorphOwner() === 'modal' && campus.isSimulatorDialogOpen() ? 'dialog-transform' : null"
+        (close)="campus.closeSimulatorDialog()"
+      />
     </ng-template>
 
     @if (!stageOverlay.hasExternalHost()) {
@@ -423,30 +404,29 @@ export class CampusComponent {
 
   private readonly modalsTemplate =
     viewChild.required<TemplateRef<unknown>>('campusModalsTemplate');
-  private readonly mobileTabButtons =
-    viewChildren<ElementRef<HTMLButtonElement>>('mobileTabBtn');
 
-  readonly mobileTab = signal<CampusMobileTabId>('overview');
+  readonly mobileTab = signal<string>('overview');
 
   private returnFocusElement: HTMLElement | null = null;
   private wasOverlayOpen = false;
-  private toastTimerId: ReturnType<typeof setTimeout> | null = null;
 
-  protected readonly mobileTabs = computed<MobileTabOption[]>(() => {
+  protected readonly mobileTabs = computed<M3TabItem[]>(() => {
     if (this.campus.currentRole() === 'student') {
       return [
-        { id: 'overview', label: 'Sesión', icon: 'school', count: null },
+        { id: 'overview', label: 'Sesión', icon: 'school', panelId: 'campus-panel-overview' },
         {
           id: 'agenda',
           label: 'Entregas',
           icon: 'assignment',
-          count: this.campus.pendingAssignmentsCount()
+          badge: this.campus.pendingAssignmentsCount(),
+          panelId: 'campus-panel-agenda'
         },
         {
           id: 'board',
           label: 'Tablero',
           icon: 'campaign',
-          count: this.campus.unreadAnnouncementsCount()
+          badge: this.campus.unreadAnnouncementsCount(),
+          panelId: 'campus-panel-board'
         }
       ];
     }
@@ -455,15 +435,17 @@ export class CampusComponent {
         id: 'overview',
         label: 'Asistencia',
         icon: 'fact_check',
-        count: this.campus.filteredRoster().length
+        badge: this.campus.filteredRoster().length,
+        panelId: 'campus-panel-overview'
       },
       {
         id: 'agenda',
         label: 'Revisión',
         icon: 'grading',
-        count: this.campus.pendingGradingCount()
+        badge: this.campus.pendingGradingCount(),
+        panelId: 'campus-panel-agenda'
       },
-      { id: 'board', label: 'Acciones', icon: 'bolt', count: null }
+      { id: 'board', label: 'Acciones', icon: 'bolt', panelId: 'campus-panel-board' }
     ];
   });
 
@@ -486,25 +468,6 @@ export class CampusComponent {
       }
       this.wasOverlayOpen = isOpen;
     });
-
-    effect(() => {
-      const msg = this.campus.toastMessage();
-      if (this.toastTimerId) {
-        clearTimeout(this.toastTimerId);
-        this.toastTimerId = null;
-      }
-      if (msg) {
-        this.toastTimerId = setTimeout(() => {
-          this.campus.dismissToast();
-        }, 4200);
-      }
-    });
-
-    this.destroyRef.onDestroy(() => {
-      if (this.toastTimerId) {
-        clearTimeout(this.toastTimerId);
-      }
-    });
   }
 
   @HostListener('document:keydown.escape', ['$event'])
@@ -519,31 +482,6 @@ export class CampusComponent {
     this.campus.switchRole(role);
   }
 
-  protected onMobileTabKeydown(event: KeyboardEvent, currentIndex: number): void {
-    const tabs = this.mobileTabs();
-    const total = tabs.length;
-    if (total === 0) return;
-
-    let targetIndex: number | null = null;
-    if (event.key === 'ArrowRight') {
-      targetIndex = (currentIndex + 1) % total;
-    } else if (event.key === 'ArrowLeft') {
-      targetIndex = (currentIndex - 1 + total) % total;
-    } else if (event.key === 'Home') {
-      targetIndex = 0;
-    } else if (event.key === 'End') {
-      targetIndex = total - 1;
-    }
-
-    if (targetIndex === null) return;
-    event.preventDefault();
-
-    this.mobileTab.set(tabs[targetIndex].id);
-    queueMicrotask(() => {
-      this.mobileTabButtons()[targetIndex]?.nativeElement.focus();
-    });
-  }
-
   protected onOpenClassroom(triggerId: string): void {
     this.captureReturnFocus();
     this.campus.openClassroomDialog(triggerId);
@@ -552,6 +490,16 @@ export class CampusComponent {
   protected onOpenAnnouncement(triggerId: string): void {
     this.captureReturnFocus();
     this.campus.openAnnouncementDialog(triggerId);
+  }
+
+  protected onOpenEvaluation(triggerId: string): void {
+    this.captureReturnFocus();
+    this.campus.openEvaluationDialog(triggerId);
+  }
+
+  protected onOpenSimulator(triggerId: string): void {
+    this.captureReturnFocus();
+    this.campus.openSimulatorDialog(triggerId);
   }
 
   protected onOpenGrading(payload: { item: TeacherGradingItem; triggerId: string }): void {
@@ -586,6 +534,10 @@ export class CampusComponent {
 
   protected onPublishAnnouncement(dto: CreateAnnouncementDto): void {
     this.campus.publishAnnouncement(dto);
+  }
+
+  protected onCreateEvaluation(dto: CreateAssignmentDto): void {
+    this.campus.createAssignment(dto);
   }
 
   protected onResetTeacherFilters(): void {

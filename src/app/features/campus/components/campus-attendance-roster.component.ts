@@ -40,7 +40,7 @@ const FILTER_LABELS: Record<RosterFilter, string> = {
               Lista de Asistencia en Vivo
             </h2>
             <p class="text-label-md text-muted truncate">
-              Marca P (Presente), T (Tardanza) o F (Falta) por estudiante
+              Marca P (Presente), T (Tardanza) o F (Falta) o envía alerta de tutoría
             </p>
           </div>
         </div>
@@ -51,8 +51,12 @@ const FILTER_LABELS: Record<RosterFilter, string> = {
       </div>
 
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div class="flex-1 min-w-0">
+        <search class="flex-1 min-w-0 block">
           <m3-text-field
+            [id]="'campus-roster-search'"
+            name="rosterSearch"
+            type="search"
+            enterkeyhint="search"
             variant="filled"
             label="Buscar estudiante"
             placeholder="Nombre o código universitario..."
@@ -60,8 +64,9 @@ const FILTER_LABELS: Record<RosterFilter, string> = {
             [clearable]="true"
             [value]="searchQuery()"
             (valueChange)="searchChange.emit($event)"
+            (clear)="searchChange.emit('')"
           />
-        </div>
+        </search>
 
         @if (activeFilter() !== 'all' || searchQuery().trim().length > 0) {
           <div class="flex items-center gap-2 shrink-0">
@@ -81,64 +86,98 @@ const FILTER_LABELS: Record<RosterFilter, string> = {
       >
         @for (student of roster(); track student.id) {
           <article
-            class="campus-roster-row campus-surface-tile bg-surface hover:bg-surface-high rounded-m3-lg p-4 flex items-center justify-between gap-3"
+            class="campus-roster-row campus-surface-tile bg-surface hover:bg-surface-high rounded-m3-lg p-4 flex flex-col justify-between gap-3"
             [style.--roster-vt-name]="'campus-roster-' + student.id"
           >
-            <div class="flex items-center gap-3 min-w-0">
-              <div
-                class="w-10 h-10 rounded-m3-md bg-primary-box/70 text-on-primary-box grid place-items-center font-mono text-label-md-emphasized shrink-0"
-                aria-hidden="true"
-              >
-                {{ initialsFor(student.studentName) }}
-              </div>
-
-              <div class="min-w-0 space-y-0.5">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-label-sm font-mono text-muted tabular-nums">
-                    {{ student.studentCode }}
-                  </span>
-                  @if (student.atRisk) {
-                    <span class="px-2 py-0.5 rounded-m3-full bg-error-box text-on-error-box text-[10px] font-bold uppercase tracking-wider">
-                      Riesgo
-                    </span>
-                  }
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div
+                  class="w-10 h-10 rounded-m3-md bg-primary-box/70 text-on-primary-box grid place-items-center font-mono text-label-md-emphasized shrink-0"
+                  aria-hidden="true"
+                >
+                  {{ initialsFor(student.studentName) }}
                 </div>
 
-                <h3 class="text-title-sm-emphasized text-main truncate">
-                  {{ student.studentName }}
-                </h3>
+                <div class="min-w-0 space-y-0.5">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-label-sm font-mono text-muted tabular-nums">
+                      {{ student.studentCode }}
+                    </span>
+                    @if (student.atRisk) {
+                      <span class="px-2 py-0.5 rounded-m3-full bg-error-box text-on-error-box text-[10px] font-bold uppercase tracking-wider">
+                        Riesgo
+                      </span>
+                    }
+                  </div>
 
-                <p class="text-label-sm text-muted font-mono tabular-nums">
-                  Asistencia acumulada: {{ student.overallAttendance }}%
-                </p>
+                  <h3 class="text-title-sm-emphasized text-main truncate">
+                    {{ student.studentName }}
+                  </h3>
+
+                  <p class="text-label-sm text-muted font-mono tabular-nums">
+                    Asistencia acumulada: {{ student.overallAttendance }}%
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="flex items-center gap-1.5 shrink-0"
+                role="group"
+                [attr.aria-label]="'Asistencia de ' + student.studentName"
+              >
+                @for (status of statusOptions; track status) {
+                  @let meta = statusMetaFor(status);
+                  @let selected = student.status === status;
+
+                  <button
+                    type="button"
+                    (click)="statusChange.emit({ studentId: student.id, status })"
+                    [attr.aria-pressed]="selected"
+                    [attr.aria-label]="meta.ariaLabel + ' a ' + student.studentName"
+                    [class]="'campus-att-btn rounded-m3-md px-2.5 text-label-md-emphasized cursor-pointer flex items-center justify-center ' + (selected ? meta.activeClass : 'bg-surface-low text-muted hover:bg-surface-highest')"
+                  >
+                    {{ meta.code }}
+                  </button>
+                }
               </div>
             </div>
 
-            <div
-              class="flex items-center gap-1.5 shrink-0"
-              role="group"
-              [attr.aria-label]="'Asistencia de ' + student.studentName"
-            >
-              @for (status of statusOptions; track status) {
-                @let meta = statusMetaFor(status);
-                @let selected = student.status === status;
+            @if (student.attendanceNote || student.atRisk || student.status !== 'present') {
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                @if (student.attendanceNote) {
+                  <span class="inline-flex items-center gap-1 text-label-sm text-primary font-medium truncate">
+                    <span class="material-symbols-rounded text-[15px]" aria-hidden="true">fact_check</span>
+                    {{ student.attendanceNote }}
+                  </span>
+                } @else {
+                  <span class="text-label-sm text-muted">
+                    {{ student.atRisk ? 'Requiere seguimiento de tutoría' : 'Sin justificación registrada' }}
+                  </span>
+                }
 
-                <button
-                  type="button"
-                  (click)="statusChange.emit({ studentId: student.id, status })"
-                  [attr.aria-pressed]="selected"
-                  [attr.aria-label]="meta.ariaLabel + ' a ' + student.studentName"
-                  class="campus-att-btn rounded-m3-md px-2.5 text-label-md-emphasized cursor-pointer flex items-center justify-center"
-                  [class]="
-                    selected
-                      ? meta.activeClass
-                      : 'bg-surface-low text-muted hover:bg-surface-highest'
-                  "
-                >
-                  {{ meta.code }}
-                </button>
-              }
-            </div>
+                <div class="flex items-center gap-1.5 ml-auto">
+                  @if (student.status !== 'present' && !student.attendanceNote) {
+                    <button
+                      type="button"
+                      (click)="justifyStudent.emit({ studentId: student.id, note: 'Justificación médica / académica' })"
+                      class="px-2.5 py-1 rounded-m3-full bg-surface-low hover:bg-sec-box hover:text-on-sec-box text-label-sm font-medium text-muted state-layer focus-ring-m3 transition-colors"
+                    >
+                      Justificar
+                    </button>
+                  }
+                  @if (student.atRisk && !student.attendanceNote) {
+                    <button
+                      type="button"
+                      (click)="tutoringAlert.emit(student.id)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-m3-full bg-error-box/75 text-on-error-box hover:bg-error-box text-label-sm-emphasized state-layer focus-ring-m3 transition-colors"
+                    >
+                      <span class="material-symbols-rounded text-[14px]" aria-hidden="true">support_agent</span>
+                      Citar tutoría
+                    </button>
+                  }
+                </div>
+              </div>
+            }
           </article>
         } @empty {
           <div class="md:col-span-2 rounded-m3-xl bg-surface p-6 text-center space-y-2.5">
@@ -170,6 +209,8 @@ export class CampusAttendanceRosterComponent {
   readonly searchChange = output<string>();
   readonly resetFilters = output<void>();
   readonly statusChange = output<{ studentId: string; status: AttendanceStatus }>();
+  readonly justifyStudent = output<{ studentId: string; note: string }>();
+  readonly tutoringAlert = output<string>();
 
   protected readonly statusOptions = STATUS_OPTIONS;
 
