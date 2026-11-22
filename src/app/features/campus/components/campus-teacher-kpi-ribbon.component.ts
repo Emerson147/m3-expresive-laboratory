@@ -33,24 +33,17 @@ interface KpiFilterChip {
           type="button"
           (click)="filterChange.emit(chip.filter)"
           [attr.aria-pressed]="active"
-          class="campus-kpi-btn rounded-m3-xl px-5 py-4 text-left flex flex-col justify-between gap-3 cursor-pointer"
-          [class]="
-            active
-              ? chip.activeClass
-              : 'bg-surface-low hover:bg-surface-box text-main'
-          "
+          [class]="'campus-kpi-btn rounded-m3-xl px-5 py-4 text-left flex flex-col justify-between gap-3 cursor-pointer ' + (active ? chip.activeClass : 'bg-surface-low hover:bg-surface-box text-main')"
         >
           <div class="flex items-center justify-between gap-2 w-full">
             <span
-              class="text-label-md-emphasized uppercase tracking-wide"
-              [class.text-muted]="!active"
+              [class]="'text-label-md-emphasized uppercase tracking-wide ' + (active ? '' : 'text-muted')"
             >
               {{ chip.label }}
             </span>
 
             <span
-              class="w-8 h-8 rounded-m3-lg grid place-items-center shrink-0"
-              [class]="active ? 'bg-surface/40 text-current' : chip.iconBoxClass"
+              [class]="'w-8 h-8 rounded-m3-lg grid place-items-center shrink-0 ' + (active ? 'bg-surface/40 text-current' : chip.iconBoxClass)"
               aria-hidden="true"
             >
               <span class="material-symbols-rounded text-lg">{{ chip.icon }}</span>

@@ -62,8 +62,7 @@ import { M3ChipComponent } from '../../../shared/components/chip/chip.component'
             <div class="min-w-0 space-y-1.5">
               <div class="flex items-center gap-2 flex-wrap">
                 <span
-                  class="px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized"
-                  [class]="badgeClassFor(item)"
+                  [class]="'px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized ' + badgeClassFor(item)"
                 >
                   {{ statusLabelFor(item) }}
                 </span>
@@ -93,12 +92,13 @@ import { M3ChipComponent } from '../../../shared/components/chip/chip.component'
                 variant="text"
                 size="sm"
                 icon="visibility"
+                [morph]="true"
                 [invisible]="
                   isDialogOpen() &&
                   activeDialogTrigger() === 'campus-assignment-btn-' + item.id
                 "
                 [viewTransitionName]="
-                  !isDialogOpen() &&
+                  dialogMorphOwner() === 'trigger' &&
                   activeDialogTrigger() === 'campus-assignment-btn-' + item.id
                     ? 'dialog-transform'
                     : null
@@ -149,6 +149,7 @@ export class CampusAssignmentsCardComponent {
   readonly isFilterTransitioning = input<boolean>(false);
   readonly activeDialogTrigger = input<string | null>(null);
   readonly isDialogOpen = input<boolean>(false);
+  readonly dialogMorphOwner = input<'trigger' | 'modal' | null>(null);
 
   readonly filterChange = output<AssignmentFilter>();
   readonly submitAssignment = output<string>();

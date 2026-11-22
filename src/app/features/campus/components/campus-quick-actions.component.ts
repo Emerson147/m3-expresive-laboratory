@@ -20,12 +20,47 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
             Acciones de Aula
           </h2>
           <p class="text-label-sm text-muted">
-            Comunicados rápidos y respaldo documental
+            Evaluaciones, comunicados rápidos y respaldo documental
           </p>
         </div>
       </div>
 
       <div class="space-y-2.5">
+        <button
+          id="campus-new-evaluation-btn"
+          type="button"
+          (click)="openEvaluation.emit('campus-new-evaluation-btn')"
+          [style.visibility]="
+            isDialogOpen() && activeDialogTrigger() === 'campus-new-evaluation-btn'
+              ? 'hidden'
+              : 'visible'
+          "
+          [style.view-transition-name]="
+            dialogMorphOwner() === 'trigger' && activeDialogTrigger() === 'campus-new-evaluation-btn'
+              ? 'dialog-transform'
+              : null
+          "
+          class="campus-surface-tile focus-ring-m3 w-full bg-surface hover:bg-surface-high rounded-m3-lg p-3.5 min-h-[56px] flex items-center justify-between gap-3 text-left cursor-pointer"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span
+              class="w-10 h-10 rounded-m3-lg bg-tertiary-box text-on-tertiary-box grid place-items-center shrink-0"
+              aria-hidden="true"
+            >
+              <span class="material-symbols-rounded text-lg">add_task</span>
+            </span>
+            <div class="min-w-0">
+              <p class="text-title-sm-emphasized text-main">Nueva evaluación / tarea</p>
+              <p class="text-label-sm text-muted truncate">
+                Asigna una entrega al calendario del estudiante
+              </p>
+            </div>
+          </div>
+          <span class="material-symbols-rounded text-lg text-muted shrink-0" aria-hidden="true">
+            chevron_right
+          </span>
+        </button>
+
         <button
           id="campus-announcement-btn"
           type="button"
@@ -36,11 +71,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
               : 'visible'
           "
           [style.view-transition-name]="
-            !isDialogOpen() && activeDialogTrigger() === 'campus-announcement-btn'
+            dialogMorphOwner() === 'trigger' && activeDialogTrigger() === 'campus-announcement-btn'
               ? 'dialog-transform'
               : null
           "
-          class="campus-surface-tile w-full bg-surface hover:bg-surface-high rounded-m3-lg p-3.5 flex items-center justify-between gap-3 text-left cursor-pointer"
+          class="campus-surface-tile focus-ring-m3 w-full bg-surface hover:bg-surface-high rounded-m3-lg p-3.5 min-h-[56px] flex items-center justify-between gap-3 text-left cursor-pointer"
         >
           <div class="flex items-center gap-3 min-w-0">
             <span
@@ -64,7 +99,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         <button
           type="button"
           (click)="downloadCsv.emit()"
-          class="campus-surface-tile w-full bg-surface hover:bg-surface-high rounded-m3-lg p-3.5 flex items-center justify-between gap-3 text-left cursor-pointer"
+          class="campus-surface-tile focus-ring-m3 w-full bg-surface hover:bg-surface-high rounded-m3-lg p-3.5 min-h-[56px] flex items-center justify-between gap-3 text-left cursor-pointer"
         >
           <div class="flex items-center gap-3 min-w-0">
             <span
@@ -92,7 +127,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 export class CampusQuickActionsComponent {
   readonly activeDialogTrigger = input<string | null>(null);
   readonly isDialogOpen = input<boolean>(false);
+  readonly dialogMorphOwner = input<'trigger' | 'modal' | null>(null);
 
+  readonly openEvaluation = output<string>();
   readonly openAnnouncement = output<string>();
   readonly downloadCsv = output<void>();
 }

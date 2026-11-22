@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { TeacherGradingItem } from '../../../core/campus/campus.models';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { GradingFilter, TeacherGradingItem } from '../../../core/campus/campus.models';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
 
 @Component({
   selector: 'app-campus-grading-queue',
-  imports: [M3ButtonComponent],
+  imports: [M3ButtonComponent, M3ChipComponent],
   host: { class: 'block' },
   template: `
     <section
@@ -38,7 +39,34 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
         }
       </div>
 
-      <div class="space-y-3">
+      <div class="flex items-center flex-wrap gap-1.5" role="group" aria-label="Filtrar revisiones">
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'all'"
+          [count]="totalCount()"
+          (action)="filterChange.emit('all')"
+        >
+          Todas
+        </m3-chip>
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'pending'"
+          [count]="pendingCount()"
+          (action)="filterChange.emit('pending')"
+        >
+          Pendientes
+        </m3-chip>
+        <m3-chip
+          type="filter"
+          [selected]="filter() === 'reviewed'"
+          [count]="reviewedCount()"
+          (action)="filterChange.emit('reviewed')"
+        >
+          Evaluadas
+        </m3-chip>
+      </div>
+
+      <div class="flex flex-col gap-3">
         @for (item of items(); track item.id) {
           @let triggerId = 'campus-grade-btn-' + item.id;
 
@@ -59,12 +87,7 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
               </div>
 
               <span
-                class="px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized shrink-0"
-                [class]="
-                  item.status === 'reviewed'
-                    ? 'bg-success-box text-on-success-box'
-                    : 'bg-warning-box text-on-warning-box'
-                "
+                [class]="'px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized shrink-0 ' + (item.status === 'reviewed' ? 'bg-success-box text-on-success-box' : 'bg-warning-box text-on-warning-box')"
               >
                 {{ item.status === 'reviewed' ? item.score || 'Evaluado' : 'Pendiente' }}
               </span>
@@ -81,10 +104,11 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
                 [id]="triggerId"
                 [variant]="item.status === 'reviewed' ? 'tonal' : 'filled'"
                 size="sm"
+                [morph]="true"
                 [icon]="item.status === 'reviewed' ? 'edit' : 'rate_review'"
                 [invisible]="isDialogOpen() && activeDialogTrigger() === triggerId"
                 [viewTransitionName]="
-                  !isDialogOpen() && activeDialogTrigger() === triggerId
+                  dialogMorphOwner() === 'trigger' && activeDialogTrigger() === triggerId
                     ? 'dialog-transform'
                     : null
                 "
@@ -94,6 +118,16 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
               </m3-button>
             </div>
           </article>
+        } @empty {
+          <div class="rounded-m3-xl bg-surface p-5 text-center space-y-2">
+            <span class="material-symbols-rounded text-2xl text-success" aria-hidden="true">
+              task_alt
+            </span>
+            <p class="text-title-sm-emphasized text-main">Sin entregas bajo este filtro</p>
+            <m3-button variant="tonal" size="sm" (action)="filterChange.emit('all')">
+              Mostrar todas
+            </m3-button>
+          </div>
         }
       </div>
     </section>
@@ -103,8 +137,16 @@ import { M3ButtonComponent } from '../../../shared/components/button/button.comp
 export class CampusGradingQueueComponent {
   readonly items = input.required<TeacherGradingItem[]>();
   readonly pendingCount = input.required<number>();
+  readonly totalCount = input<number>(0);
+  readonly filter = input<GradingFilter>('all');
   readonly activeDialogTrigger = input<string | null>(null);
   readonly isDialogOpen = input<boolean>(false);
+  readonly dialogMorphOwner = input<'trigger' | 'modal' | null>(null);
 
+  readonly filterChange = output<GradingFilter>();
   readonly openGrade = output<{ item: TeacherGradingItem; triggerId: string }>();
+
+  protected readonly reviewedCount = computed(() =>
+    Math.max(0, this.totalCount() - this.pendingCount())
+  );
 }

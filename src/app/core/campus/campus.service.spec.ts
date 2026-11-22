@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { StageOverlayService } from '../dialog/stage-overlay.service';
+import { parseCampusScoreOutOf20 } from './campus.models';
 import { CampusService } from './campus.service';
 
 describe('CampusService', () => {
@@ -151,5 +153,61 @@ describe('CampusService', () => {
       expect(service.selectedAssignment()).toBeNull();
       expect(stageOverlay.isOverlayOpen()).toBe(false);
     }
+  });
+
+  it('should support batch attendance Undo, section switching, resource toggles, and live evaluations', () => {
+    const originalPresent = service.rosterSummary().present;
+    service.markAllPresent();
+    expect(service.rosterSummary().present).toBe(service.attendanceRoster().length);
+    expect(service.canUndoBatchAttendance()).toBe(true);
+
+    service.undoBatchAttendance();
+    expect(service.canUndoBatchAttendance()).toBe(false);
+    expect(service.rosterSummary().present).toBe(originalPresent);
+
+    service.selectTeacherSection('t-cls-102');
+    expect(service.teacherClass().code).toBe('INF-204');
+    expect(service.attendanceRoster().length).toBe(4);
+    expect(service.gradingQueue().length).toBe(2);
+
+    const beforeAssignCount = service.assignments().length;
+    const created = service.createAssignment({
+      title: 'Práctica Grafos',
+      subject: 'INF-204',
+      dueDate: 'Sábado 20:00',
+      urgent: true
+    });
+    expect(service.assignments().length).toBe(beforeAssignCount + 1);
+    expect(created.urgency).toBe('urgent');
+
+    const cls = service.selectedClass();
+    const res = cls.resources?.[0];
+    expect(res).toBeTruthy();
+    if (res) {
+      const prev = !!res.completed;
+      service.toggleClassResourceCompleted(cls.id, res.id);
+      expect(service.selectedClass().resources?.[0].completed).toBe(!prev);
+    }
+  });
+
+  it('should validate 0-20 grades, simulate weighted GPA, and avoid vt-campus-swap while modal is open', () => {
+    expect(parseCampusScoreOutOf20('18 / 20')).toBe(18);
+    expect(parseCampusScoreOutOf20('17.5')).toBe(17.5);
+    expect(parseCampusScoreOutOf20('25')).toBeNull();
+    expect(parseCampusScoreOutOf20('abc')).toBeNull();
+
+    service.simulatedFinalScore.set(20);
+    const highProj = service.simulatedGpaProjection();
+    service.simulatedFinalScore.set(11);
+    const lowProj = service.simulatedGpaProjection();
+    expect(highProj.projectedGpa).toBeGreaterThan(lowProj.projectedGpa);
+
+    const spy = vi.spyOn(stageOverlay, 'runViewTransition');
+    service.openClassroomDialog('campus-header-classroom-btn');
+    expect(service.dialogMorphOwner()).toBeNull();
+    spy.mockClear();
+
+    service.setRosterFilter('absent');
+    expect(spy).not.toHaveBeenCalled();
   });
 });

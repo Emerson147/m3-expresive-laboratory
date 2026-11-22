@@ -87,12 +87,13 @@ import {
               variant="tonal"
               size="sm"
               icon="videocam"
+              [morph]="true"
               customClass="hidden sm:inline-flex"
               [invisible]="
                 isDialogOpen() && activeDialogTrigger() === 'campus-header-classroom-btn'
               "
               [viewTransitionName]="
-                !isDialogOpen() && activeDialogTrigger() === 'campus-header-classroom-btn'
+                dialogMorphOwner() === 'trigger' && activeDialogTrigger() === 'campus-header-classroom-btn'
                   ? 'dialog-transform'
                   : null
               "
@@ -106,12 +107,13 @@ import {
               variant="filled"
               size="sm"
               icon="campaign"
+              [morph]="true"
               customClass="hidden sm:inline-flex"
               [invisible]="
                 isDialogOpen() && activeDialogTrigger() === 'campus-header-announcement-btn'
               "
               [viewTransitionName]="
-                !isDialogOpen() && activeDialogTrigger() === 'campus-header-announcement-btn'
+                dialogMorphOwner() === 'trigger' && activeDialogTrigger() === 'campus-header-announcement-btn'
                   ? 'dialog-transform'
                   : null
               "
@@ -136,6 +138,7 @@ export class CampusHeaderComponent {
   readonly activeCourse = input<ClassScheduleItem | null>(null);
   readonly activeDialogTrigger = input<string | null>(null);
   readonly isDialogOpen = input<boolean>(false);
+  readonly dialogMorphOwner = input<'trigger' | 'modal' | null>(null);
 
   readonly roleChange = output<CampusRole>();
   readonly openClassroom = output<string>();
