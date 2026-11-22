@@ -1,11 +1,16 @@
 import {
   BedArea,
+  BedFilterStatus,
   BedStatus,
+  ConsciousnessLevel,
   DischargeDisposition,
   EmergencyCodeType,
   News2RiskLevel,
+  PatientTriageRecord,
   PatientVitals,
-  TriageLevel
+  TRIAGE_SLA_MINUTES,
+  TriageLevel,
+  TriageSortMode
 } from '../../../core/clinic/clinic.models';
 
 export interface TriageLevelMeta {
@@ -16,6 +21,7 @@ export interface TriageLevelMeta {
   icon: string;
   badgeClass: string;
   dotClass: string;
+  accentBarClass: string;
 }
 
 export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
@@ -26,7 +32,8 @@ export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
     targetWaitLabel: 'Inmediato (0 min)',
     icon: 'emergency',
     badgeClass: 'bg-error-box text-on-error-box',
-    dotClass: 'bg-error'
+    dotClass: 'bg-error',
+    accentBarClass: 'bg-error'
   },
   emergency: {
     shortCode: 'N2',
@@ -35,7 +42,8 @@ export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
     targetWaitLabel: '≤ 10 min',
     icon: 'priority_high',
     badgeClass: 'clinic-mts-n2',
-    dotClass: 'clinic-mts-n2-dot'
+    dotClass: 'clinic-mts-n2-dot',
+    accentBarClass: 'clinic-mts-n2-dot'
   },
   urgent: {
     shortCode: 'N3',
@@ -44,7 +52,8 @@ export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
     targetWaitLabel: '≤ 60 min',
     icon: 'pace',
     badgeClass: 'bg-warning-box text-on-warning-box',
-    dotClass: 'bg-warning'
+    dotClass: 'bg-warning',
+    accentBarClass: 'bg-warning'
   },
   standard: {
     shortCode: 'N4',
@@ -53,7 +62,8 @@ export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
     targetWaitLabel: '≤ 120 min',
     icon: 'check_circle',
     badgeClass: 'bg-success-box text-on-success-box',
-    dotClass: 'bg-success'
+    dotClass: 'bg-success',
+    accentBarClass: 'bg-success'
   },
   non_urgent: {
     shortCode: 'N5',
@@ -62,7 +72,8 @@ export const TRIAGE_LEVEL_META: Record<TriageLevel, TriageLevelMeta> = {
     targetWaitLabel: '≤ 240 min',
     icon: 'schedule',
     badgeClass: 'bg-sec-box text-on-sec-box',
-    dotClass: 'bg-secondary'
+    dotClass: 'bg-secondary',
+    accentBarClass: 'bg-secondary'
   }
 };
 
@@ -127,6 +138,13 @@ export const BED_STATUS_META: Record<BedStatus, BedStatusMeta> = {
   }
 };
 
+export const BED_FILTER_OPTIONS: readonly { id: BedFilterStatus; label: string }[] = [
+  { id: 'all', label: 'Todos los boxes' },
+  { id: 'available', label: 'Disponibles' },
+  { id: 'occupied', label: 'Ocupados' },
+  { id: 'cleaning', label: 'Desinfección' }
+];
+
 export interface BedAreaMeta {
   area: BedArea;
   title: string;
@@ -166,7 +184,7 @@ export const BED_AREA_META: readonly BedAreaMeta[] = [
 export type VitalSeverity = 'normal' | 'warning' | 'critical';
 
 export interface VitalDisplayTile {
-  key: 'heartRate' | 'bloodPressure' | 'oxygenSat' | 'temperature';
+  key: 'heartRate' | 'respRate' | 'bloodPressure' | 'oxygenSat' | 'temperature';
   label: string;
   referenceRange: string;
   displayValue: string;
@@ -177,17 +195,26 @@ export interface VitalDisplayTile {
 }
 
 export function evaluatePatientVitals(vitals: PatientVitals): readonly VitalDisplayTile[] {
+  const respRate = vitals.respRate ?? 16;
+
   const hrSeverity: VitalSeverity =
     vitals.heartRate <= 40 || vitals.heartRate >= 131
       ? 'critical'
-      : vitals.heartRate < 60 || vitals.heartRate > 100
+      : vitals.heartRate < 51 || vitals.heartRate > 100
+        ? 'warning'
+        : 'normal';
+
+  const rrSeverity: VitalSeverity =
+    respRate <= 8 || respRate >= 25
+      ? 'critical'
+      : respRate <= 11 || respRate >= 21
         ? 'warning'
         : 'normal';
 
   const bpSeverity: VitalSeverity =
-    vitals.bloodPressureSys <= 90 || vitals.bloodPressureSys >= 200
+    vitals.bloodPressureSys <= 90 || vitals.bloodPressureSys >= 220
       ? 'critical'
-      : vitals.bloodPressureSys < 100 || vitals.bloodPressureSys >= 140
+      : vitals.bloodPressureSys <= 100 || vitals.bloodPressureSys >= 160
         ? 'warning'
         : 'normal';
 
@@ -205,7 +232,7 @@ export function evaluatePatientVitals(vitals: PatientVitals): readonly VitalDisp
     {
       key: 'heartRate',
       label: 'Frec. Cardíaca',
-      referenceRange: '60–100 bpm',
+      referenceRange: '51–100 bpm',
       displayValue: String(vitals.heartRate),
       unit: 'bpm',
       icon: 'favorite',
@@ -213,9 +240,19 @@ export function evaluatePatientVitals(vitals: PatientVitals): readonly VitalDisp
       statusLabel: hrSeverity === 'normal' ? 'Normal' : 'Alterada'
     },
     {
+      key: 'respRate',
+      label: 'Frec. Resp.',
+      referenceRange: '12–20 rpm',
+      displayValue: String(respRate),
+      unit: 'rpm',
+      icon: 'pulmonology',
+      severity: rrSeverity,
+      statusLabel: rrSeverity === 'normal' ? 'Normal' : 'Alterada'
+    },
+    {
       key: 'bloodPressure',
       label: 'Presión Arterial',
-      referenceRange: '100–139 mmHg',
+      referenceRange: '101–159 mmHg',
       displayValue: `${vitals.bloodPressureSys}/${vitals.bloodPressureDia}`,
       unit: 'mmHg',
       icon: 'blood_pressure',
@@ -224,7 +261,7 @@ export function evaluatePatientVitals(vitals: PatientVitals): readonly VitalDisp
     },
     {
       key: 'oxygenSat',
-      label: 'Saturación SpO2',
+      label: 'Saturación SpO₂',
       referenceRange: '≥ 95%',
       displayValue: `${vitals.oxygenSat}%`,
       unit: '',
@@ -253,10 +290,29 @@ export interface EmergencyCodeOption {
 
 export const EMERGENCY_CODE_OPTIONS: readonly EmergencyCodeOption[] = [
   { type: null, shortLabel: 'Sin código', windowLabel: 'Atención regular' },
-  { type: 'code_stemi', shortLabel: 'Código Infarto', windowLabel: '90 min' },
-  { type: 'code_stroke', shortLabel: 'Código Ictus', windowLabel: '45 min' },
-  { type: 'code_sepsis', shortLabel: 'Código Sepsis', windowLabel: '60 min' },
+  { type: 'code_stemi', shortLabel: 'Infarto STEMI', windowLabel: '90 min' },
+  { type: 'code_anaphylaxis', shortLabel: 'Anafilaxia III', windowLabel: '15 min' },
+  { type: 'code_stroke', shortLabel: 'Ictus ACV', windowLabel: '45 min' },
+  { type: 'code_sepsis', shortLabel: 'Sepsis / Shock', windowLabel: '60 min' },
   { type: 'code_trauma', shortLabel: 'Trauma Mayor', windowLabel: '60 min' }
+];
+
+export const CONSCIOUSNESS_OPTIONS: readonly {
+  id: ConsciousnessLevel;
+  label: string;
+  description: string;
+}[] = [
+  { id: 'A', label: 'A', description: 'Alerta' },
+  { id: 'C', label: 'C', description: 'Confusión nueva' },
+  { id: 'V', label: 'V', description: 'Respuesta verbal' },
+  { id: 'P', label: 'P', description: 'Solo al dolor' },
+  { id: 'U', label: 'U', description: 'Inconsciente' }
+];
+
+export const SORT_MODE_OPTIONS: readonly { id: TriageSortMode; label: string; icon: string }[] = [
+  { id: 'clinical', label: 'Prioridad', icon: 'clinical_notes' },
+  { id: 'sla_wait', label: 'SLA', icon: 'timer' },
+  { id: 'recent', label: 'Reciente', icon: 'schedule' }
 ];
 
 export interface DischargeDispositionMeta {
@@ -290,3 +346,31 @@ export const DISCHARGE_DISPOSITION_META: readonly DischargeDispositionMeta[] = [
     badgeClass: 'bg-error-box text-on-error-box'
   }
 ];
+
+export function formatSlaMetaLabel(patient: PatientTriageRecord): {
+  label: string;
+  breached: boolean;
+  nearLimit: boolean;
+} {
+  const target = TRIAGE_SLA_MINUTES[patient.triageLevel];
+  if (patient.bedAssignedId) {
+    return { label: `${patient.waitingMinutes}m`, breached: false, nearLimit: false };
+  }
+  const breached = target === 0 ? patient.waitingMinutes > 2 : patient.waitingMinutes > target;
+  const nearLimit = !breached && target > 0 && patient.waitingMinutes >= Math.round(target * 0.75);
+
+  if (target === 0) {
+    return {
+      label: breached ? `${patient.waitingMinutes}m · Vencido` : `${patient.waitingMinutes}m · Inmed.`,
+      breached,
+      nearLimit
+    };
+  }
+  return {
+    label: breached
+      ? `${patient.waitingMinutes}m / ${target}m · Excedido`
+      : `${patient.waitingMinutes}m / ${target}m`,
+    breached,
+    nearLimit
+  };
+}
