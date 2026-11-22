@@ -24,6 +24,7 @@ export interface OrderItem {
   category: OrderCategory;
   price: number;
   notes?: string;
+  done?: boolean;
 }
 
 export interface KanbanOrder {
@@ -40,6 +41,7 @@ export interface KanbanOrder {
   elapsedMinutes: number;
   assignedStaff?: string;
   specialInstructions?: string;
+  blockedReason?: string | null;
   createdAt: string;
 }
 
@@ -76,6 +78,7 @@ export interface CreateOrderItemDto {
   category?: OrderCategory;
   price: number;
   notes?: string;
+  done?: boolean;
 }
 
 export interface CreateOrderDto {
@@ -88,6 +91,61 @@ export interface CreateOrderDto {
   specialInstructions?: string;
   items?: CreateOrderItemDto[];
   totalAmount?: number;
+}
+
+export interface KanbanClosedOrder {
+  order: KanbanOrder;
+  reason: 'dispatched' | 'canceled';
+  closedAt: string;
+}
+
+export interface AllDayDishSummary {
+  name: string;
+  totalQty: number;
+  category: OrderCategory;
+  ticketNumbers: string[];
+}
+
+export interface KanbanMenuPresetItem {
+  id: string;
+  name: string;
+  category: OrderCategory;
+  price: number;
+}
+
+export const KANBAN_BLOCK_REASONS: readonly string[] = [
+  'Falta insumo en cocina',
+  'Esperando mesa / comensal',
+  'Ajuste por alergia / cliente',
+  'Courier en camino'
+];
+
+export const KANBAN_MENU_PRESETS: readonly KanbanMenuPresetItem[] = [
+  { id: 'menu-lomo', name: 'Lomo Saltado al Wok', category: 'kitchen', price: 52.00 },
+  { id: 'menu-mariscos', name: 'Arroz con Mariscos al Wok', category: 'kitchen', price: 46.00 },
+  { id: 'menu-chaufa', name: 'Arroz Chaufa Amazónico', category: 'express', price: 42.00 },
+  { id: 'menu-ceviche', name: 'Ceviche Clásico Corvina', category: 'cold_chain', price: 48.00 },
+  { id: 'menu-tiradito', name: 'Tiradito de Atún Nikkei', category: 'cold_chain', price: 42.00 },
+  { id: 'menu-pollo', name: 'Pollo a la Brasa 1/2', category: 'dispatch', price: 38.00 },
+  { id: 'menu-causa', name: 'Causa Rellena de Pulpa de Cangrejo', category: 'cold_chain', price: 38.00 },
+  { id: 'menu-chicha', name: 'Chicha Morada Artesanal (1L)', category: 'kitchen', price: 14.00 }
+];
+
+/** Returns true when a kitchen ticket is currently paused / held with an active reason. */
+export function isOrderBlocked(order: KanbanOrder): boolean {
+  return Boolean(order.blockedReason && order.blockedReason.trim().length > 0);
+}
+
+/** Computes line-item completion progress across an order's kitchen checklist. */
+export function getOrderItemProgress(order: KanbanOrder): { done: number; total: number; percent: number } {
+  const total = order.items.length;
+  if (total === 0) return { done: 0, total: 0, percent: 0 };
+  const done = order.items.filter((item) => Boolean(item.done)).length;
+  return {
+    done,
+    total,
+    percent: Math.round((done / total) * 100)
+  };
 }
 
 /** Returns true when an active (non-ready) order has reached or exceeded its SLA target time. */

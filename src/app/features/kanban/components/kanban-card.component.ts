@@ -18,8 +18,10 @@ import {
   OrderChannel,
   OrderPriority,
   OrderStage,
+  getOrderItemProgress,
   getOrderRemainingMinutes,
   getOrderSlaProgressPercent,
+  isOrderBlocked,
   isOrderSlaBreached,
   isOrderSlaNearBreach,
   parseOrderStage
@@ -38,6 +40,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
       (pointerdown)="onCardPointerDown($event)"
       [class]="'kds-ticket-card p-4 sm:p-5 flex flex-col gap-3.5 relative ' + cardSurfaceClass()"
       [class.is-sla-breached]="isSlaBreached()"
+      [class.is-blocked]="isBlocked()"
       [class.is-dragging]="isDragging()"
       [class.is-reorder-target]="isReorderTarget()"
       [style.view-transition-name]="isTransitioning() ? 'kanban-card-active' : null">
@@ -73,8 +76,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
         </div>
 
         <span
-          class="inline-flex items-center gap-1 text-label-sm-emphasized uppercase tracking-wider px-2.5 py-1 rounded-m3-full shrink-0"
-          [class]="priorityBadgeClass()">
+          [class]="'inline-flex items-center gap-1 text-label-sm-emphasized uppercase tracking-wider px-2.5 py-1 rounded-m3-full shrink-0 ' + priorityBadgeClass()">
           @if (order().priority === 'urgent' || order().priority === 'high') {
             <span class="material-symbols-rounded text-[14px]" aria-hidden="true">
               {{ order().priority === 'urgent' ? 'local_fire_department' : 'priority_high' }}
@@ -83,6 +85,17 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
           <span>{{ priorityLabel() }}</span>
         </span>
       </div>
+
+      <!-- Blocked / Hold Banner (if paused) -->
+      @if (isBlocked()) {
+        <div class="kds-blocked-note flex items-start gap-2 text-label-md bg-tertiary-box text-on-tertiary-box px-3.5 py-2">
+          <span class="material-symbols-rounded text-base shrink-0 mt-0.5" aria-hidden="true">pause_circle</span>
+          <div class="min-w-0">
+            <span class="font-bold uppercase tracking-wider text-[11px] block">En espera</span>
+            <span class="font-medium leading-snug block">{{ order().blockedReason }}</span>
+          </div>
+        </div>
+      }
 
       <!-- SLA / Elapsed Progress (Flat deterministic M3 bar inside repeatable lists) -->
       @if (order().stage === 'ready') {
@@ -123,14 +136,33 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
         </div>
       }
 
-      <!-- Kitchen Order Items List (Readable Typography without Prices) -->
+      <!-- Kitchen Order Items List (Surfaces critical prep notes & live dish readiness) -->
       <ul role="list" class="space-y-1.5 list-none m-0 p-0">
         @for (item of order().items; track item.id) {
-          <li class="flex items-baseline gap-2 text-body-sm">
-            <span class="font-mono font-bold tabular-nums text-primary shrink-0 min-w-[1.5rem]">
-              {{ item.quantity }}x
-            </span>
-            <span class="text-main font-medium truncate">{{ item.name }}</span>
+          <li class="flex items-start gap-2 text-body-sm">
+            @if (item.done) {
+              <span
+                class="material-symbols-rounded text-[17px] text-success shrink-0 mt-0.5"
+                aria-hidden="true">
+                check_circle
+              </span>
+            } @else {
+              <span class="font-mono font-bold tabular-nums text-primary shrink-0 min-w-[1.5rem]">
+                {{ item.quantity }}x
+              </span>
+            }
+
+            <div class="min-w-0 flex-1">
+              <span
+                [class]="'font-medium block truncate ' + (item.done ? 'line-through text-muted opacity-70' : 'text-main')">
+                {{ item.done ? item.quantity + 'x ' + item.name : item.name }}
+              </span>
+              @if (item.notes && !item.done) {
+                <span class="block text-label-sm text-primary font-medium leading-snug mt-0.5">
+                  {{ item.notes }}
+                </span>
+              }
+            </div>
           </li>
         }
       </ul>
@@ -150,54 +182,67 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
         }
       }
 
-      <!-- Kitchen Touch-Friendly Footer Actions (48dp touch targets with 8dp gap) -->
-      <div class="pt-2 flex items-center justify-between gap-2">
-        <span class="text-label-sm text-muted font-mono tabular-nums">
-          {{ order().items.length }} {{ order().items.length === 1 ? 'ítem' : 'ítems' }} · {{ order().createdAt }}
-        </span>
-
-        <div class="flex items-center touch-gap-8 shrink-0">
-          @if (order().stage !== 'queue') {
-            <m3-button
-              [iconOnly]="true"
-              variant="outlined"
-              size="sm"
-              icon="arrow_back"
-              [ariaLabel]="'Regresar comanda ' + order().ticketNumber + ' a etapa anterior'"
-              (action)="regress.emit(order().id)" />
+      <!-- Kitchen Footer Metadata & Touch-Friendly Actions (48dp touch targets) -->
+      <div class="pt-1 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between gap-2 text-label-sm text-muted font-mono tabular-nums">
+          <span>
+            {{ order().items.length }} {{ order().items.length === 1 ? 'ítem' : 'ítems' }} · {{ order().createdAt }}
+          </span>
+          @if (itemProgress().done > 0) {
+            <span class="px-2 py-0.5 rounded-m3-full bg-success-box/70 text-on-success-box font-semibold">
+              {{ itemProgress().done }}/{{ itemProgress().total }} listos
+            </span>
+          } @else if (order().assignedStaff && order().assignedStaff !== 'Asignación pendiente') {
+            <span class="font-sans truncate max-w-[140px]">{{ order().assignedStaff }}</span>
           }
+        </div>
 
-          <m3-button
-            [id]="'trigger-ticket-' + order().id"
-            variant="tonal"
-            size="sm"
-            icon="receipt_long"
-            [morph]="true"
-            [invisible]="isInspectOriginInvisible()"
-            [viewTransitionName]="isInspectOriginActive() ? 'dialog-transform' : null"
-            [ariaLabel]="'Inspeccionar ticket ' + order().ticketNumber"
-            (action)="inspect.emit(order())">
-            Ticket
-          </m3-button>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center touch-gap-8 shrink-0">
+            @if (order().stage !== 'queue') {
+              <m3-button
+                [iconOnly]="true"
+                variant="outlined"
+                size="sm"
+                icon="arrow_back"
+                [ariaLabel]="'Regresar comanda ' + order().ticketNumber + ' a etapa anterior'"
+                (action)="regress.emit(order().id)" />
+            }
 
-          @if (order().stage !== 'ready') {
             <m3-button
-              [iconOnly]="true"
-              variant="filled"
+              [id]="'trigger-ticket-' + order().id"
+              variant="tonal"
               size="sm"
-              icon="arrow_forward"
-              [ariaLabel]="'Avanzar comanda ' + order().ticketNumber + ' a siguiente etapa'"
-              (action)="advance.emit(order().id)" />
-          } @else {
-            <m3-button
-              variant="filled"
-              size="sm"
-              icon="done_all"
-              [ariaLabel]="'Entregar y cerrar comanda ' + order().ticketNumber"
-              (action)="dispatch.emit(order().id)">
-              Entregar
+              icon="receipt_long"
+              [morph]="true"
+              [invisible]="isInspectOriginInvisible()"
+              [viewTransitionName]="isInspectOriginActive() ? 'dialog-transform' : null"
+              [ariaLabel]="'Inspeccionar ticket ' + order().ticketNumber"
+              (action)="inspect.emit(order())">
+              Ticket
             </m3-button>
-          }
+          </div>
+
+          <div class="flex items-center shrink-0">
+            @if (order().stage !== 'ready') {
+              <m3-button
+                [iconOnly]="true"
+                variant="filled"
+                size="sm"
+                icon="arrow_forward"
+                [ariaLabel]="'Avanzar comanda ' + order().ticketNumber + ' a siguiente etapa'"
+                (action)="advance.emit(order().id)" />
+            } @else {
+              <m3-button
+                variant="filled"
+                size="sm"
+                icon="done_all"
+                [ariaLabel]="'Entregar y cerrar comanda ' + order().ticketNumber"
+                (action)="dispatch.emit(order().id)">
+                Entregar
+              </m3-button>
+            }
+          </div>
         </div>
       </div>
     </article>
@@ -210,6 +255,7 @@ export class KanbanCardComponent {
   readonly isTransitioning = input<boolean>(false);
   readonly activeInspectTrigger = input<string | null>(null);
   readonly isInspectModalOpen = input<boolean>(false);
+  readonly inspectMorphOwner = input<'trigger' | 'modal' | null>(null);
 
   readonly dragStart = output<{ orderId: string }>();
   readonly dragHover = output<{ stage: OrderStage | null; targetOrderId: string | null }>();
@@ -236,12 +282,14 @@ export class KanbanCardComponent {
 
   readonly isSlaBreached = computed(() => isOrderSlaBreached(this.order()));
   readonly isNearBreach = computed(() => isOrderSlaNearBreach(this.order()));
+  readonly isBlocked = computed(() => isOrderBlocked(this.order()));
   readonly slaProgressPercent = computed(() => getOrderSlaProgressPercent(this.order()));
   readonly remainingMinutes = computed(() => getOrderRemainingMinutes(this.order()));
+  readonly itemProgress = computed(() => getOrderItemProgress(this.order()));
 
   readonly isInspectOriginActive = computed(() => {
     const triggerId = `ticket-${this.order().id}`;
-    return !this.isInspectModalOpen() && this.activeInspectTrigger() === triggerId;
+    return this.inspectMorphOwner() === 'trigger' && this.activeInspectTrigger() === triggerId;
   });
 
   readonly isInspectOriginInvisible = computed(() => {

@@ -30,6 +30,7 @@ import { KANBAN_EXPRESSIVE_STYLES } from './components/kanban-expressive.styles'
 import { KanbanHeaderComponent } from './components/kanban-header.component';
 import { KanbanInspectModalComponent } from './components/kanban-inspect-modal.component';
 import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component';
+import { KanbanOpsDialogComponent } from './components/kanban-ops-dialog.component';
 
 @Component({
   selector: 'app-kanban',
@@ -43,7 +44,8 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
     KanbanKpiStripComponent,
     KanbanBoardComponent,
     KanbanInspectModalComponent,
-    KanbanCreateModalComponent
+    KanbanCreateModalComponent,
+    KanbanOpsDialogComponent
   ],
   encapsulation: ViewEncapsulation.None,
   styles: [KANBAN_EXPRESSIVE_STYLES],
@@ -64,10 +66,14 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
         [currentClock]="currentClock()"
         [buzzerEnabled]="buzzerEnabled()"
         [isLiveActive]="kanbanService.isLiveSimulationActive()"
-        [isCreateOriginActive]="!isCreateModalOpen() && kanbanService.activeCreateTrigger() === 'create-order'"
+        [allDayCount]="allDayUnitsCount()"
+        [historyCount]="kanbanService.closedHistory().length"
+        [isCreateOriginActive]="kanbanService.createMorphOwner() === 'trigger' && kanbanService.activeCreateTrigger() === 'create-order'"
         [isCreateOriginInvisible]="isCreateModalOpen() && kanbanService.activeCreateTrigger() === 'create-order'"
         (toggleBuzzer)="toggleBuzzer()"
         (toggleLive)="kanbanService.toggleLiveSimulation()"
+        (openAllDay)="openOpsDialog('allday')"
+        (openHistory)="openOpsDialog('history')"
         (createOrder)="openCreateOrderModal()" />
 
       <!-- 2. Analytical KDS KPI Strip -->
@@ -123,7 +129,7 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
           </m3-chip>
         </div>
 
-        <div class="w-full lg:w-80 shrink-0">
+        <search class="w-full lg:w-80 shrink-0 block">
           <m3-text-field
             [id]="'kds-ticket-search'"
             name="ticketSearch"
@@ -137,12 +143,12 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
             [value]="kanbanService.searchQuery()"
             (valueChange)="kanbanService.setSearchQuery($event)"
             (clear)="kanbanService.setSearchQuery('')" />
-        </div>
+        </search>
       </section>
 
       <!-- 4. Adaptive Kanban KDS Board -->
       <app-kanban-board
-        [columns]="kanbanService.columns"
+        [columns]="kanbanService.effectiveColumns()"
         [ordersByStage]="kanbanService.ordersByStage()"
         [draggedOrderId]="kanbanService.draggedOrderId()"
         [dragOverStage]="kanbanService.dragOverStage()"
@@ -151,6 +157,8 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
         [isBoardFlipActive]="kanbanService.isBoardFlipActive()"
         [activeInspectTrigger]="kanbanService.activeInspectTrigger()"
         [isInspectModalOpen]="kanbanService.isInspectionOpen()"
+        [inspectMorphOwner]="kanbanService.inspectMorphOwner()"
+        [hasActiveSearchOrFilter]="kanbanService.activeFilter() !== 'all' || kanbanService.searchQuery().trim().length > 0"
         (orderDragStart)="kanbanService.onDragStart($event.orderId)"
         (orderDragHover)="kanbanService.updateDragTarget($event.stage, $event.targetOrderId)"
         (orderDragDrop)="kanbanService.commitDragDrop($event.stage, $event.beforeOrderId)"
@@ -159,29 +167,43 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
         (regressOrder)="kanbanService.regressOrder($event)"
         (dispatchOrder)="kanbanService.dispatchOrder($event)"
         (reorderOrder)="kanbanService.reorderOrderInStage($event.orderId, $event.direction)"
-        (inspectOrder)="onInspectOrder($event)" />
+        (inspectOrder)="onInspectOrder($event)"
+        (adjustWip)="kanbanService.adjustWipLimit($event.stage, $event.delta)"
+        (sortStage)="kanbanService.sortStageByUrgency($event)"
+        (clearFilters)="kanbanService.clearSearchAndFilters()" />
 
-      <!-- 5. Portaled Dialogs Template (Rendered Outside Recessed #app-stage Host) -->
+      <!-- 5. Portaled Always-Mounted Native Top-Layer Dialogs -->
       <ng-template #kanbanModalsTemplate>
-        @if (kanbanService.isInspectionOpen() && kanbanService.selectedOrder(); as order) {
-          <app-kanban-inspect-modal
-            [order]="order"
-            [staffOptions]="staffOptions"
-            [isDialogTransitionActive]="kanbanService.isModalTransitioning()"
-            (closed)="kanbanService.closeOrderInspection()"
-            (advance)="kanbanService.advanceOrder($event)"
-            (regress)="kanbanService.regressOrder($event)"
-            (dispatch)="kanbanService.dispatchOrder($event)"
-            (cancelOrder)="kanbanService.cancelOrder($event)"
-            (assignStaff)="kanbanService.assignOrderStaff($event.orderId, $event.staff)" />
-        }
+        <app-kanban-inspect-modal
+          [open]="kanbanService.isInspectionOpen()"
+          [order]="kanbanService.selectedOrder()"
+          [staffOptions]="staffOptions"
+          [viewTransitionName]="kanbanService.inspectMorphOwner() === 'modal' ? 'dialog-transform' : null"
+          (closed)="kanbanService.closeOrderInspection()"
+          (advance)="kanbanService.advanceOrder($event)"
+          (regress)="kanbanService.regressOrder($event)"
+          (moveStage)="kanbanService.moveOrder($event.orderId, $event.stage)"
+          (dispatch)="kanbanService.dispatchOrder($event)"
+          (cancelOrder)="kanbanService.cancelOrder($event)"
+          (assignStaff)="kanbanService.assignOrderStaff($event.orderId, $event.staff)"
+          (toggleItem)="kanbanService.toggleOrderItemDone($event.orderId, $event.itemId)"
+          (setBlocked)="kanbanService.setOrderBlocked($event.orderId, $event.reason)" />
 
-        @if (isCreateModalOpen()) {
-          <app-kanban-create-modal
-            [isDialogTransitionActive]="kanbanService.isModalTransitioning()"
-            (closed)="closeCreateModal()"
-            (submitted)="onCreateOrderSubmit($event)" />
-        }
+        <app-kanban-create-modal
+          [open]="isCreateModalOpen()"
+          [viewTransitionName]="kanbanService.createMorphOwner() === 'modal' ? 'dialog-transform' : null"
+          (closed)="closeCreateModal()"
+          (submitted)="onCreateOrderSubmit($event)" />
+
+        <app-kanban-ops-dialog
+          [open]="kanbanService.isOpsModalOpen()"
+          [activeTab]="kanbanService.opsModalTab()"
+          [allDayDishes]="kanbanService.allDaySummary()"
+          [closedHistory]="kanbanService.closedHistory()"
+          (tabChange)="kanbanService.opsModalTab.set($event)"
+          (closed)="kanbanService.closeOpsModal()"
+          (filterByDish)="onFilterByAllDayDish($event)"
+          (restoreOrder)="kanbanService.restoreClosedOrder($event)" />
       </ng-template>
 
       <!-- Fallback Local Host When App Stage Portal Host Is Absent (e.g. Isolated Tests) -->
@@ -189,10 +211,12 @@ import { KanbanKpiStripComponent } from './components/kanban-kpi-strip.component
         <ng-container [ngTemplateOutlet]="kanbanModalsTemplate" />
       }
 
-      <!-- Top-Layer Feedback Snackbar -->
+      <!-- Top-Layer Feedback Snackbar with Undo Action -->
       <m3-snackbar
         [open]="kanbanService.toastMessage() !== null"
         [message]="kanbanService.toastMessage() ?? ''"
+        [actionLabel]="kanbanService.canUndoLastRemoval() ? 'Deshacer' : null"
+        (action)="kanbanService.undoLastRemoval()"
         (dismissed)="kanbanService.dismissToast()" />
     </div>
   `
@@ -214,7 +238,15 @@ export class KanbanComponent implements OnInit {
   readonly currentClock = signal<string>('22:38:00');
   readonly buzzerEnabled = this.kanbanService.buzzerEnabled;
   readonly isCreateModalOpen = this.kanbanService.isCreateModalOpen;
-  readonly isAnyModalOpen = computed(() => this.kanbanService.isInspectionOpen() || this.isCreateModalOpen());
+  readonly allDayUnitsCount = computed(() =>
+    this.kanbanService.allDaySummary().reduce((sum, dish) => sum + dish.totalQty, 0)
+  );
+  readonly isAnyModalOpen = computed(
+    () =>
+      this.kanbanService.isInspectionOpen() ||
+      this.isCreateModalOpen() ||
+      this.kanbanService.isOpsModalOpen()
+  );
 
   readonly workbenchClass = computed(() =>
     this.adaptiveLayout.isCompact()
@@ -309,6 +341,10 @@ export class KanbanComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.kanbanService.isOpsModalOpen()) {
+      this.kanbanService.closeOpsModal();
+      return;
+    }
     if (this.kanbanService.isInspectionOpen()) {
       this.kanbanService.closeOrderInspection();
       return;
@@ -320,6 +356,16 @@ export class KanbanComponent implements OnInit {
     if (this.kanbanService.toastMessage() !== null) {
       this.kanbanService.dismissToast();
     }
+  }
+
+  openOpsDialog(tab: 'allday' | 'history'): void {
+    this.captureActiveFocus();
+    this.kanbanService.openOpsModal(tab);
+  }
+
+  onFilterByAllDayDish(dishName: string): void {
+    this.kanbanService.setSearchQuery(dishName);
+    this.kanbanService.closeOpsModal();
   }
 
   openCreateOrderModal(): void {

@@ -171,7 +171,6 @@ export const KANBAN_EXPRESSIVE_STYLES = /* css */ `
   }
 
   .kds-ticket-card {
-    cursor: grab;
     border-radius: var(--md-sys-shape-corner-large, 16px);
     overflow: hidden;
     transition:
@@ -185,6 +184,12 @@ export const KANBAN_EXPRESSIVE_STYLES = /* css */ `
   .kds-ticket-card:hover:not(.is-dragging) {
     border-radius: var(--md-sys-shape-corner-large-increased, 20px);
     box-shadow: var(--md-sys-elevation-level1);
+  }
+
+  .kds-ticket-card.is-blocked:not(.is-sla-breached) {
+    box-shadow:
+      inset 4px 0 0 var(--md-sys-color-tertiary),
+      var(--md-sys-elevation-level1);
   }
 
   .kds-ticket-card.is-sla-breached {
@@ -226,6 +231,11 @@ export const KANBAN_EXPRESSIVE_STYLES = /* css */ `
   .kds-allergy-note {
     border-radius: var(--md-sys-shape-corner-medium, 12px);
     box-shadow: inset 4px 0 0 var(--md-sys-color-error);
+  }
+
+  .kds-blocked-note {
+    border-radius: var(--md-sys-shape-corner-medium, 12px);
+    box-shadow: inset 4px 0 0 var(--md-sys-color-tertiary);
   }
 
   /* ── In-DOM Floating Pointer Drag Ghost (Rounded Corners Without OS Rect Halo) */
@@ -291,8 +301,8 @@ export const KANBAN_EXPRESSIVE_STYLES = /* css */ `
     min-width: 0;
   }
 
-  /* Tablet Horizontal Scroll-Snap (proximity keeps overflowing lanes reachable) */
-  @media (min-width: 768px) and (max-width: 1279px) {
+  /* Tablet & Laptop Horizontal Scroll-Snap (4 spacious lanes until 2xl 1536px+) */
+  @media (min-width: 768px) and (max-width: 1535px) {
     .kds-board-grid {
       scroll-snap-type: x proximity;
       overscroll-behavior-x: contain;
@@ -300,13 +310,92 @@ export const KANBAN_EXPRESSIVE_STYLES = /* css */ `
 
     .kds-lane {
       scroll-snap-align: start;
-      min-width: min(360px, 84vw);
+      min-width: min(350px, 84vw);
     }
   }
 
-  @media (prefers-reduced-motion: reduce) and (min-width: 768px) and (max-width: 1279px) {
+  @media (prefers-reduced-motion: reduce) and (min-width: 768px) and (max-width: 1535px) {
     .kds-board-grid {
       scroll-behavior: auto;
+    }
+  }
+
+  /* ── Top-Layer M3 Native Modal Dialog Shells (<m3-dialog>) ──────────────── */
+  dialog.m3-dialog.kds-inspect-dialog {
+    width: min(48rem, calc(100vw - 1.5rem));
+    max-width: min(48rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.kds-create-dialog,
+  dialog.m3-dialog.kds-ops-dialog {
+    width: min(46rem, calc(100vw - 1.5rem));
+    max-width: min(46rem, calc(100vw - 1.5rem));
+    background-color: var(--md-sys-color-surface-container);
+  }
+
+  dialog.m3-dialog.kds-inspect-dialog > .m3-dialog-inner,
+  dialog.m3-dialog.kds-create-dialog > .m3-dialog-inner,
+  dialog.m3-dialog.kds-ops-dialog > .m3-dialog-inner {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.kds-inspect-dialog > .m3-dialog-inner > h2,
+  dialog.m3-dialog.kds-create-dialog > .m3-dialog-inner > h2,
+  dialog.m3-dialog.kds-ops-dialog > .m3-dialog-inner > h2 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    margin: 0;
+  }
+
+  dialog.m3-dialog.kds-inspect-dialog > .m3-dialog-inner > .m3-dialog-body,
+  dialog.m3-dialog.kds-create-dialog > .m3-dialog-inner > .m3-dialog-body,
+  dialog.m3-dialog.kds-ops-dialog > .m3-dialog-inner > .m3-dialog-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  dialog.m3-dialog.kds-inspect-dialog > .m3-dialog-inner > .m3-dialog-footer,
+  dialog.m3-dialog.kds-create-dialog > .m3-dialog-inner > .m3-dialog-footer,
+  dialog.m3-dialog.kds-ops-dialog > .m3-dialog-inner > .m3-dialog-footer {
+    padding: 0;
+    display: none;
+  }
+
+  /* Connected Priority Selector in Create Modal */
+  m3-button-group.kds-priority-group-host {
+    display: block !important;
+    width: 100%;
+  }
+
+  .kds-priority-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  @media (min-width: 560px) {
+    .kds-priority-group {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 3px;
+    }
+
+    .kds-priority-group .m3-btn {
+      width: 100%;
+      justify-content: center;
+      padding-inline: 10px;
     }
   }
 
