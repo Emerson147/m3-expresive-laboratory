@@ -2,82 +2,78 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
   afterNextRender,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
   viewChild
 } from '@angular/core';
 import {
   DischargeDisposition,
   PatientTriageRecord
 } from '../../../core/clinic/clinic.models';
-import { StageOverlayService } from '../../../core/dialog/stage-overlay.service';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import { M3DialogComponent } from '../../../shared/components/dialog/dialog.component';
 import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
 import { DISCHARGE_DISPOSITION_META } from './clinic-ui.tokens';
 
 @Component({
   selector: 'app-clinic-discharge-modal',
-  imports: [M3ButtonComponent, M3TextFieldComponent],
+  imports: [M3DialogComponent, M3ButtonComponent, M3TextFieldComponent],
   host: { class: 'contents' },
   template: `
-    <div
-      (click)="close.emit()"
-      [class.m3-dialog-backdrop]="!stageOverlay.hasViewTransitions()"
-      class="fixed inset-0 z-40 bg-scrim cursor-pointer"
-      aria-hidden="true"
-    ></div>
-
-    <div class="clinic-modal-stage fixed inset-0 z-50 p-3 sm:p-5 pointer-events-none">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="clinic-discharge-heading"
-        [style.view-transition-name]="isTransitioning() ? 'dialog-transform' : null"
-        [class.m3-dialog-surface]="!stageOverlay.hasViewTransitions()"
-        [class.shadow-m3-level3]="!isTransitioning()"
-        class="pointer-events-auto w-full max-w-lg h-fit max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col rounded-m3-xl bg-surface-box"
-      >
-        <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-2.5 shrink-0">
-          <header class="bg-surface rounded-m3-xl p-4 flex items-start justify-between gap-3">
-            <div class="flex items-start gap-3 min-w-0">
-              <div
-                class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0"
-                aria-hidden="true"
-              >
-                <span class="material-symbols-rounded text-[21px]">medical_services</span>
-              </div>
-              <div class="min-w-0">
-                <h2
-                  id="clinic-discharge-heading"
-                  #modalHeading
-                  tabindex="-1"
-                  class="outline-none text-title-lg-emphasized text-main tracking-tight"
+    <m3-dialog
+      variant="basic"
+      size="md"
+      [open]="open() && !!patient()"
+      [managedClose]="true"
+      [showCloseButton]="false"
+      headline="Confirmar Egreso Clínico"
+      [viewTransitionName]="viewTransitionName()"
+      customClass="clinic-modal-dialog clinic-modal-sm"
+      (closeRequested)="close.emit()"
+    >
+      @if (open() && patient(); as pt) {
+        <form (submit)="handleConfirm($event, pt)" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-2.5 shrink-0">
+            <header class="bg-surface rounded-m3-xl p-4 flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div
+                  class="w-10 h-10 rounded-m3-lg bg-primary-box text-on-primary-box grid place-items-center shrink-0"
+                  aria-hidden="true"
                 >
-                  Confirmar Egreso Clínico
-                </h2>
-                <p class="text-label-md text-muted mt-0.5 truncate">
-                  {{ patient().fullName }} · {{ patient().ticketCode }} · NEWS2 {{ patient().news2.score }}
-                </p>
+                  <span class="material-symbols-rounded text-[21px]">medical_services</span>
+                </div>
+                <div class="min-w-0">
+                  <h3
+                    id="clinic-discharge-heading"
+                    class="text-title-lg-emphasized text-main tracking-tight"
+                  >
+                    Confirmar Egreso Clínico
+                  </h3>
+                  <p class="text-label-md text-muted mt-0.5 truncate">
+                    {{ pt.fullName }} · {{ pt.ticketCode }} · NEWS2 {{ pt.news2.score }}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <m3-button
-              variant="text"
-              size="sm"
-              icon="close"
-              [iconOnly]="true"
-              ariaLabel="Cancelar egreso"
-              (action)="close.emit()"
-            />
-          </header>
-        </div>
+              <m3-button
+                variant="text"
+                size="sm"
+                icon="close"
+                [iconOnly]="true"
+                ariaLabel="Cancelar egreso"
+                (action)="close.emit()"
+              />
+            </header>
+          </div>
 
-        <form (submit)="handleConfirm($event)" class="contents">
-          <div class="px-5 sm:px-6 py-3 flex flex-col gap-4 overflow-y-auto m3-scrollbar">
-            @if (patient().bedAssignedId; as bedId) {
+          <div #modalScrollBody class="px-5 sm:px-6 py-3 flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto m3-scrollbar">
+            @if (pt.bedAssignedId; as bedId) {
               <div class="rounded-m3-lg bg-warning-box text-on-warning-box px-3.5 py-2.5 flex items-center gap-2.5 text-label-md">
                 <span class="material-symbols-rounded text-[18px] shrink-0" aria-hidden="true">
                   cleaning_services
@@ -101,15 +97,14 @@ import { DISCHARGE_DISPOSITION_META } from './clinic-ui.tokens';
                     [attr.aria-checked]="selected"
                     (click)="disposition.set(opt.id)"
                     [class]="
-                      'clinic-surface-tile w-full text-left p-3.5 flex items-start gap-3 cursor-pointer ' +
+                      'clinic-surface-tile state-layer focus-ring-m3 w-full text-left p-3.5 flex items-start gap-3 cursor-pointer ' +
                       (selected
                         ? 'is-selected bg-primary-box text-on-primary-box'
                         : 'bg-surface hover:bg-surface-high text-main')
                     "
                   >
                     <span
-                      [class]="opt.badgeClass"
-                      class="w-9 h-9 rounded-m3-md grid place-items-center shrink-0"
+                      [class]="opt.badgeClass + ' w-9 h-9 rounded-m3-md grid place-items-center shrink-0'"
                       aria-hidden="true"
                     >
                       <span class="material-symbols-rounded text-[19px]">{{ opt.icon }}</span>
@@ -150,17 +145,18 @@ import { DISCHARGE_DISPOSITION_META } from './clinic-ui.tokens';
             </m3-button>
           </footer>
         </form>
-      </section>
-    </div>
+      }
+    </m3-dialog>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClinicDischargeModalComponent {
-  protected readonly stageOverlay = inject(StageOverlayService);
-  private readonly modalHeading = viewChild<ElementRef<HTMLElement>>('modalHeading');
+  private readonly injector = inject(Injector);
+  private readonly modalScrollBody = viewChild<ElementRef<HTMLElement>>('modalScrollBody');
 
-  readonly patient = input.required<PatientTriageRecord>();
-  readonly isTransitioning = input<boolean>(false);
+  readonly open = input<boolean>(false);
+  readonly patient = input<PatientTriageRecord | null>(null);
+  readonly viewTransitionName = input<string | null>(null);
 
   readonly close = output<void>();
   readonly confirm = output<{
@@ -173,16 +169,32 @@ export class ClinicDischargeModalComponent {
   readonly disposition = signal<DischargeDisposition>('home');
   readonly notes = signal<string>('');
 
+  private wasOpen = false;
+
   constructor() {
-    afterNextRender(() => {
-      this.modalHeading()?.nativeElement.focus();
+    effect(() => {
+      const isOpen = this.open();
+      if (isOpen && !this.wasOpen) {
+        this.disposition.set('home');
+        this.notes.set('');
+        untracked(() => {
+          afterNextRender(
+            () => {
+              const el = this.modalScrollBody()?.nativeElement;
+              if (el) el.scrollTop = 0;
+            },
+            { injector: this.injector }
+          );
+        });
+      }
+      this.wasOpen = isOpen;
     });
   }
 
-  protected handleConfirm(event: Event): void {
+  protected handleConfirm(event: Event, pt: PatientTriageRecord): void {
     event.preventDefault();
     this.confirm.emit({
-      patientId: this.patient().id,
+      patientId: pt.id,
       disposition: this.disposition(),
       notes: this.notes().trim() || undefined
     });

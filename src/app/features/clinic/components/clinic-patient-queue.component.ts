@@ -2,25 +2,41 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import {
   ClinicKpiSummary,
   PatientTriageRecord,
-  TriageFilter
+  TriageFilter,
+  TriageSortMode
 } from '../../../core/clinic/clinic.models';
 import { M3ButtonComponent } from '../../../shared/components/button/button.component';
+import {
+  M3ButtonGroupComponent,
+  M3ButtonGroupOption
+} from '../../../shared/components/button/button-group.component';
 import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
-import { NEWS2_RISK_META, TRIAGE_LEVEL_META } from './clinic-ui.tokens';
+import {
+  NEWS2_RISK_META,
+  SORT_MODE_OPTIONS,
+  TRIAGE_LEVEL_META,
+  formatSlaMetaLabel
+} from './clinic-ui.tokens';
 
 interface FilterOption {
   id: TriageFilter;
   label: string;
-  count: number | null;
+  count: number;
 }
+
+const SORT_BUTTON_OPTIONS: M3ButtonGroupOption[] = SORT_MODE_OPTIONS.map((opt) => ({
+  id: opt.id,
+  label: opt.label,
+  icon: opt.icon
+}));
 
 @Component({
   selector: 'app-clinic-patient-queue',
-  imports: [M3ButtonComponent, M3ChipComponent],
-  host: { class: 'block' },
+  imports: [M3ButtonComponent, M3ButtonGroupComponent, M3ChipComponent],
+  host: { class: 'block h-full' },
   template: `
-    <div class="rounded-m3-xl bg-surface-low p-4 sm:p-5 space-y-4">
-      <!-- Queue Header -->
+    <div class="rounded-m3-xl bg-surface-low p-4 sm:p-5 space-y-4 h-full">
+      <!-- Queue Header + Sort Group -->
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-2.5 min-w-0">
           <div
@@ -31,22 +47,26 @@ interface FilterOption {
           </div>
           <div class="min-w-0">
             <h2 class="text-title-md-emphasized text-main truncate">
-              Cola Activa de Triaje
+              Cola Clínica de Guardia
             </h2>
             <p class="text-body-sm text-muted">
-              Selecciona un paciente para revisar ficha, NEWS2 o asignar box
+              {{ patients().length }} de {{ totalPatientsCount() }} pacientes visibles
             </p>
           </div>
         </div>
 
-        <span
-          class="px-3 py-1 rounded-m3-full bg-surface text-main text-label-sm-emphasized font-mono tabular-nums shrink-0"
-        >
-          {{ patients().length }} visibles
-        </span>
+        <m3-button-group
+          variant="connected"
+          size="xs"
+          selectionMode="single"
+          ariaLabel="Ordenar cola clínica"
+          [options]="sortOptions"
+          [value]="[sortMode()]"
+          (selectionChange)="onSortChange($event)"
+        />
       </div>
 
-      <!-- Filter Chips Row (Covers every TriageFilter including in_bed & waiting) -->
+      <!-- Single-Row Essential Clinical Filters -->
       <div
         role="group"
         aria-label="Filtrar cola de triaje"
@@ -64,19 +84,18 @@ interface FilterOption {
         }
       </div>
 
-      <!-- Semantic List of Selectable Triage Cards -->
+      <!-- Calm, Low-Fatigue Patient Rows -->
       @if (patients().length > 0) {
         <ul
           role="list"
           aria-label="Lista de pacientes en emergencia"
-          class="list-none m-0 p-0 space-y-2.5"
+          class="list-none m-0 p-0 space-y-2"
         >
           @for (patient of patients(); track patient.id) {
             @let isSelected = selectedPatientId() === patient.id;
             @let triageMeta = triageMetaFor(patient.triageLevel);
             @let newsMeta = newsMetaFor(patient.news2.riskLevel);
-            @let isCritical =
-              patient.triageLevel === 'resuscitation' || patient.triageLevel === 'emergency';
+            @let slaMeta = slaMetaFor(patient);
 
             <li>
               <button
@@ -84,127 +103,123 @@ interface FilterOption {
                 (click)="selectPatient.emit(patient)"
                 [attr.aria-current]="isSelected ? 'true' : null"
                 [class]="
-                  'clinic-surface-tile w-full text-left p-4 flex flex-col gap-3 cursor-pointer ' +
+                  'clinic-surface-tile state-layer focus-ring-m3 relative w-full text-left p-3.5 flex items-start gap-3 cursor-pointer ' +
                   (isSelected
                     ? 'is-selected bg-primary-box text-on-primary-box'
-                    : 'bg-surface hover:bg-surface-high text-main')
+                    : 'bg-surface text-main')
                 "
               >
-                <!-- Row 1: Manchester Level + Ticket & Bed / Latency -->
-                <div class="flex items-center justify-between gap-2 flex-wrap w-full">
-                  <div class="flex items-center gap-2 flex-wrap min-w-0">
-                    <span
-                      [class]="triageMeta.badgeClass"
-                      class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized uppercase tracking-wider shrink-0"
-                    >
-                      @if (patient.activeCode) {
+                <!-- Leading M3 Circular Priority Avatar (replaces stiff vertical edge stripe) -->
+                <span
+                  [class]="
+                    triageMeta.badgeClass +
+                    ' relative w-11 h-11 rounded-m3-full grid place-items-center text-label-md-emphasized font-mono font-bold uppercase shrink-0 mt-0.5'
+                  "
+                >
+                  {{ triageMeta.shortCode }}
+                  @if (patient.activeCode) {
+                    <span class="absolute -top-0.5 -right-0.5 flex" aria-hidden="true">
+                      <span [class]="'clinic-live-dot ' + triageMeta.dotClass"></span>
+                    </span>
+                  }
+                </span>
+
+                <div class="flex-1 min-w-0 space-y-1.5">
+                  <!-- Row 1: Identity + Active Protocol Tag + Box & SLA -->
+                  <div class="flex items-center justify-between gap-2 flex-wrap w-full">
+                    <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <h3 class="text-title-sm-emphasized tracking-tight truncate">
+                        {{ patient.fullName }}
+                      </h3>
+
+                      <span
+                        class="text-label-sm shrink-0"
+                        [class.text-muted]="!isSelected"
+                      >
+                        {{ patient.age }}a · {{ patient.ticketCode }}
+                      </span>
+
+                      @if (patient.activeCode; as code) {
                         <span
-                          class="clinic-live-dot"
-                          [class]="triageMeta.dotClass"
-                          aria-hidden="true"
-                        ></span>
-                      } @else {
-                        <span class="material-symbols-rounded text-[14px]" aria-hidden="true">
-                          {{ triageMeta.icon }}
+                          class="bg-error-box text-on-error-box inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-full text-label-sm font-semibold shrink-0"
+                        >
+                          <span class="material-symbols-rounded text-[13px]" aria-hidden="true">bolt</span>
+                          <span>
+                            {{ code.title }} · {{ code.remainingMinutes }}m
+                            @if (code.steps.length > 0) {
+                              <span class="opacity-80 font-mono">
+                                ({{ completedCodeSteps(patient) }}/{{ code.steps.length }})
+                              </span>
+                            }
+                          </span>
                         </span>
                       }
-                      <span>{{ triageMeta.fullLabel }}</span>
-                    </span>
-
-                    <span
-                      [class]="isSelected ? 'bg-surface/20 text-on-primary-box' : 'bg-surface-low text-muted'"
-                      class="px-2.5 py-0.5 rounded-m3-full text-label-sm font-mono tabular-nums shrink-0"
-                    >
-                      {{ patient.ticketCode }}
-                    </span>
-                  </div>
-
-                  <div class="flex items-center gap-1.5 shrink-0 text-label-sm font-mono tabular-nums">
-                    @if (patient.bedAssignedId) {
-                      <span
-                        [class]="isSelected ? 'bg-surface/20 text-on-primary-box' : 'bg-sec-box text-on-sec-box'"
-                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-m3-full font-semibold"
-                      >
-                        <span class="material-symbols-rounded text-[14px]" aria-hidden="true">bed</span>
-                        <span>{{ patient.bedAssignedId }}</span>
-                      </span>
-                    } @else {
-                      <span
-                        [class]="
-                          isSelected
-                            ? 'bg-surface/20 text-on-primary-box'
-                            : isCritical
-                              ? 'bg-error-box text-on-error-box'
-                              : 'bg-warning-box text-on-warning-box'
-                        "
-                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-m3-full font-semibold"
-                      >
-                        <span class="material-symbols-rounded text-[14px]" aria-hidden="true">hourglass_top</span>
-                        <span>Sin Box</span>
-                      </span>
-                    }
-
-                    <span
-                      [class]="isSelected ? 'bg-surface/15 text-on-primary-box' : 'bg-surface-low text-muted'"
-                      class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-m3-full"
-                    >
-                      <span class="material-symbols-rounded text-[13px]" aria-hidden="true">schedule</span>
-                      <span>{{ patient.waitingMinutes }}m</span>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Row 2: Patient Identity + NEWS2 Pill -->
-                <div class="flex items-center justify-between gap-3 w-full">
-                  <div class="flex items-baseline gap-2 min-w-0">
-                    <h3 class="text-title-md-emphasized tracking-tight truncate">
-                      {{ patient.fullName }}
-                    </h3>
-                    <span
-                      class="text-label-md shrink-0"
-                      [class.text-muted]="!isSelected"
-                    >
-                      {{ patient.age }}a · {{ genderLabel(patient.gender) }}
-                    </span>
-                  </div>
-
-                  <span
-                    [class]="newsMeta.pillClass"
-                    class="px-2.5 py-0.5 rounded-m3-full text-label-sm-emphasized font-mono tabular-nums shrink-0"
-                  >
-                    NEWS2 {{ patient.news2.score }}
-                  </span>
-                </div>
-
-                <!-- Row 3: Acute Protocol Banner OR Chief Complaint -->
-                @if (patient.activeCode; as code) {
-                  <div
-                    class="bg-error-box text-on-error-box px-3 py-2 rounded-m3-md flex items-center justify-between gap-2 w-full"
-                  >
-                    <div class="flex items-center gap-2 min-w-0">
-                      <span class="material-symbols-rounded text-[16px] shrink-0" aria-hidden="true">
-                        bolt
-                      </span>
-                      <span class="text-label-md-emphasized truncate">{{ code.title }}</span>
-                      <span class="text-label-sm opacity-80 truncate hidden sm:inline">
-                        · {{ code.windowLabel }}
-                      </span>
                     </div>
 
-                    <span
-                      class="bg-error text-on-error px-2 py-0.5 rounded-m3-full text-label-sm-emphasized font-mono tabular-nums shrink-0"
-                    >
-                      {{ code.remainingMinutes }} min
-                    </span>
+                    <div class="flex items-center gap-1.5 shrink-0 text-label-sm font-mono tabular-nums">
+                      <span
+                        [class]="
+                          newsMeta.pillClass +
+                          ' px-2 py-0.5 rounded-m3-full font-semibold'
+                        "
+                      >
+                        NEWS2 {{ patient.news2.score }}
+                      </span>
+
+                      @if (patient.bedAssignedId) {
+                        <span
+                          [class]="
+                            (isSelected ? 'bg-surface text-main' : 'bg-surface-low text-main') +
+                            ' inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-full font-semibold'
+                          "
+                        >
+                          <span class="material-symbols-rounded text-[13px]" aria-hidden="true">bed</span>
+                          <span>{{ patient.bedAssignedId }}</span>
+                        </span>
+                      } @else {
+                        <span
+                          class="bg-warning-box text-on-warning-box inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-full font-semibold"
+                        >
+                          Sin Box
+                        </span>
+                      }
+
+                      @if (slaMeta.breached || slaMeta.nearLimit) {
+                        <span
+                          [class]="
+                            (slaMeta.breached
+                              ? 'bg-error-box text-on-error-box font-semibold'
+                              : 'bg-warning-box text-on-warning-box') +
+                            ' inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-full'
+                          "
+                        >
+                          {{ slaMeta.label }}
+                        </span>
+                      }
+                    </div>
                   </div>
-                } @else {
-                  <p
-                    class="text-body-sm truncate w-full"
-                    [class.text-muted]="!isSelected"
-                  >
-                    <span class="font-semibold">Motivo:</span> {{ patient.chiefComplaint }}
-                  </p>
-                }
+
+                  <!-- Row 2: Calm Single-Line Clinical Context + Vitals + Allergy Notice -->
+                  <div class="flex items-center justify-between gap-3 w-full text-body-sm">
+                    <p class="truncate min-w-0" [class.text-muted]="!isSelected">
+                      {{ patient.chiefComplaint }}
+                    </p>
+
+                    <div class="flex items-center gap-2.5 shrink-0 text-label-sm font-mono tabular-nums">
+                      @if (patient.allergies.length > 0) {
+                        <span
+                          class="bg-warning-box text-on-warning-box px-2 py-0.5 rounded-m3-full font-semibold"
+                          [attr.title]="'Alergias: ' + patient.allergies.join(', ')"
+                        >
+                          ⚠ {{ patient.allergies.length }} alerg.
+                        </span>
+                      }
+                      <span [class.text-muted]="!isSelected">
+                        SpO₂ {{ patient.vitals.oxygenSat }}% · FC {{ patient.vitals.heartRate }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </button>
             </li>
           }
@@ -248,26 +263,35 @@ export class ClinicPatientQueueComponent {
   readonly inBedCount = input.required<number>();
   readonly waitingCount = input.required<number>();
   readonly activeFilter = input.required<TriageFilter>();
+  readonly sortMode = input.required<TriageSortMode>();
   readonly selectedPatientId = input<string | null>(null);
 
   readonly filterChange = output<TriageFilter>();
+  readonly sortModeChange = output<TriageSortMode>();
   readonly selectPatient = output<PatientTriageRecord>();
   readonly resetFilters = output<void>();
+
+  protected readonly sortOptions = SORT_BUTTON_OPTIONS;
 
   protected readonly filterOptions = computed<readonly FilterOption[]>(() => {
     const k = this.kpi();
     const total = this.totalPatientsCount();
-    const standardCount = Math.max(0, total - k.criticalCases - k.urgentCases);
 
     return [
       { id: 'all', label: 'Todos', count: total },
       { id: 'critical', label: 'Críticos (N1/N2)', count: k.criticalCases },
-      { id: 'urgent', label: 'Urgentes (N3)', count: k.urgentCases },
-      { id: 'standard', label: 'Menores (N4/N5)', count: standardCount },
-      { id: 'in_bed', label: 'En Box', count: this.inBedCount() },
-      { id: 'waiting', label: 'En Espera', count: this.waitingCount() }
+      { id: 'sla_breach', label: 'SLA Vencido', count: k.slaBreachCount },
+      { id: 'waiting', label: 'En Espera', count: this.waitingCount() },
+      { id: 'in_bed', label: 'En Box', count: this.inBedCount() }
     ];
   });
+
+  protected onSortChange(selected: string[]): void {
+    const next = selected[0] as TriageSortMode | undefined;
+    if (next) {
+      this.sortModeChange.emit(next);
+    }
+  }
 
   protected triageMetaFor = (level: PatientTriageRecord['triageLevel']) =>
     TRIAGE_LEVEL_META[level];
@@ -275,9 +299,9 @@ export class ClinicPatientQueueComponent {
   protected newsMetaFor = (risk: PatientTriageRecord['news2']['riskLevel']) =>
     NEWS2_RISK_META[risk];
 
-  protected genderLabel(gender: PatientTriageRecord['gender']): string {
-    if (gender === 'M') return 'Masc.';
-    if (gender === 'F') return 'Fem.';
-    return 'Otro';
+  protected slaMetaFor = (patient: PatientTriageRecord) => formatSlaMetaLabel(patient);
+
+  protected completedCodeSteps(patient: PatientTriageRecord): number {
+    return patient.activeCode?.steps.filter((s) => s.completed).length ?? 0;
   }
 }
