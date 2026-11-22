@@ -45,7 +45,7 @@ describe('KanbanComponent', () => {
     const kpiCards = el.querySelectorAll('.kds-kpi-card');
     expect(kpiCards.length).toBe(4);
 
-    const mobileTabs = el.querySelectorAll('m3-tabs button[role="tab"]');
+    const mobileTabs = el.querySelectorAll('app-kanban-board m3-tabs button[role="tab"]');
     expect(mobileTabs.length).toBe(4);
 
     const lanes = el.querySelectorAll('section[aria-label="Tablero Kanban Operativo KDS"] [data-kanban-lane]');
@@ -221,16 +221,17 @@ describe('KanbanComponent', () => {
       'Ingresá una mesa o canal para emitir la comanda.'
     );
 
-    // Fill valid table, choose urgent radio & cold_chain category, then submit
+    // Fill valid table, choose urgent button via <m3-button-group> & cold_chain category, then submit
     tableInput.value = 'Mesa 99 · VIP';
     tableInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    const urgentRadio = el.querySelector(
-      '#kanban-create-dialog input[type="radio"][value="urgent"]'
-    ) as HTMLInputElement;
-    expect(urgentRadio).toBeTruthy();
-    urgentRadio.click();
+    const priorityButtons = Array.from(
+      el.querySelectorAll('#kanban-create-dialog .kds-priority-group button')
+    ) as HTMLButtonElement[];
+    const urgentBtn = priorityButtons.find(btn => btn.textContent?.includes('Urgente'));
+    expect(urgentBtn).toBeTruthy();
+    urgentBtn?.click();
     fixture.detectChanges();
 
     const categorySelect = el.querySelector('#kds-create-category') as HTMLSelectElement;
@@ -279,7 +280,7 @@ describe('KanbanComponent', () => {
     expect(component.buzzerEnabled()).toBe(false);
   });
 
-  it('should allow dispatching ready orders from card footer and assigning/canceling inside inspect modal', () => {
+  it('should allow dispatching ready orders with snackbar Undo, Dish checklist, Stage Jump, Hold reason, and two-step Anular', () => {
     const el = fixture.nativeElement as HTMLElement;
     const readyOrder = kanbanService.ordersByStage().ready[0];
     const dispatchBtn = el.querySelector(
@@ -291,26 +292,110 @@ describe('KanbanComponent', () => {
     fixture.detectChanges();
     expect(kanbanService.orders().some(o => o.id === readyOrder.id)).toBe(false);
     expect(kanbanService.dispatchedCount()).toBe(1);
+    expect(kanbanService.canUndoLastRemoval()).toBe(true);
+
+    // Undo via snackbar action restores ticket
+    const snackbarUndoBtn = el.querySelector('m3-snackbar .m3-snackbar-action') as HTMLButtonElement | null;
+    expect(snackbarUndoBtn?.textContent).toContain('Deshacer');
+    snackbarUndoBtn?.click();
+    fixture.detectChanges();
+    expect(kanbanService.orders().some(o => o.id === readyOrder.id)).toBe(true);
 
     const inspectTarget = kanbanService.ordersByStage().queue[0];
     kanbanService.openOrderInspection(inspectTarget);
     fixture.detectChanges();
 
+    const inspectDialog = el.querySelector('dialog.m3-dialog.kds-inspect-dialog[open]') as HTMLDialogElement | null;
+    expect(inspectDialog).toBeTruthy();
+
     const staffSelect = el.querySelector('#kds-inspect-staff') as HTMLSelectElement;
     expect(staffSelect).toBeTruthy();
+    if (inspectTarget.assignedStaff) {
+      expect(staffSelect.value).toBe(inspectTarget.assignedStaff);
+    }
     staffSelect.value = 'Chef Carlos Ruiz';
     staffSelect.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     expect(kanbanService.orders().find(o => o.id === inspectTarget.id)?.assignedStaff).toBe('Chef Carlos Ruiz');
 
-    const cancelBtn = el.querySelector(
+    // Toggle first dish checkbox inside inspect dialog
+    const dishCheck = el.querySelector('#kanban-inspect-dialog m3-checkbox input[type="checkbox"]') as HTMLInputElement | null;
+    expect(dishCheck).toBeTruthy();
+    dishCheck?.click();
+    fixture.detectChanges();
+    expect(kanbanService.orders().find(o => o.id === inspectTarget.id)?.items[0].done).toBe(true);
+
+    // Jump stage directly to QA inside inspect modal pipeline
+    const qaJumpBtn = el.querySelector(
+      '#kanban-inspect-dialog [aria-label="Mover comanda a etapa Calidad"]'
+    ) as HTMLButtonElement | null;
+    expect(qaJumpBtn).toBeTruthy();
+    qaJumpBtn?.click();
+    fixture.detectChanges();
+    expect(kanbanService.orders().find(o => o.id === inspectTarget.id)?.stage).toBe('qa');
+
+    // Safe two-step Anular requires confirmation click before deleting
+    const cancelStep1 = el.querySelector(
       '#kanban-inspect-dialog [aria-label="Anular y retirar comanda del tablero"]'
     ) as HTMLButtonElement | null;
-    expect(cancelBtn).toBeTruthy();
-    cancelBtn?.click();
+    expect(cancelStep1).toBeTruthy();
+    cancelStep1?.click();
+    fixture.detectChanges();
+    expect(kanbanService.orders().some(o => o.id === inspectTarget.id)).toBe(true);
+
+    const cancelStep2 = el.querySelector(
+      '#kanban-inspect-dialog [aria-label="Confirmar anulación definitiva de comanda"]'
+    ) as HTMLButtonElement | null;
+    expect(cancelStep2).toBeTruthy();
+    cancelStep2?.click();
     fixture.detectChanges();
 
     expect(kanbanService.orders().some(o => o.id === inspectTarget.id)).toBe(false);
     expect(kanbanService.isInspectionOpen()).toBe(false);
+  });
+
+  it('should support All-Day & Recall ops dialog, editable lane WIP limits, and empty search recovery', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    // Open All-Day dialog from Header
+    const allDayBtn = el.querySelector(
+      'app-kanban-header [aria-label="Abrir resumen consolidado All-Day de cocina"]'
+    ) as HTMLButtonElement | null;
+    expect(allDayBtn).toBeTruthy();
+    allDayBtn?.click();
+    fixture.detectChanges();
+
+    const opsDialog = el.querySelector('dialog.m3-dialog.kds-ops-dialog[open]') as HTMLDialogElement | null;
+    expect(opsDialog).toBeTruthy();
+    expect(opsDialog?.textContent).toContain('Lomo Saltado');
+
+    // Click first consolidated dish to filter the board and close dialog
+    const firstDishBtn = opsDialog?.querySelector('ul button') as HTMLButtonElement | null;
+    expect(firstDishBtn).toBeTruthy();
+    firstDishBtn?.click();
+    fixture.detectChanges();
+
+    expect(kanbanService.isOpsModalOpen()).toBe(false);
+    expect(kanbanService.searchQuery().length).toBeGreaterThan(0);
+
+    // Search non-existent text shows empty banner and reset button
+    kanbanService.setSearchQuery('ZZZZ_NO_EXISTE');
+    fixture.detectChanges();
+    const resetBtn = el.querySelector('app-kanban-board m3-button') as HTMLElement | null;
+    expect(el.textContent).toContain('No hay comandas que coincidan con el filtro');
+    expect(resetBtn).toBeTruthy();
+
+    kanbanService.clearSearchAndFilters();
+    fixture.detectChanges();
+    expect(kanbanService.searchQuery()).toBe('');
+
+    // Adjust WIP stepper directly in Cola de Entrada lane header
+    const decWipBtn = el.querySelector(
+      '[aria-label="Reducir límite WIP de Cola de Entrada"]'
+    ) as HTMLButtonElement | null;
+    expect(decWipBtn).toBeTruthy();
+    decWipBtn?.click();
+    fixture.detectChanges();
+    expect(kanbanService.effectiveColumns().find(c => c.id === 'queue')?.wipLimit).toBe(5);
   });
 });

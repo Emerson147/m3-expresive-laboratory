@@ -1,4 +1,5 @@
 import {
+  ApplicationRef,
   Injectable,
   signal,
   computed,
@@ -14,8 +15,11 @@ import {
   KanbanFilter,
   KanbanFilterCounts,
   KanbanKpiSummary,
+  KanbanClosedOrder,
+  AllDayDishSummary,
   OrderStage,
   OrderCategory,
+  OrderPriority,
   OrderItem,
   CreateOrderDto,
   CreateOrderItemDto,
@@ -249,10 +253,18 @@ const DEFAULT_CATEGORY_ITEMS: Record<OrderCategory, { name: string; price: numbe
   ]
 };
 
+const PRIORITY_WEIGHT: Record<OrderPriority, number> = {
+  urgent: 400,
+  high: 300,
+  medium: 200,
+  low: 100
+};
+
 @Injectable({
   providedIn: 'root'
 })
 export class KanbanService {
+  private readonly appRef = inject(ApplicationRef);
   private readonly ngZone = inject(NgZone);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
@@ -268,12 +280,29 @@ export class KanbanService {
   readonly selectedOrderId = signal<string | null>(null);
   readonly isInspectionOpen = signal<boolean>(false);
   readonly isCreateModalOpen = signal<boolean>(false);
+  readonly isOpsModalOpen = signal<boolean>(false);
+  readonly opsModalTab = signal<'allday' | 'history'>('allday');
 
-  // Modal & FLIP View Transition coordination
+  // Strict single-owner Modal & FLIP View Transition coordination
   readonly activeInspectTrigger = signal<string | null>(null);
   readonly activeCreateTrigger = signal<string | null>(null);
-  readonly isModalTransitioning = signal<boolean>(false);
+  readonly inspectMorphOwner = signal<'trigger' | 'modal' | null>(null);
+  readonly createMorphOwner = signal<'trigger' | 'modal' | null>(null);
+  readonly isModalTransitioning = computed(
+    () => this.inspectMorphOwner() !== null || this.createMorphOwner() !== null
+  );
   readonly isBoardFlipActive = signal<boolean>(false);
+
+  // Editable per-lane WIP limits & closed shift recall history
+  readonly columnWipLimits = signal<Record<OrderStage, number>>({
+    queue: 6,
+    prep: 4,
+    qa: 4,
+    ready: 8
+  });
+  readonly closedHistory = signal<KanbanClosedOrder[]>([]);
+  readonly canUndoLastRemoval = signal<boolean>(false);
+  readonly lastClosedOrder = computed<KanbanClosedOrder | null>(() => this.closedHistory()[0] ?? null);
 
   // Drag and Drop / Interactive state
   readonly draggedOrderId = signal<string | null>(null);
@@ -288,8 +317,15 @@ export class KanbanService {
   readonly toastMessage = signal<string | null>(null);
   readonly liveAnnouncement = signal<string>('');
 
-  // Static columns definition (pure domain data without Tailwind presentation strings)
+  // Base static columns + reactive effective WIP columns
   readonly columns: readonly KanbanColumn[] = KANBAN_COLUMNS;
+  readonly effectiveColumns = computed<KanbanColumn[]>(() => {
+    const limits = this.columnWipLimits();
+    return this.columns.map(col => ({
+      ...col,
+      wipLimit: limits[col.id] ?? col.wipLimit
+    }));
+  });
 
   /** Reactive selected ticket linked to the live order list (stays synchronized on stage/SLA updates). */
   readonly selectedOrder = computed<KanbanOrder | null>(() => {
@@ -320,6 +356,36 @@ export class KanbanService {
     return grouped;
   });
 
+  /** Consolidated "All-Day" production queue across pending unchecked dishes in Cola & Cocina. */
+  readonly allDaySummary = computed<AllDayDishSummary[]>(() => {
+    const dishMap = new Map<string, AllDayDishSummary>();
+    for (const order of this.orders()) {
+      if (order.stage !== 'queue' && order.stage !== 'prep') continue;
+      for (const item of order.items) {
+        if (item.done) continue;
+        const cleanName = item.name.trim();
+        const key = cleanName.toLowerCase();
+        const existing = dishMap.get(key);
+        if (existing) {
+          existing.totalQty += item.quantity;
+          if (!existing.ticketNumbers.includes(order.ticketNumber)) {
+            existing.ticketNumbers.push(order.ticketNumber);
+          }
+        } else {
+          dishMap.set(key, {
+            name: cleanName,
+            totalQty: item.quantity,
+            category: item.category,
+            ticketNumbers: [order.ticketNumber]
+          });
+        }
+      }
+    }
+    return Array.from(dishMap.values()).sort(
+      (a, b) => b.totalQty - a.totalQty || a.name.localeCompare(b.name, 'es')
+    );
+  });
+
   readonly filterCounts = computed<KanbanFilterCounts>(() => {
     const list = this.orders();
     return {
@@ -340,7 +406,7 @@ export class KanbanService {
     const totalElapsed = all.reduce((acc, curr) => acc + curr.elapsedMinutes, 0);
     const avgPrepTimeMin = all.length ? Math.round((totalElapsed / all.length) * 10) / 10 : 0;
     const throughputPerHour = Math.round((readyCount + this.dispatchedCount()) * 4.2);
-    const wipExceededColumns = this.columns.filter(col => byStage[col.id].length > col.wipLimit).length;
+    const wipExceededColumns = this.effectiveColumns().filter(col => byStage[col.id].length > col.wipLimit).length;
     const onTimeRatePercent = all.length
       ? Math.round(((all.length - slaBreachCount) / all.length) * 100)
       : 100;
@@ -364,18 +430,145 @@ export class KanbanService {
     return this.ordersByStage()[stage];
   }
 
-  setFilter(filter: KanbanFilter): void {
-    if (this.activeFilter() === filter) return;
+  private hasAnyOpenModal(): boolean {
+    return this.isInspectionOpen() || this.isCreateModalOpen() || this.isOpsModalOpen();
+  }
+
+  /**
+   * Coordinates board FLIP transitions when the board is unobstructed, while running
+   * silent atomic signal updates whenever a native Top-Layer modal covers the stage
+   * so ::view-transition ticket groups never render above an open <dialog>.
+   */
+  private runBoardMutation(
+    update: () => void,
+    cleanup?: () => void,
+    transitionOrderId: string | null = null
+  ): void {
+    if (this.hasAnyOpenModal()) {
+      update();
+      this.activeTransitionOrderId.set(null);
+      this.isBoardFlipActive.set(false);
+      cleanup?.();
+      return;
+    }
+
+    this.activeTransitionOrderId.set(transitionOrderId);
     this.isBoardFlipActive.set(true);
+    this.appRef.tick();
+
     this.stageOverlay.runViewTransition(
-      () => this.activeFilter.set(filter),
-      () => this.isBoardFlipActive.set(false),
+      update,
+      () => {
+        this.activeTransitionOrderId.set(null);
+        this.isBoardFlipActive.set(false);
+        cleanup?.();
+      },
       { rootClass: 'vt-board-flip' }
     );
   }
 
+  setFilter(filter: KanbanFilter): void {
+    if (this.activeFilter() === filter) return;
+    this.runBoardMutation(() => this.activeFilter.set(filter));
+  }
+
   setSearchQuery(query: string): void {
     this.searchQuery.set(query);
+  }
+
+  clearSearchAndFilters(): void {
+    const hadFilter = this.activeFilter() !== 'all';
+    this.searchQuery.set('');
+    if (hadFilter) {
+      this.setFilter('all');
+    }
+  }
+
+  adjustWipLimit(stage: OrderStage, delta: 1 | -1): void {
+    const current = this.columnWipLimits()[stage] ?? 4;
+    const next = Math.max(1, Math.min(20, current + delta));
+    if (next === current) return;
+
+    this.columnWipLimits.update(limits => ({ ...limits, [stage]: next }));
+    this.liveAnnouncement.set(`Límite WIP de ${STAGE_TITLES[stage]} ajustado a ${next}.`);
+  }
+
+  sortStageByUrgency(stage: OrderStage): void {
+    const stageOrders = this.orders().filter(o => o.stage === stage);
+    if (stageOrders.length < 2) return;
+
+    const getUrgencyScore = (order: KanbanOrder): number => {
+      const breachScore = isOrderSlaBreached(order) ? 1000 : 0;
+      const priorityScore = PRIORITY_WEIGHT[order.priority];
+      const elapsedRatio = Math.round(
+        (order.elapsedMinutes / Math.max(1, order.prepTimeTargetMin)) * 100
+      );
+      return breachScore + priorityScore + elapsedRatio;
+    };
+
+    const sortedStageOrders = [...stageOrders].sort(
+      (a, b) => getUrgencyScore(b) - getUrgencyScore(a)
+    );
+    const unchanged = stageOrders.every((order, idx) => order.id === sortedStageOrders[idx].id);
+    if (unchanged) {
+      const msg = `${STAGE_TITLES[stage]} ya está ordenado por urgencia SLA.`;
+      this.canUndoLastRemoval.set(false);
+      this.toastMessage.set(msg);
+      this.liveAnnouncement.set(msg);
+      return;
+    }
+
+    const msg = `Carril ${STAGE_TITLES[stage]} ordenado por prioridad y SLA.`;
+    this.runBoardMutation(() => {
+      let cursor = 0;
+      this.orders.update(list =>
+        list.map(order => (order.stage === stage ? sortedStageOrders[cursor++] : order))
+      );
+      this.canUndoLastRemoval.set(false);
+      this.toastMessage.set(msg);
+      this.liveAnnouncement.set(msg);
+    });
+  }
+
+  toggleOrderItemDone(orderId: string, itemId: string): void {
+    const targetOrder = this.orders().find(o => o.id === orderId);
+    const targetItem = targetOrder?.items.find(i => i.id === itemId);
+    if (!targetOrder || !targetItem) return;
+
+    const nextDone = !targetItem.done;
+    this.orders.update(list =>
+      list.map(order =>
+        order.id === orderId
+          ? {
+              ...order,
+              items: order.items.map(item =>
+                item.id === itemId ? { ...item, done: nextDone } : item
+              )
+            }
+          : order
+      )
+    );
+    this.liveAnnouncement.set(
+      `${targetItem.name} (${targetOrder.ticketNumber}) marcado como ${nextDone ? 'listo' : 'pendiente'}.`
+    );
+  }
+
+  setOrderBlocked(orderId: string, reason: string | null): void {
+    const order = this.orders().find(o => o.id === orderId);
+    if (!order) return;
+
+    const cleanReason = reason?.trim() || null;
+    if ((order.blockedReason ?? null) === cleanReason) return;
+
+    this.orders.update(list =>
+      list.map(o => (o.id === orderId ? { ...o, blockedReason: cleanReason } : o))
+    );
+    const notice = cleanReason
+      ? `Comanda ${order.ticketNumber} en espera: ${cleanReason}.`
+      : `Comanda ${order.ticketNumber} reanudada al flujo activo.`;
+    this.canUndoLastRemoval.set(false);
+    this.liveAnnouncement.set(notice);
+    this.toastMessage.set(notice);
   }
 
   toggleBuzzer(): void {
@@ -388,6 +581,7 @@ export class KanbanService {
 
   dismissToast(): void {
     this.toastMessage.set(null);
+    this.canUndoLastRemoval.set(false);
   }
 
   playKdsChime(type: 'created' | 'ready' | 'advance'): void {
@@ -447,9 +641,6 @@ export class KanbanService {
       current.stage === targetStage && Boolean(beforeOrderId) && beforeOrderId !== orderId;
     if (current.stage === targetStage && !isSameStageReorder) return;
 
-    this.activeTransitionOrderId.set(orderId);
-    this.isBoardFlipActive.set(true);
-
     if (current.stage !== targetStage) {
       this.playKdsChime(targetStage === 'ready' ? 'ready' : 'advance');
     }
@@ -463,17 +654,15 @@ export class KanbanService {
       statusMsg = `Comanda ${current.ticketNumber} movida a ${STAGE_TITLES[targetStage]}.`;
     }
 
-    this.stageOverlay.runViewTransition(
+    this.runBoardMutation(
       () => {
         this.orders.update(list => this.applyOrderMove(list, orderId, targetStage, beforeOrderId));
+        this.canUndoLastRemoval.set(false);
         this.liveAnnouncement.set(statusMsg);
         this.toastMessage.set(statusMsg);
       },
-      () => {
-        this.activeTransitionOrderId.set(null);
-        this.isBoardFlipActive.set(false);
-      },
-      { rootClass: 'vt-board-flip' }
+      undefined,
+      orderId
     );
   }
 
@@ -489,10 +678,7 @@ export class KanbanService {
     const partnerId = stageOrders[partnerIdx].id;
     const statusMsg = `Comanda ${current.ticketNumber} reordenada en ${STAGE_TITLES[current.stage]}.`;
 
-    this.activeTransitionOrderId.set(orderId);
-    this.isBoardFlipActive.set(true);
-
-    this.stageOverlay.runViewTransition(
+    this.runBoardMutation(
       () => {
         this.orders.update(list => {
           const idxA = list.findIndex(o => o.id === orderId);
@@ -504,11 +690,8 @@ export class KanbanService {
         });
         this.liveAnnouncement.set(statusMsg);
       },
-      () => {
-        this.activeTransitionOrderId.set(null);
-        this.isBoardFlipActive.set(false);
-      },
-      { rootClass: 'vt-board-flip' }
+      undefined,
+      orderId
     );
   }
 
@@ -531,28 +714,62 @@ export class KanbanService {
     this.removeOrderFromBoard(orderId, `Comanda ${order.ticketNumber} anulada del flujo.`, false);
   }
 
-  private removeOrderFromBoard(orderId: string, notice: string, countAsDispatched: boolean): void {
-    this.isBoardFlipActive.set(true);
+  undoLastRemoval(): void {
+    const latest = this.lastClosedOrder();
+    if (!latest) return;
+    this.restoreClosedOrder(latest.order.id);
+  }
 
-    this.stageOverlay.runViewTransition(
+  restoreClosedOrder(orderId: string): void {
+    const entry = this.closedHistory().find(item => item.order.id === orderId);
+    if (!entry) return;
+
+    const restoredMsg = `Comanda ${entry.order.ticketNumber} restaurada a ${STAGE_TITLES[entry.order.stage]}.`;
+    this.runBoardMutation(
       () => {
-        this.orders.update(list => list.filter(o => o.id !== orderId));
-        if (countAsDispatched) {
-          this.dispatchedCount.update(count => count + 1);
+        this.closedHistory.update(history => history.filter(item => item.order.id !== orderId));
+        if (entry.reason === 'dispatched') {
+          this.dispatchedCount.update(c => Math.max(0, c - 1));
         }
-        if (this.selectedOrderId() === orderId) {
-          this.isInspectionOpen.set(false);
-          this.selectedOrderId.set(null);
-          this.stageOverlay.setOverlayOpen(this.isCreateModalOpen());
-        }
-        this.liveAnnouncement.set(notice);
-        this.toastMessage.set(notice);
+        this.orders.update(list =>
+          list.some(o => o.id === orderId) ? list : [entry.order, ...list]
+        );
+        this.canUndoLastRemoval.set(false);
+        this.liveAnnouncement.set(restoredMsg);
+        this.toastMessage.set(restoredMsg);
       },
-      () => {
-        this.isBoardFlipActive.set(false);
-      },
-      { rootClass: 'vt-board-flip' }
+      undefined,
+      entry.order.id
     );
+  }
+
+  private removeOrderFromBoard(orderId: string, notice: string, countAsDispatched: boolean): void {
+    const targetOrder = this.orders().find(o => o.id === orderId);
+    if (!targetOrder) return;
+
+    const closedEntry: KanbanClosedOrder = {
+      order: targetOrder,
+      reason: countAsDispatched ? 'dispatched' : 'canceled',
+      closedAt: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    this.runBoardMutation(() => {
+      this.orders.update(list => list.filter(o => o.id !== orderId));
+      this.closedHistory.update(history => [closedEntry, ...history].slice(0, 25));
+      if (countAsDispatched) {
+        this.dispatchedCount.update(count => count + 1);
+      }
+      if (this.selectedOrderId() === orderId) {
+        this.isInspectionOpen.set(false);
+        this.selectedOrderId.set(null);
+        this.inspectMorphOwner.set(null);
+        this.activeInspectTrigger.set(null);
+        this.stageOverlay.setOverlayOpen(this.isCreateModalOpen() || this.isOpsModalOpen());
+      }
+      this.canUndoLastRemoval.set(true);
+      this.liveAnnouncement.set(notice);
+      this.toastMessage.set(notice);
+    });
   }
 
   assignOrderStaff(orderId: string, staff: string): void {
@@ -566,6 +783,7 @@ export class KanbanService {
       list.map(o => (o.id === orderId ? { ...o, assignedStaff: cleanStaff } : o))
     );
     const notice = `Responsable de ${order.ticketNumber}: ${cleanStaff}.`;
+    this.canUndoLastRemoval.set(false);
     this.liveAnnouncement.set(notice);
     this.toastMessage.set(notice);
   }
@@ -616,41 +834,48 @@ export class KanbanService {
 
   openOrderInspection(order: KanbanOrder, triggerId?: string): void {
     this.activeInspectTrigger.set(triggerId ?? `ticket-${order.id}`);
-    this.isModalTransitioning.set(true);
+    this.inspectMorphOwner.set('trigger');
+    this.appRef.tick();
 
-    // Guard against bluring/inerting unportaled in-stage dialogs before Phase 3 external host portal is mounted.
+    // Guard against bluring/inerting unportaled in-stage dialogs before external host portal is mounted.
     const shouldRecessStage = Boolean(this.stageOverlay.overlayTemplate());
 
     this.stageOverlay.runViewTransition(
       () => {
         this.selectedOrderId.set(order.id);
         this.isInspectionOpen.set(true);
+        this.inspectMorphOwner.set('modal');
         if (shouldRecessStage) {
           this.stageOverlay.setOverlayOpen(true);
         }
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.inspectMorphOwner.set(null);
       }
     );
   }
 
   closeOrderInspection(): void {
     if (!this.isInspectionOpen()) return;
-    this.isModalTransitioning.set(true);
+    this.inspectMorphOwner.set('modal');
+    this.appRef.tick();
 
-    const shouldSyncOverlay = Boolean(this.stageOverlay.overlayTemplate()) && !this.isCreateModalOpen();
+    const shouldSyncOverlay =
+      Boolean(this.stageOverlay.overlayTemplate()) &&
+      !this.isCreateModalOpen() &&
+      !this.isOpsModalOpen();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isInspectionOpen.set(false);
         this.selectedOrderId.set(null);
+        this.inspectMorphOwner.set('trigger');
         if (shouldSyncOverlay) {
           this.stageOverlay.setOverlayOpen(false);
         }
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.inspectMorphOwner.set(null);
         this.activeInspectTrigger.set(null);
       },
       { isExiting: true }
@@ -659,40 +884,81 @@ export class KanbanService {
 
   openCreateModal(triggerId = 'create-order'): void {
     this.activeCreateTrigger.set(triggerId);
-    this.isModalTransitioning.set(true);
+    this.createMorphOwner.set('trigger');
+    this.appRef.tick();
 
     const shouldRecessStage = Boolean(this.stageOverlay.overlayTemplate());
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isCreateModalOpen.set(true);
+        this.createMorphOwner.set('modal');
         if (shouldRecessStage) {
           this.stageOverlay.setOverlayOpen(true);
         }
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.createMorphOwner.set(null);
       }
     );
   }
 
   closeCreateModal(): void {
     if (!this.isCreateModalOpen()) return;
-    this.isModalTransitioning.set(true);
+    this.createMorphOwner.set('modal');
+    this.appRef.tick();
 
-    const shouldSyncOverlay = Boolean(this.stageOverlay.overlayTemplate()) && !this.isInspectionOpen();
+    const shouldSyncOverlay =
+      Boolean(this.stageOverlay.overlayTemplate()) &&
+      !this.isInspectionOpen() &&
+      !this.isOpsModalOpen();
 
     this.stageOverlay.runViewTransition(
       () => {
         this.isCreateModalOpen.set(false);
+        this.createMorphOwner.set('trigger');
         if (shouldSyncOverlay) {
           this.stageOverlay.setOverlayOpen(false);
         }
       },
       () => {
-        this.isModalTransitioning.set(false);
+        this.createMorphOwner.set(null);
         this.activeCreateTrigger.set(null);
       },
+      { isExiting: true }
+    );
+  }
+
+  openOpsModal(tab: 'allday' | 'history' = 'allday'): void {
+    this.opsModalTab.set(tab);
+    const shouldRecessStage = Boolean(this.stageOverlay.overlayTemplate());
+    this.appRef.tick();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isOpsModalOpen.set(true);
+        if (shouldRecessStage) {
+          this.stageOverlay.setOverlayOpen(true);
+        }
+      }
+    );
+  }
+
+  closeOpsModal(): void {
+    if (!this.isOpsModalOpen()) return;
+    const shouldSyncOverlay =
+      Boolean(this.stageOverlay.overlayTemplate()) &&
+      !this.isInspectionOpen() &&
+      !this.isCreateModalOpen();
+
+    this.stageOverlay.runViewTransition(
+      () => {
+        this.isOpsModalOpen.set(false);
+        if (shouldSyncOverlay) {
+          this.stageOverlay.setOverlayOpen(false);
+        }
+      },
+      undefined,
       { isExiting: true }
     );
   }
@@ -813,22 +1079,17 @@ export class KanbanService {
     };
 
     const notice = `Comanda ${newOrder.ticketNumber} (${newOrder.tableOrClient}) ingresada a Cola de Entrada.`;
-
-    this.isBoardFlipActive.set(true);
-    this.activeTransitionOrderId.set(newOrder.id);
     this.playKdsChime('created');
 
-    this.stageOverlay.runViewTransition(
+    this.runBoardMutation(
       () => {
         this.orders.update(list => [newOrder, ...list]);
+        this.canUndoLastRemoval.set(false);
         this.liveAnnouncement.set(notice);
         this.toastMessage.set(notice);
       },
-      () => {
-        this.activeTransitionOrderId.set(null);
-        this.isBoardFlipActive.set(false);
-      },
-      { rootClass: 'vt-board-flip' }
+      undefined,
+      newOrder.id
     );
 
     return newOrder;

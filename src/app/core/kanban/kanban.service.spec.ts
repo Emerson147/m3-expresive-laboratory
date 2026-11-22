@@ -231,4 +231,93 @@ describe('KanbanService', () => {
       expect(call[2]).toEqual({ rootClass: 'vt-board-flip' });
     }
   });
+
+  it('should track strict single-owner dialog-transform signals for Inspect and Create modals', () => {
+    const order = service.orders()[0];
+    expect(service.inspectMorphOwner()).toBeNull();
+    expect(service.createMorphOwner()).toBeNull();
+
+    service.openOrderInspection(order, 'ticket-' + order.id);
+    expect(service.isInspectionOpen()).toBe(true);
+    expect(service.inspectMorphOwner()).toBeNull();
+
+    service.closeOrderInspection();
+    expect(service.isInspectionOpen()).toBe(false);
+    expect(service.inspectMorphOwner()).toBeNull();
+
+    service.openCreateModal('create-order');
+    expect(service.isCreateModalOpen()).toBe(true);
+    expect(service.createMorphOwner()).toBeNull();
+
+    service.closeCreateModal();
+    expect(service.isCreateModalOpen()).toBe(false);
+    expect(service.createMorphOwner()).toBeNull();
+  });
+
+  it('should toggle dish items, compute All-Day pending summary, and manage order hold/blocked reasons', () => {
+    const target = service.ordersByStage().queue[0];
+    const dishName = target.items[0].name;
+    const beforeAllDay = service.allDaySummary().find(d => d.name === dishName)?.totalQty ?? 0;
+    expect(beforeAllDay).toBeGreaterThanOrEqual(target.items[0].quantity);
+
+    service.toggleOrderItemDone(target.id, target.items[0].id);
+    const updatedOrder = service.orders().find(o => o.id === target.id);
+    expect(updatedOrder?.items[0].done).toBe(true);
+
+    const afterAllDay = service.allDaySummary().find(d => d.name === dishName)?.totalQty ?? 0;
+    expect(afterAllDay).toBe(beforeAllDay - target.items[0].quantity);
+
+    service.setOrderBlocked(target.id, 'Falta insumo en cocina');
+    expect(service.orders().find(o => o.id === target.id)?.blockedReason).toBe('Falta insumo en cocina');
+
+    service.setOrderBlocked(target.id, null);
+    expect(service.orders().find(o => o.id === target.id)?.blockedReason).toBeNull();
+  });
+
+  it('should record closed history on dispatch/cancel, support Undo/Recall restore, adjust WIP, and sort lane by urgency', () => {
+    const readyOrder = service.ordersByStage().ready[0];
+    service.dispatchOrder(readyOrder.id);
+    expect(service.dispatchedCount()).toBe(1);
+    expect(service.canUndoLastRemoval()).toBe(true);
+    expect(service.closedHistory()[0]?.order.id).toBe(readyOrder.id);
+
+    service.undoLastRemoval();
+    expect(service.dispatchedCount()).toBe(0);
+    expect(service.canUndoLastRemoval()).toBe(false);
+    expect(service.orders().some(o => o.id === readyOrder.id)).toBe(true);
+
+    for (let i = 0; i < 5; i++) {
+      service.adjustWipLimit('queue', -1);
+    }
+    expect(service.effectiveColumns().find(c => c.id === 'queue')?.wipLimit).toBe(1);
+    expect(service.kpis().wipExceededColumns).toBeGreaterThanOrEqual(1);
+
+    // Create an urgent order appended or placed at top, then verify sortStageByUrgency orders breached/urgent first
+    const queueIdsBefore = service.ordersByStage().queue.map(o => o.id);
+    expect(queueIdsBefore.length).toBeGreaterThanOrEqual(2);
+    service.reorderOrderInStage(queueIdsBefore[0], 'down');
+    service.createOrder({
+      tableOrClient: 'Mesa VIP',
+      priority: 'urgent',
+      category: 'kitchen'
+    });
+    // Move high priority behind medium, then auto-sort queue
+    service.sortStageByUrgency('queue');
+    const sortedQueue = service.ordersByStage().queue;
+    expect(sortedQueue[0].priority).toBe('urgent');
+  });
+
+  it('should skip vt-board-flip when mutating an order while an inspect dialog is open so background cards never render over the modal', () => {
+    const stageOverlay = TestBed.inject(StageOverlayService);
+    const spy = vi.spyOn(stageOverlay, 'runViewTransition');
+    const target = service.ordersByStage().queue[0];
+
+    service.openOrderInspection(target);
+    spy.mockClear();
+
+    service.moveOrder(target.id, 'qa');
+    expect(service.orders().find(o => o.id === target.id)?.stage).toBe('qa');
+    expect(service.isBoardFlipActive()).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

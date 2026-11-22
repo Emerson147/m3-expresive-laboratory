@@ -59,6 +59,26 @@ import { M3SwitchComponent } from '../../../shared/components/switch/switch.comp
             (changed)="toggleBuzzer.emit()" />
         </div>
 
+        <!-- All-Day Production Summary -->
+        <m3-button
+          variant="tonal"
+          size="sm"
+          icon="restaurant_menu"
+          ariaLabel="Abrir resumen consolidado All-Day de cocina"
+          (action)="openAllDay.emit()">
+          All-Day ({{ allDayCount() }})
+        </m3-button>
+
+        <!-- Shift History / Recall -->
+        <m3-button
+          variant="outlined"
+          size="sm"
+          icon="history"
+          ariaLabel="Ver historial y recuperar comandas cerradas"
+          (action)="openHistory.emit()">
+          Historial ({{ historyCount() }})
+        </m3-button>
+
         <!-- Primary Dispatch / New Order CTA -->
         <m3-button
           id="trigger-create-order"
@@ -79,10 +99,14 @@ export class KanbanHeaderComponent {
   readonly currentClock = input.required<string>();
   readonly buzzerEnabled = input<boolean>(true);
   readonly isLiveActive = input<boolean>(true);
+  readonly allDayCount = input<number>(0);
+  readonly historyCount = input<number>(0);
   readonly isCreateOriginActive = input<boolean>(false);
   readonly isCreateOriginInvisible = input<boolean>(false);
 
   readonly toggleBuzzer = output<void>();
   readonly toggleLive = output<void>();
+  readonly openAllDay = output<void>();
+  readonly openHistory = output<void>();
   readonly createOrder = output<void>();
 }
