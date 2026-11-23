@@ -35,7 +35,7 @@
          Used for focal points, hero animations, modals, drawers and task celebrations.
        - Standard: Utilitarian & low-distraction (y1 = 1.06 in fast spatial, +6% subtle overshoot).
          Used for dense, high-frequency productivity interfaces (data tables, form fields, continuous lists).
-       - Spatial Family: Damping = 0.9 (underdamped, allows momentum overshoot).
+       - Spatial Family: Expressive ζ = 0.6 (fast) / 0.8 (default/slow); Standard ζ = 0.9.
        - Effects Family: Damping = 1.0 (critically damped, zero bounce on optical properties). */
 
   /* 4.1 Android / Compose Physics Parameters (Damping Ratio ζ & Stiffness k) */
@@ -405,7 +405,7 @@ html[data-motion-scheme="standard"],
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(88px);
+    transform: translateY(64px);
   }
   100% {
     transform: translateY(0px);
@@ -414,7 +414,7 @@ html[data-motion-scheme="standard"],
 
 @keyframes m3TheaterDecelerate {
   0% {
-    transform: translateY(88px);
+    transform: translateY(64px);
     opacity: 0.3;
   }
   25% {
@@ -435,7 +435,7 @@ html[data-motion-scheme="standard"],
     opacity: 1;
   }
   100% {
-    transform: translateY(88px);
+    transform: translateY(64px);
     opacity: 0.3;
   }
 }

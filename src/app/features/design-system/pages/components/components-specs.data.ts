@@ -61,8 +61,8 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'All Buttons (Common, Toggle, Group, Split, FAB)',
     category: 'Actions',
     docUrl: 'https://m3.material.io/components/all-buttons',
-    selectorOrCss: '<m3-button>, <m3-button-group>, <m3-split-button>, <m3-fab>',
-    keyRule: '5 énfasis (Filled -> Text), escala XS..XL, Toggle Pill <-> 12px Square y Connected Groups en lugar de Segmented Buttons.',
+    selectorOrCss: '<m3-button>, <a m3-button>, <m3-button-group>, <m3-split-button>, <m3-fab>',
+    keyRule: '5 énfasis (Filled -> Text), escala XS..XL (28..56px), Toggle Pill <-> 12px Square, FAB (variant="primary|secondary|tertiary|surface") y Connected Groups.',
     webNotes: 'La opacidad disabled separa 12% contenedor y 38% tinta on-surface sin multiplicar opacidades padre.'
   },
   {
@@ -70,9 +70,9 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'Cards (Elevated, Filled, Outlined)',
     category: 'Containment & Selection',
     docUrl: 'https://m3.material.io/components/cards/overview',
-    selectorOrCss: '<m3-card variant="elevated|filled|outlined">',
-    keyRule: 'Cada card agrupa un tema único y acción coherente; elevation level 1->2 en elevated o tono/borde sin sombra.',
-    webNotes: 'Cuando es interactive=true usa role="button" y activa con click, Enter o keyup.space (bloqueando scroll en keydown).'
+    selectorOrCss: '<m3-card variant="elevated|filled|outlined" shape="xl|lg|md" surface="default|low|box|high|highest">',
+    keyRule: 'Cada card agrupa un tema único y acción coherente; [shape] modula 28/16/12dp, [surface] ajusta el tono base y elevation 1->2 aplica en elevated.',
+    webNotes: 'Cuando es [interactive]="true" usa role="button" y activa con click, Enter o keyup.space (bloqueando scroll en keydown).'
   },
   {
     id: 'chips',
@@ -88,9 +88,9 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'Text Fields (Filled & Outlined + Autofill)',
     category: 'Text Inputs',
     docUrl: 'https://m3.material.io/components/text-fields/overview',
-    selectorOrCss: '<m3-text-field variant="filled|outlined">',
-    keyRule: 'Etiqueta flotante obligatoria, supporting/error text enlazado con aria-describedby y contraste >= 3:1 en bordes e iconos.',
-    webNotes: 'Soporta ControlValueAccessor, autocomplete nativo del navegador y outline Highlight en @media (forced-colors: active).'
+    selectorOrCss: '<m3-text-field variant="filled|outlined" [clearable]="..." [passwordToggle]="..." [autoGrow]="..." prefix="..." suffix="...">',
+    keyRule: 'Etiqueta flotante obligatoria, [prefix]/[suffix] + supporting/error text enlazado con aria-describedby y contraste >= 3:1 en bordes e iconos.',
+    webNotes: 'Soporta ControlValueAccessor (incluyendo setDisabledState), autocomplete nativo, [clearable], [passwordToggle], [autoGrow] y outline Highlight en @media (forced-colors: active).'
   },
   {
     id: 'loading-indicator',
@@ -106,8 +106,8 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'Progress Indicators (> 5s Linear & Circular Wavy)',
     category: 'Communication & Feedback',
     docUrl: 'https://m3.material.io/components/progress-indicators/overview',
-    selectorOrCss: '<m3-linear-progress>, <m3-circular-progress>',
-    keyRule: 'Para esperas > 5s; Linear soporta mínimo 40dp, punto mínimo visible al 1%, stop indicator fijo de 4dp concéntrico (obligatorio si contraste < 3:1) y espejo RTL (`dir="rtl"`). Circular escala 24dp–240dp (`[diameter]`), mantiene `sm` (24dp) plano y usa `color="inherit"` dentro de `<m3-button [loading]>`.',
+    selectorOrCss: '<m3-linear-progress [showStop]="...">, <m3-circular-progress [diameter]="...">',
+    keyRule: 'Para esperas > 5s; Linear soporta mínimo 40dp, punto mínimo visible al 1%, stop indicator fijo de 4dp concéntrico ([showStop], obligatorio si contraste < 3:1) y espejo RTL (`dir="rtl"`). Circular escala 24dp–240dp (`[diameter]`), mantiene `sm` (24dp) plano y usa `color="inherit"` dentro de `<m3-button [loading]>`.',
     webNotes: 'Sin huecos falsos en 0%, wave `lg` oficial M3 (alto 14px, amplitud 3dp, longitud 40dp), envolvente A(p) 0.10/0.95, `four-color` exclusivo de indeterminado, `[blueprint]` / `[paused]` para inspección y fallback estático bajo prefers-reduced-motion.'
   },
   {
@@ -151,7 +151,7 @@ export const COMPONENT_PILLAR_SPECS: ComponentPillarSpec[] = [
     name: 'Native Dialog & Top-Layer Popovers',
     category: 'Communication & Feedback',
     docUrl: 'https://m3.material.io/components/dialogs/overview',
-    selectorOrCss: '<m3-dialog>, <m3-snackbar>, [popover="auto|manual"]',
+    selectorOrCss: '<m3-dialog variant="basic|fullscreen" size="sm|md|lg" tone="primary|secondary|tertiary|error" [aurora]="...">, <m3-snackbar>, [popover="auto|manual"]',
     keyRule: 'Dialog básico (28dp, 280–560dp, surface-container-high) sobre <dialog>.showModal(); Snackbar usa popover="manual" y Split Menu popover="auto".',
     webNotes: 'Top Layer nativo del navegador con closedby="any", inert automático fuera del dialog, @starting-style y transition-behavior: allow-discrete.'
   }
@@ -217,7 +217,7 @@ export const BUTTON_EMPHASIS_SPECS: ButtonEmphasisSpec[] = [
   {
     kind: 'FAB / Extended FAB',
     role: 'Acción constructiva flotante clave de la pantalla',
-    containerToken: 'primary|secondary|tertiary-container (Level 3)',
+    containerToken: 'variant="primary|secondary|tertiary|surface" (Level 3)',
     shapeRule: '12px (sm) / 16px (md/extended) / 28px (lg)',
     useWhen: 'Crear nuevo registro, Nueva consulta, Redactar.'
   }
@@ -290,5 +290,153 @@ export const TEXT_FIELD_CONTEXT_SPECS: TextFieldContextSpec[] = [
     modernWebPattern: 'autocomplete="current-password|new-password" + minlength/pattern nativo.'
   }
 ];
+
+export interface ProgressDecisionCardSpec {
+  readonly title: string;
+  readonly badge: string;
+  readonly points: readonly string[];
+}
+
+export interface ProgressGuidelineRule {
+  readonly title: string;
+  readonly rule: string;
+}
+
+export interface ArchitectureQuickRowSpec {
+  readonly scenario: string;
+  readonly how: string;
+  readonly where: string;
+  readonly why: string;
+  readonly purpose: string;
+}
+
+export const PROGRESS_GUIDELINES_SPECS: readonly ProgressGuidelineRule[] = [
+  {
+    title: 'Emphasized Decelerate (400ms) + Amplitud (200ms)',
+    rule: 'Avance de progreso con medium4 (400ms) y cubic-bezier(0.05, 0.7, 0.1, 1); al llegar a destino (100%), A(p) se reduce en short4 (200ms).'
+  },
+  {
+    title: 'Velocidad Canónica (40 dp/s • 1.00 Hz)',
+    rule: 'Fase v = 40 dp/s; ciclo indeterminado suave de 2.4s (lineal) y 2.2s (circular) sin multiplicador 2×.'
+  },
+  {
+    title: 'Indeterminate → Determinate',
+    rule: 'Si un proceso pasa de duración desconocida a conocida, transicionar en la misma variante (nunca cambiar de circular a lineal).'
+  },
+  {
+    title: 'Stop Dot (Ø 4dp) & Contraste',
+    rule: 'Obligatorio en lineal determinado cuando la pista tiene contraste < 3:1 frente a la superficie; RTL solo invierte lineal.'
+  }
+];
+
+export const LOADING_DECISION_MATRIX: readonly ProgressDecisionCardSpec[] = [
+  {
+    title: '1. Cómo usar',
+    badge: '48dp → 38dp',
+    points: [
+      'Base 48dp (polígono activo 38dp); escala con [diameter] entre 24dp y 240dp.',
+      'Activa [contained]="true" (primary-container) sobre fotos, mapas o listas densas.',
+      'Declara role="progressbar" con [ariaLabel] concreto ("Acción + objeto").'
+    ]
+  },
+  {
+    title: '2. Dónde usar (y dónde NO)',
+    badge: '200ms – 5s',
+    points: [
+      'Sí: esperas breves (200ms–5s), Pull-to-refresh y handshakes rápidos de API/POS.',
+      'No en < 200ms (omite carga para evitar parpadeo visual innecesario).',
+      'No en > 5s o descarga determinista: usa Progress Indicator Wavy (lineal/circular).'
+    ]
+  },
+  {
+    title: '3. Por qué (Física & Contraste)',
+    badge: 'Spring 0.6 / 200',
+    points: [
+      'Morph orgánico de 7 polígonos cada 650ms (+90°/paso + giro 4666ms) mitiga fatiga visual.',
+      'Corre fuera de NgZone solo mutando <path d> + transform: rotate() sin reflow CSS.',
+      'Se congela en pentágono estático ante prefers-reduced-motion.'
+    ]
+  },
+  {
+    title: '4. Para qué (Casos Cliente)',
+    badge: 'Gestos & Feedback',
+    points: [
+      'Confirmar acciones sin progreso conocido sin fabricar porcentajes falsos.',
+      'Conectar arrastre táctil Pull-to-refresh ([progress] Circle 18° → SoftBurst).',
+      'Garantizar legibilidad ≥ 3:1 sobre cualquier superficie con [contained] / [elevated].'
+    ]
+  }
+];
+
+export const PROGRESS_DECISION_MATRIX: readonly ProgressDecisionCardSpec[] = [
+  {
+    title: '1. Cómo usar',
+    badge: '40dp/s • Stop 4dp',
+    points: [
+      'Lineal (≥ 40dp ancho): ideal en barras, cards y headers; activa [showStop]="true" en determinado.',
+      'Circular (24–240dp): mantén plano ([wavy]="false") en 24dp o botones; usa [wavy]="true" desde 40dp+.',
+      'Indeterminado → Determinado: transiciona en la misma variante (nunca cambies de circular a lineal en medio).'
+    ]
+  },
+  {
+    title: '2. Dónde usar (y dónde NO)',
+    badge: '> 5s • Cuantificable',
+    points: [
+      'Sí: subidas/descargas largas (> 5s), cargas porcentuales reales, exportaciones y procesos multi-paso.',
+      'No en esperas < 200ms (omite) ni 200ms–5s indeterminadas sin % (usa Loading Indicator).',
+      'No en botones si quieres tracking complejo: dentro de botón usa circular inline plano (currentColor ≥ 3:1).'
+    ]
+  },
+  {
+    title: '3. Por qué (Física & Óptica)',
+    badge: '400ms / 200ms',
+    points: [
+      'Avance de progreso con Emphasized Decelerate (400ms) y atenuación final de amplitud A(p) en 200ms.',
+      'La brecha cap-compensada de 4dp + Stop Dot Ø 4dp evita artefactos visuales si el track tiene contraste < 3:1.',
+      'La cuantización circular entera N cierra el anillo wavy sin costura ni salto al rodear los 360°.'
+    ]
+  },
+  {
+    title: '4. Para qué (Casos Cliente)',
+    badge: 'Progreso Real',
+    points: [
+      'Mostrar avance exacto de importación CSV/PDF o sincronización offline con transparencia real.',
+      'Indicar carga en streaming o dual-buffer (active + buffer) en reproductores y archivos pesados.',
+      'Dar accesibilidad WCAG 2.2 AA automática vía role="progressbar" y aria-valuenow sincronizado.'
+    ]
+  }
+];
+
+export const ARCHITECTURE_QUICK_GUIDE_ROWS: readonly ArchitectureQuickRowSpec[] = [
+  {
+    scenario: 'Espera < 200ms',
+    how: 'Omitir todo indicador visual; renderizar resultado directo al resolver.',
+    where: 'Micro-fetches en memoria, filtros locales, toggles instantáneos.',
+    why: 'Evita parpadeos innecesarios que hacen percibir la UI más lenta de lo real.',
+    purpose: 'Mantener sensación de respuesta inmediata (Zero Flash).'
+  },
+  {
+    scenario: 'Loading Indicator (200ms–5s)',
+    how: 'Caja 48dp / figura 38dp (ratio 38/48), [diameter] 24–240dp, [contained] sobre fotos, [progress] 0..1 en arrastre.',
+    where: 'Pull-to-refresh, handshake de terminal POS, carga breve de tarjetas sin % conocido.',
+    why: '7 formas convexas con resorte real (0.6 / 200) cada 650ms fuera de NgZone reducen fatiga visual; sin las 35 formas extra por YAGNI.',
+    purpose: 'Confirmar actividad breve o feedback táctil continuo sin inventar porcentajes falsos.'
+  },
+  {
+    scenario: 'Progress Indicator (> 5s)',
+    how: 'Lineal en borde/panel (wavy ≥4dp gap + Stop Dot 4dp); Circular 24–240dp (plano en ≤24dp, wavy en ≥40dp).',
+    where: 'Descargas, uploads, procesos batch, streaming con buffer, reportes largos.',
+    why: 'Emphasized Decelerate 400ms + atenuación 200ms en extremos + cuantización circular sin costura.',
+    purpose: 'Comunicar avance cuantificable (%) o latencia prolongada con precisión.'
+  },
+  {
+    scenario: 'Superficies, Formas & Motion',
+    how: '8 superficies OKLCH (--seed-hue), 10-step Corner Morph (h/2 ↔ squircle), tokens --md-sys-motion-* sin magic numbers.',
+    where: 'Toda la app: Buttons, Chips, Cards, Dialogs, Stage Recess y rutas.',
+    why: 'Corner Morph reemplaza la vibración háptica en Web; Spatial (0.6–0.8 Expressive, 0.9 Standard) vs Effects (1.0) y 0 lag desde h/2.',
+    purpose: 'Escalar proyectos de clientes (POS, Clínica, ERP) copiando tokens sin deuda visual.'
+  }
+];
+
 
 

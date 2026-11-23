@@ -116,8 +116,13 @@ export class ThemeService {
   }
 
   private runRippleThemeTransition(nextDark: boolean, event: MouseEvent): void {
-    const { x, y, endRadius } = this.getRadialGeometry(event);
     const ripple = this.document.createElement('div');
+    if (typeof ripple.animate !== 'function') {
+      this.applyThemeState(nextDark);
+      return;
+    }
+
+    const { x, y, endRadius } = this.getRadialGeometry(event);
     ripple.className = 'fixed inset-0 pointer-events-none z-[9999]';
 
     this.applyThemeState(nextDark);

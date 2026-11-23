@@ -1,0 +1,126 @@
+/* ==========================================================================
+   M3 EXPRESSIVE — TAILWIND v4 @theme BRIDGE
+   Maps --md-sys-* semantic & motion tokens to utility namespaces:
+   bg-primary, text-muted, rounded-m3-xl, shadow-m3-level2, ease-m3-*, etc.
+   ========================================================================== */
+
+@theme {
+  /* Surfaces & Containers */
+  --color-surface-dim: var(--md-sys-color-surface-dim);
+  --color-surface: var(--md-sys-color-surface);
+  --color-surface-bright: var(--md-sys-color-surface-bright);
+  --color-surface-lowest: var(--md-sys-color-surface-container-lowest);
+  --color-surface-low: var(--md-sys-color-surface-container-low);
+  --color-surface-box: var(--md-sys-color-surface-container);
+  --color-surface-high: var(--md-sys-color-surface-container-high);
+  --color-surface-highest: var(--md-sys-color-surface-container-highest);
+  --color-surface-variant: var(--md-sys-color-surface-variant);
+  --color-inverse-surface: var(--md-sys-color-inverse-surface);
+  --color-inverse-on-surface: var(--md-sys-color-inverse-on-surface);
+  --color-inverse-primary: var(--md-sys-color-inverse-primary);
+
+  /* Role: Primary & Fixed */
+  --color-primary: var(--md-sys-color-primary);
+  --color-on-primary: var(--md-sys-color-on-primary);
+  --color-primary-box: var(--md-sys-color-primary-container);
+  --color-on-primary-box: var(--md-sys-color-on-primary-container);
+  --color-primary-fixed: var(--md-sys-color-primary-fixed);
+  --color-primary-fixed-dim: var(--md-sys-color-primary-fixed-dim);
+  --color-on-primary-fixed: var(--md-sys-color-on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--md-sys-color-on-primary-fixed-variant);
+
+  /* Role: Secondary & Fixed */
+  --color-secondary: var(--md-sys-color-secondary);
+  --color-on-secondary: var(--md-sys-color-on-secondary);
+  --color-sec-box: var(--md-sys-color-secondary-container);
+  --color-on-sec-box: var(--md-sys-color-on-secondary-container);
+  --color-secondary-fixed: var(--md-sys-color-secondary-fixed);
+  --color-secondary-fixed-dim: var(--md-sys-color-secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--md-sys-color-on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--md-sys-color-on-secondary-fixed-variant);
+
+  /* Role: Tertiary & Fixed */
+  --color-tertiary: var(--md-sys-color-tertiary);
+  --color-on-tertiary: var(--md-sys-color-on-tertiary);
+  --color-tertiary-box: var(--md-sys-color-tertiary-container);
+  --color-on-tertiary-box: var(--md-sys-color-on-tertiary-container);
+  --color-tertiary-fixed: var(--md-sys-color-tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--md-sys-color-tertiary-fixed-dim);
+  --color-on-tertiary-fixed: var(--md-sys-color-on-tertiary-fixed);
+  --color-on-tertiary-fixed-variant: var(--md-sys-color-on-tertiary-fixed-variant);
+
+  /* Role: Error */
+  --color-error: var(--md-sys-color-error);
+  --color-on-error: var(--md-sys-color-on-error);
+  --color-error-box: var(--md-sys-color-error-container);
+  --color-on-error-box: var(--md-sys-color-on-error-container);
+
+  /* Extended Semantic Roles: Success & Warning */
+  --color-success: var(--md-sys-color-success);
+  --color-on-success: var(--md-sys-color-on-success);
+  --color-success-box: var(--md-sys-color-success-container);
+  --color-on-success-box: var(--md-sys-color-on-success-container);
+  --color-warning: var(--md-sys-color-warning);
+  --color-on-warning: var(--md-sys-color-on-warning);
+  --color-warning-box: var(--md-sys-color-warning-container);
+  --color-on-warning-box: var(--md-sys-color-on-warning-container);
+
+  /* Typography & Outlines */
+  --color-main: var(--md-sys-color-on-surface);
+  --color-muted: var(--md-sys-color-on-surface-variant);
+  --color-outline: var(--md-sys-color-outline);
+  --color-outline-sub: var(--md-sys-color-outline-variant);
+  --color-scrim: var(--md-sys-color-scrim);
+
+  /* Shape Corners (10-Step M3 Expressive Scale) */
+  --radius-m3-none: var(--md-sys-shape-corner-none);
+  --radius-m3-xs: var(--md-sys-shape-corner-extra-small);
+  --radius-m3-sm: var(--md-sys-shape-corner-small);
+  --radius-m3-md: var(--md-sys-shape-corner-medium);
+  --radius-m3-lg: var(--md-sys-shape-corner-large);
+  --radius-m3-lg-inc: var(--md-sys-shape-corner-large-increased);
+  --radius-m3-xl: var(--md-sys-shape-corner-extra-large);
+  --radius-m3-xl-inc: var(--md-sys-shape-corner-extra-large-increased);
+  --radius-m3-2xl: var(--md-sys-shape-corner-extra-extra-large);
+  --radius-m3-full: var(--md-sys-shape-corner-full);
+
+  /* Elevation Shadows */
+  --shadow-m3-level0: var(--md-sys-elevation-level0);
+  --shadow-m3-level1: var(--md-sys-elevation-level1);
+  --shadow-m3-level2: var(--md-sys-elevation-level2);
+  --shadow-m3-level3: var(--md-sys-elevation-level3);
+  --shadow-m3-level4: var(--md-sys-elevation-level4);
+  --shadow-m3-level5: var(--md-sys-elevation-level5);
+
+  /* Motion Easings */
+  --ease-m3-standard: var(--md-sys-motion-easing-standard);
+  --ease-m3-standard-decelerate: var(--md-sys-motion-easing-standard-decelerate);
+  --ease-m3-standard-accelerate: var(--md-sys-motion-easing-standard-accelerate);
+  --ease-m3-emphasized: var(--md-sys-motion-easing-emphasized);
+  --ease-m3-emphasized-decelerate: var(--md-sys-motion-easing-emphasized-decelerate);
+  --ease-m3-emphasized-accelerate: var(--md-sys-motion-easing-emphasized-accelerate);
+  --ease-m3-spring: var(--md-sys-motion-spring-fast-spatial);
+  --ease-m3-spring-spatial: var(--md-sys-motion-spring-default-spatial);
+  --ease-m3-spring-effects: var(--md-sys-motion-spring-effects);
+  --ease-m3-spring-fast-spatial: var(--md-sys-motion-spring-fast-spatial);
+  --ease-m3-spring-default-spatial: var(--md-sys-motion-spring-default-spatial);
+  --ease-m3-spring-slow-spatial: var(--md-sys-motion-spring-slow-spatial);
+  --ease-m3-spring-fast-effects: var(--md-sys-motion-spring-fast-effects);
+  --ease-m3-spring-default-effects: var(--md-sys-motion-spring-default-effects);
+  --ease-m3-spring-slow-effects: var(--md-sys-motion-spring-slow-effects);
+
+  /* Motion Durations */
+  --duration-m3-short1: var(--md-sys-motion-duration-short1);
+  --duration-m3-short2: var(--md-sys-motion-duration-short2);
+  --duration-m3-short3: var(--md-sys-motion-duration-short3);
+  --duration-m3-short4: var(--md-sys-motion-duration-short4);
+  --duration-m3-medium1: var(--md-sys-motion-duration-medium1);
+  --duration-m3-medium2: var(--md-sys-motion-duration-medium2);
+  --duration-m3-medium3: var(--md-sys-motion-duration-medium3);
+  --duration-m3-medium4: var(--md-sys-motion-duration-medium4);
+  --duration-m3-long1: var(--md-sys-motion-duration-long1);
+  --duration-m3-long2: var(--md-sys-motion-duration-long2);
+  --duration-m3-short: var(--md-sys-motion-duration-short4);
+  --duration-m3-medium: var(--md-sys-motion-duration-medium2);
+  --duration-m3-long: var(--md-sys-motion-duration-long2);
+}

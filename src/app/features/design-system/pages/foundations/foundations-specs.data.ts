@@ -1,4 +1,4 @@
-import { WindowHeightClass, WindowSizeClass } from '../../../core/layout/adaptive-layout.service';
+import { WindowHeightClass, WindowSizeClass } from '../../../../core/layout/adaptive-layout.service';
 
 export interface WidthBreakpointSpec {
   readonly id: WindowSizeClass;
@@ -103,7 +103,7 @@ export const PARTS_OF_LAYOUT_SPECS: readonly LayoutPartSpec[] = [
     id: 'nav-bar',
     name: 'Navigation Bar / Bottom Bar',
     region: 'Navigation Components',
-    sizingRule: 'Alto 80dp (bar) • Ancho 100% (Compact <600dp)',
+    sizingRule: 'Alto 64dp (bar M3E) • Ancho 100% (Compact <600dp)',
     role: 'Contenedor de destinos principales al alcance del pulgar en pantallas estrechas.',
     designRule: 'Usar entre 3 y 5 destinos de nivel superior. Nunca mezclar con Navigation Rail visible simultáneamente.',
     exampleInApp: 'Mobile Dock inferior en vista Compact (<600px).',
@@ -277,7 +277,7 @@ export const WIDTH_BREAKPOINT_5_SPECS: readonly WidthBreakpointSpec[] = [
     marginDp: 24,
     spacerDp: 24,
     panesLabel: '2 – 3 paneles',
-    navigationChrome: 'Persistent Drawer + contenedor max-width acotado',
+    navigationChrome: 'Expanded Rail / Persistent Drawer (2–3 paneles paralelos)',
     sampleWidthPx: 1680,
     devices: 'Monitores ultrawide y estaciones de trabajo',
     appMapping: 'Tres paneles (Nav + Contenido principal + Panel de detalle/inspección)'

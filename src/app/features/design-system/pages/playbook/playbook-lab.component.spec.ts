@@ -22,7 +22,8 @@ describe('PlaybookLabComponent', () => {
     expect(el.textContent).toContain('Biblia M3');
     expect(el.textContent).toContain('Modelo Mental en 4 Capas');
     expect(el.textContent).toContain('Las 5 Preguntas Sagradas');
-    expect(el.querySelectorAll('m3-card').length).toBe(4);
+    expect(el.querySelectorAll('m3-card').length).toBe(5);
+    expect(el.querySelectorAll('a[m3-button]').length).toBe(2);
     expect(el.querySelectorAll('m3-checkbox').length).toBe(component.checklistItems.length);
     expect(el.querySelector('m3-linear-progress')).toBeTruthy();
     expect(el.querySelector('m3-tabs')).toBeTruthy();
@@ -78,12 +79,27 @@ describe('PlaybookLabComponent', () => {
     expect(component.filteredRules().length).toBe(component.totalRulesCount);
   });
 
-  it('opens the manual snackbar when copying a starter snippet or oracle rule', () => {
-    component.copySnippet('<m3-switch />', 'Uso copiado');
-    fixture.detectChanges();
+  it('opens the manual snackbar when copying a starter snippet or oracle rule', async () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true
+    });
 
-    expect(component.snackbarOpen()).toBe(true);
-    expect(component.snackbarMessage()).toBe('Uso copiado');
-    expect(fixture.nativeElement.querySelector('.m3-snackbar')?.textContent).toContain('Uso copiado');
+    try {
+      component.copySnippet('<m3-switch />', 'Uso copiado');
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      expect(component.snackbarOpen()).toBe(true);
+      expect(component.snackbarMessage()).toBe('Uso copiado');
+      expect(fixture.nativeElement.querySelector('.m3-snackbar')?.textContent).toContain('Uso copiado');
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(navigator, 'clipboard', originalDescriptor);
+      } else {
+        delete (navigator as { clipboard?: Clipboard }).clipboard;
+      }
+    }
   });
 });

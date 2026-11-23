@@ -10,7 +10,6 @@ export type M3CardSurface = 'default' | 'surface' | 'low' | 'box' | 'high' | 'hi
   selector: 'm3-card',
   standalone: true,
   host: {
-    'class': 'block',
     '[class]': 'computedClasses()',
     '[style.view-transition-name]': 'viewTransitionName()',
     '[attr.tabindex]': "interactive() && !disabled() ? 0 : null",
@@ -60,8 +59,13 @@ export class M3CardComponent {
   readonly action = output<MouseEvent | KeyboardEvent>();
 
   readonly computedClasses = computed(() => {
+    const extra = this.customClass().trim();
+    const hasDisplayUtility =
+      extra.length > 0 &&
+      /(?:^|\s)(?:inline-flex|flex|inline-grid|grid|inline-block|contents|hidden)(?:\s|$)/.test(extra);
+
     const classes = [
-      'block',
+      ...(hasDisplayUtility ? [] : ['block']),
       'm3-card',
       `m3-card-${this.variant()}`,
       `m3-card-pad-${this.padding()}`

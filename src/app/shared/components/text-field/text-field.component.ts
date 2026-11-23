@@ -27,7 +27,7 @@ let nextUniqueId = 0;
   ],
   host: {
     'class': 'block w-full',
-    '[class.is-disabled]': 'disabled()'
+    '[class.is-disabled]': 'isDisabled()'
   },
   template: `
     <div [class]="rootClasses()">
@@ -57,14 +57,14 @@ let nextUniqueId = 0;
               </span>
             }
 
-            @if (!multiline()) {
+              @if (!multiline()) {
               <input
                 #controlEl
                 [id]="actualId()"
                 [attr.name]="name() || null"
                 [type]="effectiveType()"
                 [value]="value()"
-                [disabled]="disabled()"
+                [disabled]="isDisabled()"
                 [readOnly]="readonly()"
                 [required]="required()"
                 [attr.pattern]="pattern() || null"
@@ -88,7 +88,7 @@ let nextUniqueId = 0;
                 [attr.name]="name() || null"
                 [rows]="rows()"
                 [value]="value()"
-                [disabled]="disabled()"
+                [disabled]="isDisabled()"
                 [readOnly]="readonly()"
                 [required]="required()"
                 [attr.minlength]="minlength() || null"
@@ -122,7 +122,7 @@ let nextUniqueId = 0;
               </span>
             }
 
-            @if (isPasswordField() && !disabled()) {
+            @if (isPasswordField() && !isDisabled()) {
               <button
                 type="button"
                 [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
@@ -133,7 +133,7 @@ let nextUniqueId = 0;
                   {{ showPassword() ? 'visibility_off' : 'visibility' }}
                 </span>
               </button>
-            } @else if (!effectiveError() && clearable() && value() && !disabled() && !readonly()) {
+            } @else if (!effectiveError() && clearable() && value() && !isDisabled() && !readonly()) {
               <button 
                 type="button" 
                 aria-label="Limpiar campo"
@@ -266,9 +266,12 @@ export class M3TextFieldComponent implements ControlValueAccessor {
   readonly isFocused = signal<boolean>(false);
   readonly showPassword = signal<boolean>(false);
   readonly hasInteracted = signal<boolean>(false);
+  readonly cvaDisabled = signal<boolean>(false);
   readonly nativeValidationError = signal<string | null>(null);
   private readonly controlEl = viewChild<ElementRef<HTMLInputElement | HTMLTextAreaElement>>('controlEl');
   private readonly internalId = `m3-input-${++nextUniqueId}`;
+
+  readonly isDisabled = computed(() => this.disabled() || this.cvaDisabled());
 
   focus(): void {
     this.controlEl()?.nativeElement.focus();
@@ -316,7 +319,7 @@ export class M3TextFieldComponent implements ControlValueAccessor {
     () =>
       this.effectiveError() ||
       this.isPasswordField() ||
-      (this.clearable() && !!this.value() && !this.disabled() && !this.readonly()) ||
+      (this.clearable() && !!this.value() && !this.isDisabled() && !this.readonly()) ||
       (this.showValidState() && this.nativeValidAfterInteraction()) ||
       !!this.trailingIcon()
   );
@@ -350,7 +353,7 @@ export class M3TextFieldComponent implements ControlValueAccessor {
     if (this.isFocused()) classes.push('is-focused');
     if (this.effectiveError()) classes.push('is-error');
     if (this.showValidState() && this.nativeValidAfterInteraction()) classes.push('is-valid');
-    if (this.disabled()) classes.push('is-disabled');
+    if (this.isDisabled()) classes.push('is-disabled');
     if (this.readonly()) classes.push('is-readonly');
     if (this.multiline()) classes.push('m3-text-field-multiline');
     if (this.multiline() && this.autoGrow()) classes.push('is-auto-grow');
@@ -424,7 +427,7 @@ export class M3TextFieldComponent implements ControlValueAccessor {
     this.onTouched = fn;
   }
 
-  setDisabledState?(isDisabled: boolean): void {
-    // Handled via disabled input binding
+  setDisabledState(isDisabled: boolean): void {
+    this.cvaDisabled.set(isDisabled);
   }
 }

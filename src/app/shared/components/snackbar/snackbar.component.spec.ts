@@ -53,5 +53,32 @@ describe('M3SnackbarComponent', () => {
 
     expect(component.open()).toBe(false);
   });
+
+  it('should reset the auto-hide countdown when message changes while already open', () => {
+    vi.useFakeTimers();
+    try {
+      fixture.componentRef.setInput('durationMs', 3000);
+      fixture.componentRef.setInput('message', 'Primera alerta');
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(2000);
+      expect(component.open()).toBe(true);
+
+      fixture.componentRef.setInput('message', 'Segunda alerta');
+      fixture.detectChanges();
+
+      // Countdown should have reset to 3000ms from the second message
+      vi.advanceTimersByTime(2000);
+      fixture.detectChanges();
+      expect(component.open()).toBe(true);
+
+      vi.advanceTimersByTime(1000);
+      fixture.detectChanges();
+      expect(component.open()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 

@@ -193,4 +193,22 @@ describe('M3TextFieldComponent', () => {
     expect(counter).toBeTruthy();
     expect(counter.textContent.trim()).toBe('5/100');
   });
+
+  it('should support ControlValueAccessor setDisabledState on both single-line input and multiline textarea', () => {
+    const root = fixture.nativeElement.querySelector('.m3-text-field') as HTMLElement;
+    const inputEl = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+
+    expect(root.classList.contains('is-disabled')).toBe(false);
+    expect(inputEl.disabled).toBe(false);
+
+    component.setDisabledState(true);
+    fixture.detectChanges();
+    expect(root.classList.contains('is-disabled')).toBe(true);
+    expect(inputEl.disabled).toBe(true);
+
+    component.setDisabledState(false);
+    fixture.detectChanges();
+    expect(root.classList.contains('is-disabled')).toBe(false);
+    expect(inputEl.disabled).toBe(false);
+  });
 });
