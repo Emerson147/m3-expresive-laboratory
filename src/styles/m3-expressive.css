@@ -1,0 +1,252 @@
+/* ==========================================================================
+   M3 EXPRESSIVE PORTABLE KIT — ENTRY POINT
+   Copy `src/styles/` into any Angular + Tailwind v4 project and import:
+     @import "./styles/m3-expressive.css";
+   ========================================================================== */
+
+@import "tailwindcss";
+@import "./_token.css";
+@import "./_shape.css";
+@import "./_motion.css";
+@import "./_elevation.css";
+@import "./_typography.css";
+@import "./_interaction.css";
+@import "./_button.css";
+@import "./_card.css";
+@import "./_chip.css";
+@import "./_text-field.css";
+@import "./_progress.css";
+@import "./_switch.css";
+@import "./_selection.css";
+@import "./_tabs.css";
+@import "./_dialog.css";
+@import "./_overlays.css";
+@import "./_theme.css";
+
+/* =========================================================
+   PORTABLE M3 STATE LAYERS, MESH SURFACES & OVERLAY MOTION
+   ========================================================= */
+.btn-m3 {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring),
+    border-radius var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial, cubic-bezier(0.42, 1.67, 0.21, 0.90)),
+    background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+}
+
+.btn-m3::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short3, 150ms) var(--md-sys-motion-easing-standard);
+}
+
+.btn-m3:hover::before {
+  opacity: var(--md-sys-state-hover-opacity, 0.08);
+}
+
+.btn-m3:focus-visible::before {
+  opacity: var(--md-sys-state-focus-opacity, 0.10);
+}
+
+.btn-m3:active::before {
+  opacity: var(--md-sys-state-pressed-opacity, 0.12);
+}
+
+.btn-m3:active {
+  transform: scale(0.96) !important;
+}
+
+.card-m3 {
+  transition:
+    border-color var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-medium1, 250ms) var(--md-sys-motion-easing-emphasized);
+}
+
+.card-interactive {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
+    background-color var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-easing-standard),
+    transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring);
+}
+
+.card-interactive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
+}
+
+.card-interactive:hover::before {
+  opacity: var(--md-sys-state-hover-opacity, 0.04);
+}
+
+.card-interactive:active {
+  transform: scale(0.99);
+}
+
+@layer components {
+  .hero-mesh-m3 {
+    background-color: var(--md-sys-color-surface-container);
+    background-image: linear-gradient(
+      135deg var(--in-oklab),
+      color-mix(in oklab, var(--md-sys-color-primary-container) 30%, var(--md-sys-color-surface-container)) 0%,
+      var(--md-sys-color-surface-container) 54%,
+      color-mix(in oklab, var(--md-sys-color-tertiary-container) 24%, var(--md-sys-color-surface-container)) 100%
+    );
+  }
+
+  .hero-mesh-m3:not(.m3-aurora-glow) {
+    background:
+      radial-gradient(circle at 82% 22%, var(--md-sys-hero-glow, oklch(68% 0.22 var(--seed-hue) / 0.44)) 0%, transparent 60%),
+      radial-gradient(circle at 18% 78%, var(--md-sys-hero-glow-ambient, oklch(74% 0.18 calc(var(--seed-hue) - 36) / 0.34)) 0%, transparent 64%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, var(--md-sys-hero-glow-secondary, oklch(72% 0.20 var(--tertiary-hue) / 0.38)) 0%, transparent 66%),
+      var(--md-sys-color-surface-container);
+  }
+}
+
+/* Circular Dark/Light Theme Reveal */
+html.theme-transition::view-transition-old(root) {
+  z-index: 1;
+  animation: none;
+}
+
+html.theme-transition::view-transition-new(root) {
+  z-index: 9999;
+  animation: circle-reveal var(--md-sys-motion-duration-long2, 500ms) var(--md-sys-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)) forwards;
+}
+
+@keyframes circle-reveal {
+  from {
+    clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+
+  to {
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Dialog / Overlay Fallback Animations */
+.m3-container-enter {
+  animation: m3ContainerGrow var(--md-sys-motion-duration-medium2, 300ms) var(--md-sys-motion-spring) both;
+}
+
+@keyframes m3ContainerGrow {
+  0% {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.m3-dialog-backdrop {
+  animation: m3FadeIn var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate) both;
+}
+
+.m3-dialog-surface {
+  animation: m3DialogSpring var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial) both;
+  transform-origin: center center;
+}
+
+@keyframes m3FadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes m3DialogSpring {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Invisible Origin Marker during Container Transform View Transitions */
+.invisible {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* M3 Expressive Scrollbar Utilities */
+.m3-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--md-sys-color-primary) 50%, var(--md-sys-color-outline-variant)) color-mix(in oklch, var(--md-sys-color-surface-container-high) 40%, transparent);
+}
+
+@supports not (scrollbar-color: auto) {
+  .m3-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .m3-scrollbar::-webkit-scrollbar-track {
+    background: color-mix(in oklch, var(--md-sys-color-surface-container-high) 30%, transparent);
+    border-radius: 9999px;
+  }
+
+  .m3-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--md-sys-color-primary) 45%, var(--md-sys-color-outline-variant));
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklch, var(--md-sys-color-surface) 60%, transparent);
+    transition: background var(--md-sys-motion-duration-short3, 150ms) ease;
+  }
+
+  .m3-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--md-sys-color-primary);
+  }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

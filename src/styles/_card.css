@@ -12,7 +12,8 @@
   --md-comp-outlined-card-outline-color: var(--md-sys-color-outline-variant);
 
   position: relative;
-  border-radius: var(--md-sys-shape-corner-extra-large, 28px);
+  --md-comp-card-shape: var(--md-sys-shape-corner-extra-large, 28px);
+  border-radius: var(--md-comp-card-shape);
   color: var(--md-sys-color-on-surface);
   transition: 
     background-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard),
@@ -20,6 +21,14 @@
     transform var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-spring-fast-spatial),
     border-color var(--md-sys-motion-duration-short4, 200ms) var(--md-sys-motion-easing-standard);
   box-sizing: border-box;
+}
+
+.m3-card.rounded-m3-lg {
+  --md-comp-card-shape: var(--md-sys-shape-corner-large, 16px);
+}
+
+.m3-card.rounded-m3-md {
+  --md-comp-card-shape: var(--md-sys-shape-corner-medium, 12px);
 }
 
 /* --- THE 3 CANONICAL M3 CARD VARIANTS --- */

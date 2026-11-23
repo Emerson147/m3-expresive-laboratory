@@ -1,14 +1,14 @@
-import { isPlatformBrowser } from '@angular/common';
-import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { M3ButtonComponent } from '../../../shared/components/button/button.component';
-import { M3CardComponent } from '../../../shared/components/card/card.component';
-import { M3CheckboxComponent } from '../../../shared/components/checkbox/checkbox.component';
-import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
-import { M3LinearProgressComponent } from '../../../shared/components/progress';
-import { M3SnackbarComponent } from '../../../shared/components/snackbar/snackbar.component';
-import { M3TabsComponent } from '../../../shared/components/tabs/tabs.component';
-import { M3TextFieldComponent } from '../../../shared/components/text-field/text-field.component';
+import { M3ButtonAnchorComponent, M3ButtonComponent } from '../../../../shared/components/button/button.component';
+import { M3CardComponent } from '../../../../shared/components/card/card.component';
+import { M3CheckboxComponent } from '../../../../shared/components/checkbox/checkbox.component';
+import { M3ChipComponent } from '../../../../shared/components/chip/chip.component';
+import { M3LinearProgressComponent } from '../../../../shared/components/progress';
+import { M3SnackbarComponent } from '../../../../shared/components/snackbar/snackbar.component';
+import { M3TabsComponent } from '../../../../shared/components/tabs/tabs.component';
+import { M3TextFieldComponent } from '../../../../shared/components/text-field/text-field.component';
+import { copyTextWithFeedback } from '../../../../shared/utils/clipboard.util';
 import {
   PLAYBOOK_BLUEPRINTS,
   PLAYBOOK_BLUEPRINT_TABS,
@@ -32,6 +32,7 @@ import {
   standalone: true,
   imports: [
     RouterLink,
+    M3ButtonAnchorComponent,
     M3ButtonComponent,
     M3CardComponent,
     M3CheckboxComponent,
@@ -41,15 +42,16 @@ import {
     M3TextFieldComponent,
     M3SnackbarComponent
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-8">
       <!-- 1. HERO: TU BIBLIA DE ARQUITECTURA M3 (DE CERO A SISTEMA REAL) -->
-      <section class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl space-y-4 shadow-xs">
+      <m3-card variant="outlined" padding="lg" customClass="bg-surface-box space-y-4">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div class="space-y-1.5">
             <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
-              <span class="material-symbols-rounded text-base">menu_book</span>
-              Paso 5 • Biblia M3 (De Cero a Producci&oacute;n)
+              <span class="material-symbols-rounded text-base" aria-hidden="true">menu_book</span>
+              Paso 5 • Biblia M3 (De Cero a Sistema)
             </div>
             <h2 class="text-title-lg-emphasized text-main">
               C&oacute;mo Armar Sistemas Reales Desde Cero (Explicado Simple + Reglas Estrictas Google M3 &amp; Web)
@@ -60,27 +62,21 @@ import {
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <a
-              routerLink="/design-system/styles"
-              class="btn-m3 state-layer focus-ring-m3 px-3.5 py-2 rounded-full bg-surface-high text-main text-xs font-bold flex items-center gap-1.5 no-underline">
-              <span class="material-symbols-rounded text-base">palette</span>
-              <span>1. Styles</span>
+            <a m3-button variant="outlined" size="sm" icon="palette" routerLink="/design-system/styles">
+              1. Styles
             </a>
-            <a
-              routerLink="/design-system/components"
-              class="btn-m3 state-layer focus-ring-m3 px-3.5 py-2 rounded-full bg-sec-box text-on-sec-box text-xs font-bold flex items-center gap-1.5 no-underline">
-              <span class="material-symbols-rounded text-base">widgets</span>
-              <span>3. Components</span>
+            <a m3-button variant="tonal" size="sm" icon="widgets" routerLink="/design-system/components">
+              3. Components
             </a>
           </div>
         </div>
-      </section>
+      </m3-card>
 
       <!-- 2. MODELO MENTAL PARA UN NIÑO DE 5 AÑOS: LA CASA DE LEGO EN 4 CAPAS -->
       <section class="space-y-4">
         <div>
           <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-            <span class="material-symbols-rounded text-base">toys</span>
+            <span class="material-symbols-rounded text-base" aria-hidden="true">toys</span>
             Modelo Mental en 4 Capas
           </div>
           <h3 class="text-title-md font-bold text-main">
@@ -114,7 +110,7 @@ import {
                   </div>
                   <ul class="space-y-0.5 text-[10px] font-mono text-muted">
                     @for (file of layer.files; track file) {
-                      <li class="truncate" [title]="file">{{ file }}</li>
+                      <li class="truncate">{{ file }}</li>
                     }
                   </ul>
                 </div>
@@ -130,7 +126,7 @@ import {
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-                <span class="material-symbols-rounded text-base">checklist</span>
+                <span class="material-symbols-rounded text-base" aria-hidden="true">checklist</span>
                 Checklist Paso a Paso • Cero a Cliente Nuevo
               </div>
               <h3 class="text-title-md font-bold text-main">Qu&eacute; copiar exactamente antes de programar pantallas</h3>
@@ -172,7 +168,7 @@ import {
           <div class="space-y-4">
             <div>
               <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-                <span class="material-symbols-rounded text-base">terminal</span>
+                <span class="material-symbols-rounded text-base" aria-hidden="true">terminal</span>
                 Kit M&iacute;nimo Copiable
               </div>
               <h3 class="text-title-md font-bold text-main">Archivos base para pegar en otro repo Angular</h3>
@@ -219,7 +215,7 @@ import {
       <section class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl space-y-4 shadow-xs">
         <div>
           <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-            <span class="material-symbols-rounded text-base">psychology</span>
+            <span class="material-symbols-rounded text-base" aria-hidden="true">psychology</span>
             Criterio Propio Antes de Tocar el Teclado
           </div>
           <h3 class="text-title-md font-bold text-main">
@@ -255,7 +251,7 @@ import {
       <section class="bg-surface-box border border-outline-sub p-6 rounded-m3-xl space-y-4 shadow-xs">
         <div>
           <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-            <span class="material-symbols-rounded text-base">schema</span>
+            <span class="material-symbols-rounded text-base" aria-hidden="true">schema</span>
             Recetas Listas Por Caso de Uso
           </div>
           <h3 class="text-title-md font-bold text-main">Qu&eacute; componentes juntar en cada pantalla t&iacute;pica</h3>
@@ -319,7 +315,7 @@ import {
         <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">
-              <span class="material-symbols-rounded text-base">gavel</span>
+              <span class="material-symbols-rounded text-base" aria-hidden="true">gavel</span>
               Or&aacute;culo Estricto de Decisiones
             </div>
             <h3 class="text-title-md font-bold text-main">
@@ -342,8 +338,8 @@ import {
         </div>
 
         <!-- Category & Source Filters -->
-        <div class="space-y-2.5">
-          <div class="flex flex-wrap gap-1.5">
+        <div class="space-y-3">
+          <div role="group" aria-label="Filtrar Oráculo por categoría" class="flex flex-wrap gap-2">
             @for (cat of categoryFilters; track cat.id) {
               <m3-chip
                 type="filter"
@@ -354,7 +350,7 @@ import {
             }
           </div>
 
-          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+          <div role="group" aria-label="Filtrar Oráculo por fuente normativa" class="flex flex-wrap items-center gap-2 pt-1">
             <span class="text-[11px] font-semibold text-muted uppercase mr-1">Fuente:</span>
             <m3-chip
               type="filter"
@@ -420,7 +416,7 @@ import {
                 </div>
 
                 <div class="pt-3 border-t border-outline-sub flex flex-wrap items-center justify-between gap-2">
-                  <span class="text-[10px] font-mono text-primary truncate max-w-full" [title]="rule.repoFile">
+                  <span class="text-[10px] font-mono text-primary truncate max-w-full">
                     {{ rule.repoFile }}
                   </span>
                   <m3-button variant="text" size="xs" icon="content_copy" (action)="copySnippet(rule.snippet, 'Uso de ' + rule.component + ' copiado')">
@@ -521,10 +517,9 @@ export class PlaybookLabComponent {
   }
 
   copySnippet(content: string, confirmationMsg: string): void {
-    if (isPlatformBrowser(this.platformId) && navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(content).catch(() => {});
-    }
-    this.snackbarMessage.set(confirmationMsg);
-    this.snackbarOpen.set(true);
+    copyTextWithFeedback(this.platformId, content, confirmationMsg, (msg) => {
+      this.snackbarMessage.set(msg);
+      this.snackbarOpen.set(true);
+    });
   }
 }

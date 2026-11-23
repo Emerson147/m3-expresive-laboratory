@@ -1,4 +1,4 @@
-import { M3TabItem } from '../../../shared/components/tabs/tabs.component';
+import { M3TabItem } from '../../../../shared/components/tabs/tabs.component';
 
 export type PlaybookSourceBadge = 'Google M3 Oficial' | 'Estándar Web / WCAG' | 'Arquitectura M3E Web';
 
@@ -85,17 +85,12 @@ export const PLAYBOOK_LAYERS: readonly PlaybookLayerCard[] = [
     title: 'Los Muebles Armados (src/app/shared/components/)',
     metaphor5Years:
       'Son sillas y mesas ya armadas y seguras. No tienes que cortar madera ni clavar botones nuevos cada vez que haces un cuarto.',
-    whatLivesHere: 'Botones, Switch, Checkbox, Radio, Slider, Tabs, Text Field, Card, Progress, Loading, Dialog y Snackbar.',
-    copyRule: 'COPIA la carpeta components/ completa y sus CSS hermanos (_button.css, _selection.css, _tabs.css, _dialog.css).',
+    whatLivesHere: 'Botones, Card, Chip, Text Field, Switch, Checkbox, Radio, Slider, Tabs, Progress, Loading, Dialog y Snackbar.',
+    copyRule: 'COPIA shared/components/ completa y sus CSS hermanos en src/styles/ (_button, _card, _chip, _text-field, _progress, _switch, _selection, _tabs, _dialog).',
     files: [
-      'src/app/shared/components/button/',
-      'src/app/shared/components/switch/',
-      'src/app/shared/components/checkbox/',
-      'src/app/shared/components/radio/',
-      'src/app/shared/components/slider/',
-      'src/app/shared/components/tabs/',
-      'src/app/shared/components/dialog/',
-      'src/app/shared/components/progress/'
+      'src/app/shared/components/{button,card,chip,text-field}/',
+      'src/app/shared/components/{switch,checkbox,radio,slider}/',
+      'src/app/shared/components/{tabs,dialog,snackbar,progress}/'
     ]
   },
   {
@@ -104,13 +99,13 @@ export const PLAYBOOK_LAYERS: readonly PlaybookLayerCard[] = [
     title: 'La Electricidad y los Planos (src/app/core/)',
     metaphor5Years:
       'Es el interruptor de luz (día/noche) y la cinta métrica que sabe si estás viendo la casa en un celular chiquito o una tele gigante.',
-    whatLivesHere: 'ThemeService (luz/oscuridad y color del cliente), AdaptiveLayoutService (Compact/Medium/Expanded) y DialogService.',
-    copyRule: 'COPIA theme/, layout/ y dialog/ sin lógica de demos.',
+    whatLivesHere: 'ThemeService (luz/oscuridad, --seed-hue y --seed-chroma), AdaptiveLayoutService (5 breakpoints) y StageOverlayService / DialogService.',
+    copyRule: 'COPIA theme/, layout/ y core/dialog/; limpia las rutas demo en shared/models/ui.models.ts si copias DialogService.',
     files: [
       'src/app/core/theme/theme.service.ts',
       'src/app/core/layout/adaptive-layout.service.ts',
-      'src/app/core/dialog/dialog.service.ts',
-      'src/app/core/dialog/stage-overlay.service.ts'
+      'src/app/core/dialog/{dialog,stage-overlay}.service.ts',
+      'src/app/shared/models/ui.models.ts'
     ]
   },
   {
@@ -314,7 +309,7 @@ export const PLAYBOOK_DECISION_RULES: readonly PlaybookDecisionRule[] = [
     avoidWhen: 'Usar Chips para navegar entre páginas principales del sistema (eso es Navigation o Tabs) o reemplazar botones principales.',
     technicalWhy: 'Prohibido anidar botones dentro de otros botones: el Input Chip usa wrapper visual y botones hermanos accesibles.',
     repoFile: 'src/app/shared/components/chip/chip.component.ts',
-    snippet: '<m3-chip variant="filter" [(selected)]="onlyActive">Solo activos</m3-chip>'
+    snippet: '<m3-chip type="filter" [selected]="onlyActive()" (action)="toggleFilter()">Solo activos</m3-chip>'
   },
   {
     id: 'rule-loading-vs-progress',
@@ -347,7 +342,7 @@ export const PLAYBOOK_DECISION_RULES: readonly PlaybookDecisionRule[] = [
     sourceBadge: 'Google M3 Oficial',
     kidAnalogy: 'Son charolas de distintos materiales: con sombra para destacar sobre mesa plana, con borde fino para ordenar muchas iguales.',
     useWhen: 'Outlined en grids densos de 6+ tarjetas repetidas; Filled para separar bloques de resumen; Elevated sobre fondo neutro con pocos ítems.',
-    avoidWhen: 'Hacer toda la card clicable si adentro ya tiene botones de acción (anida elementos interactivos y rompe WCAG).',
+    avoidWhen: 'Activar [interactive]="true" en la card si adentro ya tiene botones de acción (anida elementos interactivos y rompe WCAG).',
     technicalWhy: 'Define superficie semántica OKLCH (surface-container-low / highest) y estado hover/focus sin mutar márgenes externos.',
     repoFile: 'src/app/shared/components/card/card.component.ts',
     snippet: '<m3-card variant="outlined" tone="default">...</m3-card>'
@@ -370,11 +365,11 @@ export const PLAYBOOK_DECISION_RULES: readonly PlaybookDecisionRule[] = [
     category: 'navigation-tabs',
     sourceBadge: 'Google M3 Oficial',
     kidAnalogy: 'En teléfono pequeño los botones van abajo cerca de tu pulgar; en pantalla ancha se mudan al lado izquierdo para dejar espacio al centro.',
-    useWhen: 'Navigation Bar en Compact (< 600px) con 3–5 destinos principales; Rail en Medium/Expanded con submenús desplegables accesibles.',
+    useWhen: 'Navigation Bar (64dp en M3E) para Compact (< 600px) con 3–5 destinos; Rail en Medium/Expanded con submenús desplegables accesibles.',
     avoidWhen: 'Meter 8 enlaces en una barra inferior de celular o dejar una Navigation Bar gigante flotando en monitores de escritorio.',
     technicalWhy: 'Impulsa el shell adaptativo mediante AdaptiveLayoutService usando inert en submenús cerrados para proteger el orden de foco.',
     repoFile: 'src/app/shared/ui/navigation.component.ts',
-    snippet: 'AdaptiveLayoutService.windowSizeClass() // compact | medium | expanded'
+    snippet: 'private readonly layout = inject(AdaptiveLayoutService);\n// layout.windowSizeClass(): compact | medium | expanded | large | extra-large'
   },
   {
     id: 'rule-dialog-vs-popover',
@@ -382,9 +377,9 @@ export const PLAYBOOK_DECISION_RULES: readonly PlaybookDecisionRule[] = [
     category: 'overlays',
     sourceBadge: 'Estándar Web / WCAG',
     kidAnalogy: '<dialog> cierra la puerta del cuarto hasta que respondas; popover="auto" es una nota que se va si tocas fuera; snackbar solo saluda abajo.',
-    useWhen: '<m3-dialog> para confirmaciones destructivas/formularios modales; popover="auto" para menús; popover="manual" en <m3-snackbar>.',
-    avoidWhen: 'Escribir focus traps manuales en JavaScript para modales, pelear con z-index: 99999, o cerrar un Snackbar con clic accidental afuera.',
-    technicalWhy: 'showModal() aplica inert nativo al fondo, maneja Escape y Top Layer; @starting-style anima entrada/salida discreta a 60fps.',
+    useWhen: '<m3-dialog> para confirmaciones destructivas/formularios modales; popover="auto" para menús; <m3-snackbar> (popover="manual" interno) para avisos breves.',
+    avoidWhen: 'Poner popover="manual" sobre la etiqueta host <m3-snackbar>, escribir focus traps manuales en JS para modales o usar z-index: 99999.',
+    technicalWhy: 'showModal() aplica inert nativo al fondo, maneja Escape y Top Layer; <m3-snackbar> gestiona el atributo popover en su nodo interno.',
     repoFile: 'src/app/shared/components/dialog/dialog.component.ts',
     snippet: '<m3-dialog #d headline="¿Eliminar registro?" [(open)]="confirmOpen">...</m3-dialog>'
   },
@@ -421,7 +416,7 @@ export const PLAYBOOK_BLUEPRINTS: readonly PlaybookBlueprint[] = [
       'Regla M3 Input: Formularios largos usan TextField Outlined (no mezcles Filled y Outlined en la misma tarjeta).',
       'Regla Web Forms: < 6 opciones usa <m3-radio-group>; 6 o más opciones usa .m3-select-field.',
       'Regla A11y: Nunca metas el error o ayuda dentro del <label>; el componente ya los enlaza vía aria-describedby.',
-      'Regla Confirmación: Al guardar muestra <m3-snackbar popover="manual">; al eliminar pide confirmación en <m3-dialog>.'
+      'Regla Confirmación: Al guardar muestra <m3-snackbar [(open)]="savedToast" [message]="...">; al eliminar pide confirmación en <m3-dialog>.'
     ],
     codeSnippet: `<m3-card variant="outlined">
   <form (submit)="onSave($event)" class="space-y-4">
@@ -441,7 +436,7 @@ export const PLAYBOOK_BLUEPRINTS: readonly PlaybookBlueprint[] = [
     icon: 'tune',
     summary5Years:
       'Si estás en Ajustes del sistema, cada interruptor (Switch) y palanquita (Slider) funciona al momento sin obligarte a apretar un botón extra abajo.',
-    componentsUsed: ['<m3-tabs variant="secondary">', '<m3-switch>', '<m3-slider>', '<m3-card variant="filled">', '<m3-snackbar>'],
+    componentsUsed: ['<m3-tabs variant="secondary">', '<m3-card variant="filled">', '<m3-switch>', '<m3-slider>', '<m3-snackbar>'],
     strictRules: [
       'Regla Switch vs Checkbox: Todo interruptor en Ajustes usa <m3-switch> y persiste el cambio al instante con feedback breve.',
       'Regla Switch Icon: Si la densidad visual es alta usa iconMode="selected" o "none"; si necesitas refuerzo ON/OFF usa iconMode="both".',
@@ -449,7 +444,7 @@ export const PLAYBOOK_BLUEPRINTS: readonly PlaybookBlueprint[] = [
       'Regla Tabs: Usa variant="secondary" (línea 2dp) para dividir sub-categorías de ajustes dentro de la página.'
     ],
     codeSnippet: `<m3-tabs variant="secondary" [tabs]="settingsTabs" [(value)]="section" />
-<div class="space-y-4 p-4 bg-surface-box rounded-m3-xl border border-outline-sub">
+<m3-card variant="filled" customClass="space-y-4">
   <m3-switch
     label="Respaldo automático"
     description="Sube copia cifrada cada cierre de caja"
@@ -461,7 +456,8 @@ export const PLAYBOOK_BLUEPRINTS: readonly PlaybookBlueprint[] = [
     size="sm"
     [min]="0" [max]="50" [step]="5" [showStops]="true"
     [(value)]="maxDiscount" />
-</div>`
+</m3-card>
+<m3-snackbar [(open)]="savedToast" message="Preferencia guardada" />`
   },
   {
     id: 'pos',
@@ -469,14 +465,18 @@ export const PLAYBOOK_BLUEPRINTS: readonly PlaybookBlueprint[] = [
     icon: 'point_of_sale',
     summary5Years:
       'Para trabajar rápido todo el día: filtros con Chips arriba, Tabs para cambiar de vista, Loading morphing para cargas rápidas y Split Button para cobrar o imprimir.',
-    componentsUsed: ['<m3-tabs variant="primary">', '<m3-chip variant="filter">', '<m3-loading-indicator>', '<m3-split-button>', '<m3-card variant="outlined">'],
+    componentsUsed: ['<m3-tabs variant="primary">', '<m3-chip type="filter">', '<m3-loading-indicator>', '<m3-split-button>', '<m3-card variant="outlined">'],
     strictRules: [
       'Regla Espera: Latencia POS / consulta rápida (200ms–5s) usa <m3-loading-indicator [contained]="true">; descarga pesada > 5s usa <m3-linear-progress>.',
       'Regla Cards Densas: En catálogos de 10+ tarjetas usa variant="outlined" para no saturar con sombras.',
-      'Regla Anidamiento WCAG: Nunca pongas botones dentro de una Card que ya tiene (click) completo.',
+      'Regla Anidamiento WCAG: Nunca pongas botones dentro de una Card con [interactive]="true".',
       'Regla Split Button: Acción primaria ("Cobrar") a la izquierda + flecha menu popover="auto" ("Cotizar / Ticket") a la derecha.'
     ],
     codeSnippet: `<m3-tabs variant="primary" [tabs]="posTabs" [(value)]="view" />
+<div class="flex flex-wrap items-center justify-between gap-2 my-3">
+  <m3-chip type="filter" [selected]="onlyActive()" (action)="toggleFilter()">Activos</m3-chip>
+  <m3-split-button label="Cobrar" [menuItems]="payActions" (primaryClick)="checkout()" />
+</div>
 @if (loadingQuickSync()) {
   <m3-loading-indicator [contained]="true" ariaLabel="Sincronizando catálogo..." />
 }
@@ -534,10 +534,12 @@ export const PLAYBOOK_STARTER_SNIPPETS = {
 @import "./styles/_tabs.css";
 @import "./styles/_dialog.css";
 @import "./styles/_overlays.css";`,
-  copyScript: `# Desde tu repo semilla hacia un proyecto Angular nuevo:
+  copyScript: `# Desde tu repo semilla hacia un proyecto Angular nuevo (Kit Portable):
 cp -r src/styles/ ../nuevo-cliente/src/styles/
 cp src/styles.css ../nuevo-cliente/src/styles.css
 cp -r src/app/shared/components/ ../nuevo-cliente/src/app/shared/components/
 cp -r src/app/core/{theme,layout,dialog} ../nuevo-cliente/src/app/core/
-# Luego en ../nuevo-cliente/src/styles/_token.css ajusta --seed-hue y --seed-chroma`
+mkdir -p ../nuevo-cliente/src/app/shared/models
+cp src/app/shared/models/ui.models.ts ../nuevo-cliente/src/app/shared/models/
+# Limpia rutas demo en ui.models.ts y ajusta --seed-hue / --seed-chroma en src/styles/_token.css`
 } as const;

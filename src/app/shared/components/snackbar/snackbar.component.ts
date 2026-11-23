@@ -81,6 +81,9 @@ export class M3SnackbarComponent {
   constructor() {
     effect(() => {
       const isOpen = this.open();
+      // Track message changes so consecutive notifications reset the auto-hide countdown
+      this.message();
+      const duration = this.durationMs();
       const el = this.popoverEl()?.nativeElement;
       this.clearAutoHide();
 
@@ -92,7 +95,6 @@ export class M3SnackbarComponent {
             // Fallback state already binds via open()
           }
         }
-        const duration = this.durationMs();
         if (duration > 0) {
           this.autoHideTimer = setTimeout(() => this.dismiss(), duration);
         }

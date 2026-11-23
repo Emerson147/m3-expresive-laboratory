@@ -126,4 +126,20 @@ describe('M3CardComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.classList.contains('m3-card-surface-low')).toBe(true);
   });
+
+  it('should apply explicit shape radius tokens and preserve custom display classes instead of forcing block', () => {
+    fixture.componentRef.setInput('shape', 'md');
+    fixture.componentRef.setInput('customClass', 'flex items-center gap-3');
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.classList.contains('rounded-m3-md')).toBe(true);
+    expect(el.classList.contains('rounded-m3-xl')).toBe(false);
+    expect(el.classList.contains('flex')).toBe(true);
+    expect(el.classList.contains('block')).toBe(false);
+
+    fixture.componentRef.setInput('shape', 'lg');
+    fixture.detectChanges();
+    expect(el.classList.contains('rounded-m3-lg')).toBe(true);
+  });
 });

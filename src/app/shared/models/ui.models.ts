@@ -68,7 +68,7 @@ export const APP_NAV_DESTINATIONS: readonly AppNavDestination[] = [
     shortLabel: 'Sistema',
     compactPrimary: true,
     dockPinned: true,
-    keywords: ['tokens', 'oklch', 'm3', 'componentes', 'motion']
+    keywords: ['tokens', 'oklch', 'm3', 'componentes', 'motion', 'styles', 'foundations', 'playbook', 'biblia']
   },
   {
     section: 'pos',
@@ -176,5 +176,5 @@ export const DESIGN_SYSTEM_STEPS: DesignSystemStepLink[] = [
   { path: 'foundations', route: '/design-system/foundations', icon: 'touch_app', label: 'Paso 2: Foundations', navLabel: '2. Foundations' },
   { path: 'components', route: '/design-system/components', icon: 'widgets', label: 'Paso 3: Components (80/20)', navLabel: '3. Components' },
   { path: 'motion', route: '/design-system/motion', icon: 'animation', label: 'Paso 4: Motion & Transitions', navLabel: '4. Motion' },
-  { path: 'playbook', route: '/design-system/playbook', icon: 'menu_book', label: 'Paso 5: Biblia M3 (Cero a Sistema)', navLabel: '5. Biblia M3' }
+  { path: 'playbook', route: '/design-system/playbook', icon: 'menu_book', label: 'Paso 5: Biblia M3 (De Cero a Sistema)', navLabel: '5. Biblia M3' }
 ];

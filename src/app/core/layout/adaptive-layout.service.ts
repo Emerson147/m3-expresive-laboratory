@@ -6,6 +6,15 @@ export type WindowSizeClass = 'compact' | 'medium' | 'expanded' | 'large' | 'ext
 /** Official Material 3 Height Breakpoints. */
 export type WindowHeightClass = 'compact' | 'medium' | 'expanded';
 
+/** Classifies a pixel width into Google Material 3's 5 canonical Width Breakpoints. */
+export function classifyWindowWidth(widthPx: number): WindowSizeClass {
+  if (widthPx < 600) return 'compact';
+  if (widthPx < 840) return 'medium';
+  if (widthPx < 1200) return 'expanded';
+  if (widthPx < 1600) return 'large';
+  return 'extra-large';
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,14 +38,7 @@ export class AdaptiveLayoutService {
    * - Large: 1200dp – 1599dp (Desktops & laptops, 2 panes, Expanded Rail / Drawer)
    * - Extra-Large: >= 1600dp (Ultrawide monitors, 2–3 panes, Persistent Drawer)
    */
-  readonly windowSizeClass = computed<WindowSizeClass>(() => {
-    const width = this.windowWidth();
-    if (width < 600) return 'compact';
-    if (width < 840) return 'medium';
-    if (width < 1200) return 'expanded';
-    if (width < 1600) return 'large';
-    return 'extra-large';
-  });
+  readonly windowSizeClass = computed<WindowSizeClass>(() => classifyWindowWidth(this.windowWidth()));
 
   /**
    * Official Material 3 Height Breakpoints:

@@ -448,3 +448,179 @@ export const MODERN_WEB_MOTION_PRIMITIVES: readonly ModernWebMotionPrimitiveSpec
 }`
   }
 ];
+
+export interface ApplyingTransitionPrincipleSpec {
+  readonly number: number;
+  readonly title: string;
+  readonly body: string;
+  readonly tokenHint: string;
+}
+
+export const APPLYING_TRANSITIONS_PRINCIPLES: readonly ApplyingTransitionPrincipleSpec[] = [
+  {
+    number: 1,
+    title: '1. Accesibilidad Universal',
+    body: 'Respeta prefers-reduced-motion: reemplaza traslaciones por desvanecimientos sutiles de 150ms sin efectos decorativos.',
+    tokenHint: '@media (prefers-reduced-motion: reduce)'
+  },
+  {
+    number: 2,
+    title: '2. Consistencia Sistémica',
+    body: 'Mismo tipo de transición y token para la misma acción en toda la app. Aumenta la previsibilidad operativa.',
+    tokenHint: '.m3-transition-standard | .m3-transition-emphasized'
+  },
+  {
+    number: 3,
+    title: '3. Layouts Estables (Skeletons)',
+    body: 'Fija las dimensiones físicas antes de que carguen los datos para evitar empujar elementos en pantalla (CLS = 0.00).',
+    tokenHint: '.m3-skeleton.m3-skeleton-shimmer'
+  },
+  {
+    number: 4,
+    title: '4. Cero Jump-Cuts',
+    body: 'Evita cortes secos e instantáneos salvo en herramientas de pura velocidad repetitiva para usuarios expertos.',
+    tokenHint: 'short3 (150ms) mínimo visual'
+  },
+  {
+    number: 5,
+    title: '5. Modelo Espacial Coherente',
+    body: 'Los elementos emergen desde su origen físico real: navigation drawers desde el borde lateral, sheets desde abajo.',
+    tokenHint: 'transform-origin + m3EnterFromBottom'
+  },
+  {
+    number: 6,
+    title: '6. Dirección Unificada',
+    body: 'Los elementos secundarios se agrupan y viajan a lo largo del mismo eje de movimiento sin direcciones cruzadas.',
+    tokenHint: 'm3ForwardIn / m3BackwardIn'
+  },
+  {
+    number: 7,
+    title: '7. Clean Fades (Sin Cross-Fade Sucio)',
+    body: 'Desvanece por completo el contenido saliente antes de entrar el nuevo para evitar capas semitransparentes superpuestas.',
+    tokenHint: 'short2 exit + short2 delay'
+  },
+  {
+    number: 8,
+    title: '8. Estilo Sobrio y Concentrado',
+    body: 'La navegación frecuente debe ser ágil y precisa, reservando resortes expresivos para hitos o elementos focales.',
+    tokenHint: 'Standard ζ = 0.9 vs Expressive ζ = 0.6'
+  }
+] as const;
+
+export interface MotionPlaybookFilterSpec {
+  readonly id: string;
+  readonly badge: string;
+  readonly title: string;
+  readonly ruleLeftLabel: string;
+  readonly ruleLeftText: string;
+  readonly ruleRightLabel: string;
+  readonly ruleRightText: string;
+  readonly tokens: string;
+}
+
+export const MOTION_PLAYBOOK_FILTERS: readonly MotionPlaybookFilterSpec[] = [
+  {
+    id: 'dom-lifecycle',
+    badge: 'Filtro 1',
+    title: 'Ciclo de Vida del DOM',
+    ruleLeftLabel: 'Nodo Persistente (CSS Transitions)',
+    ruleLeftText: 'Si la tarjeta, drawer o FAB sigue vivo dentro del mismo componente: usá dimensiones acotadas + overflow-hidden o Grid 0fr ↔ 1fr.',
+    ruleRightLabel: 'DOM Destruido (View Transitions API)',
+    ruleRightText: 'Si cambia la ruta o un diálogo salta al Top Layer: enlazá view-transition-name dinámico para morfar snapshots GPU sin congelar el hilo.',
+    tokens: 'document.startViewTransition() | grid-rows-[0fr..1fr]'
+  },
+  {
+    id: 'physics-family',
+    badge: 'Filtro 2',
+    title: 'Familia Física (Spatial vs Effects)',
+    ruleLeftLabel: 'Spatial (Con Rebote Controlado)',
+    ruleLeftText: 'Mueve o cambia tamaño/radio: Expressive ζ = 0.6–0.8 para hitos focales; Standard ζ = 0.9 para tablas y flujos densos.',
+    ruleRightLabel: 'Effects (Damping 1.0 • Cero Rebote)',
+    ruleRightText: 'Color, opacidad, elevación y state-layer jamás deben oscilar ni sobrepasarse: siempre curvas de frenado puro (150ms–300ms).',
+    tokens: '--md-sys-motion-spring-*-spatial vs *-effects'
+  },
+  {
+    id: 'compositor-tokens',
+    badge: 'Filtro 3',
+    title: 'Cero Números Mágicos y GPU Segura',
+    ruleLeftLabel: 'Tokens Centralizados en _motion.css',
+    ruleLeftText: 'Prohibido hardcodear ms sueltos o cubic-bezier en componentes de negocio; así [data-motion-scheme="standard"] y reduce funcionan globalmente.',
+    ruleRightLabel: 'Solo Propiedades de Compositor + Freeze VT',
+    ruleRightText: 'Orbs ambientales (.m3-aurora-orb) animan solo transform + opacity, se pausan con html.vt-running y respetan prefers-reduced-motion.',
+    tokens: '--md-sys-motion-duration-* + html.vt-running'
+  }
+] as const;
+
+export interface ContainerTransformTrapSpec {
+  readonly id: string;
+  readonly title: string;
+  readonly problem: string;
+  readonly solution: string;
+  readonly snippet: string;
+}
+
+export const CONTAINER_TRANSFORM_TRAPS: readonly ContainerTransformTrapSpec[] = [
+  {
+    id: 'trap-max-width',
+    title: 'Trampa 1: Explosión Horizontal (max-width: none)',
+    problem: 'Combinar w-full max-w-md (abierto) con w-72 (cerrado, max-width implícito none) hace que al cerrar en t=0ms el ancho explote al 100% del padre.',
+    solution: 'Fijá max-w-full de forma invariable e interpolá únicamente anchos explícitos acotados (ej. w-72 ↔ w-[448px]) con transition-property explícita.',
+    snippet: 'class="max-w-full overflow-hidden" style="transition-property: width, height, border-radius;"'
+  },
+  {
+    id: 'trap-height-auto',
+    title: 'Trampa 2: Salto Seco y Hueco Vacío (height: auto)',
+    problem: 'CSS no puede interpolar height: auto sin Saltos, y desmontar contenido con @if al cerrar deja una caja hueca encogiéndose durante 500ms.',
+    solution: 'Usá alturas explícitas acotadas (h-16 ↔ h-48) o Grid 0fr ↔ 1fr y desvanecé el contenido interno en 100ms (0ms delay) antes que el contenedor.',
+    snippet: 'transition-duration: var(--md-sys-motion-duration-short2); /* contenido sale primero */'
+  },
+  {
+    id: 'trap-ghosting',
+    title: 'Trampa 3: Ghosting por Pseudo-elemento ::before',
+    problem: 'En hosts .state-layer/.card-interactive, ::before ya está reservado para el velo currentColor de Hover/Focus/Pressed; pisarlo rompe el feedback y produce halos sucios.',
+    solution: 'Colocá glows o auroras ambientales (.m3-aurora-orb) en <div class="m3-aurora-layer" aria-hidden="true"> hijo y congelalas durante html.vt-running.',
+    snippet: '<div class="m3-aurora-layer" aria-hidden="true"><span class="m3-aurora-orb m3-aurora-orb-1"></span></div>'
+  }
+] as const;
+
+export interface MotionAppliedRecipeSpec {
+  readonly id: string;
+  readonly badge: string;
+  readonly title: string;
+  readonly timing: string;
+  readonly why: string;
+  readonly snippet: string;
+}
+
+export const MOTION_APPLIED_RECIPES: readonly MotionAppliedRecipeSpec[] = [
+  {
+    id: 'recipe-button-morph',
+    badge: 'Controls',
+    title: 'M3 Button & Chip Shape Morphing',
+    timing: '350ms fast-spatial + 150ms fast-effects',
+    why: 'Desacoplá el tamaño/radio elástico (spatial) del color de relleno (effects damping 1.0) para tacto vivo sin parpadeo cromático.',
+    snippet: `transition:
+  border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+  transform var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+  background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);`
+  },
+  {
+    id: 'recipe-stagger-waterfall',
+    badge: 'Lists & Bento',
+    title: 'Cascada Stagger (--stagger-index × 40ms)',
+    timing: '200ms short4 + top 240ms cap',
+    why: 'Ordena la lectura en listas y grillas Bento; capeá siempre el retraso total (~240ms max) para no frenar listas largas.',
+    snippet: `.m3-stagger-row {
+  animation: m3ContainerContentIn var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate) both;
+  animation-delay: calc(min(var(--stagger-index, 0), 6) * 40ms);
+}`
+  },
+  {
+    id: 'recipe-vt-dynamic',
+    badge: 'View Transitions',
+    title: 'Origen Dinámico view-transition-name',
+    timing: '500ms long2 open ↔ 250ms medium1 return',
+    why: 'Nunca fijes view-transition-name estático en listas: asignalo solo al trigger activo para no romper el stacking context del backdrop.',
+    snippet: `[style.view-transition-name]="activeItemId() === item.id ? 'hero-detail' : null"`
+  }
+] as const;

@@ -59,4 +59,12 @@ describe('ThemeService', () => {
     service.setContrastLevel('standard');
     expect(doc.documentElement.getAttribute('data-contrast')).toBeNull();
   });
+
+  it('toggles theme mode cleanly on pointer events even when WAAPI animate is unavailable', () => {
+    const initial = service.isDarkMode();
+    service.toggleThemeMode(new MouseEvent('click', { clientX: 40, clientY: 40 }));
+
+    expect(service.isDarkMode()).toBe(!initial);
+    expect(doc.body.querySelector('.z-\\[9999\\]')).toBeNull();
+  });
 });

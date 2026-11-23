@@ -493,30 +493,6 @@ circle.m3-linear-progress-stop {
   stroke-dasharray: 2 2;
 }
 
-/* Lab Native Range Slider (uses CSS accent-color with @supports not fallback per Modern Web Guidance) */
-.m3-lab-slider {
-  accent-color: var(--md-sys-color-primary);
-}
-
-@supports not (accent-color: var(--md-sys-color-primary)) {
-  .m3-lab-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 6px;
-    border-radius: 9999px;
-    background: var(--md-sys-color-secondary-container);
-  }
-  .m3-lab-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 9999px;
-    background: var(--md-sys-color-primary);
-    cursor: pointer;
-  }
-}
-
 
 /* =========================================================
    5. M3 EXPRESSIVE SHAPE-MORPHING LOADING INDICATOR

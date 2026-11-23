@@ -207,7 +207,7 @@ export const TOKEN_ANATOMY_EXAMPLES: readonly TokenAnatomyExample[] = [
     refToken: '--md-sys-color-shadow',
     refValue: 'oklch(0% 0 0 / 0.25 Light | 0.65 Dark)',
     sysToken: '--md-sys-elevation-level2',
-    compOrThemeToken: '--md-comp-elevated-card-hover-elevation / --shadow-m3-level2',
+    compOrThemeToken: '--md-sys-elevation-level2 (.m3-card-elevated:hover) / --shadow-m3-level2',
     segments: {
       prefix: 'md',
       tier: 'sys',
@@ -372,9 +372,9 @@ export const SURFACE_HIERARCHY_SPECS: readonly SurfaceTierSpec[] = [
     tailwindClass: 'bg-surface-dim',
     refLight: 'neutral87',
     oklchLight: '84% 0.020 H',
-    refDark: 'neutral6-dim',
+    refDark: 'literal dark (10% L < neutral6)',
     oklchDark: '10% 0.014 H',
-    usage: 'Plano atenuado exterior / Stage Recess en modo claro'
+    usage: 'Plano atenuado exterior / Stage Recess en modo claro y oscuro'
   }
 ];
 
@@ -890,11 +890,11 @@ export const SHAPE_MORPH_MECHANISMS_SPECS: readonly ShapeMorphMechanismSpec[] = 
     title: 'Mecanismo A: Corner Radius Morphing (Tensión de Esquinas)',
     platformScope: 'Universal (esencial en Web/Desktop donde no existe vibración háptica física)',
     howItWorks:
-      'Interpola border-radius usando resortes espaciales (--md-sys-motion-spring-expressive-fast-spatial). LEY CRÍTICA: nunca animar desde full (9999px) porque CSS interpola numéricamente desde 9999 hasta h/2 generando ~1s de zona muerta visual; siempre usar el radio acotado h/2 (--md-comp-button-shape-pill: 24px/20px ↔ 12px/10px; --md-comp-chip-shape-pill: 16px ↔ 8px).',
+      'Interpola border-radius usando resortes espaciales (--md-sys-motion-spring-expressive-fast-spatial). LEY CRÍTICA: nunca animar desde full (9999px) porque CSS interpola numéricamente desde 9999 hasta h/2 generando ~1s de zona muerta visual; siempre usar el radio acotado h/2 (--md-comp-button-shape-pill: 24px ↔ --md-sys-shape-corner-medium: 12px; --md-comp-chip-shape-pill: 16px ↔ --md-sys-shape-corner-small: 8px).',
     cssOrSvgTech:
-      'Bounded h/2 CSS border-radius (24px/20px ↔ 12px/10px, 16px ↔ 8px) + var(--md-sys-motion-spring-expressive-fast-spatial)',
+      'Bounded h/2 CSS border-radius (24px ↔ 12px, 16px ↔ 8px) + var(--md-sys-motion-spring-expressive-fast-spatial)',
     canonicalComponents: [
-      'Botones M3 & Button Groups (Píldora acotada 24px/20px → 12px/10px instantáneo sin dead-zone de 9999px)',
+      'Botones M3 & Button Groups (Píldora acotada 24px → 12px al instante sin dead-zone de 9999px)',
       'Filter Chips & Input Chips (Píldora acotada 16px → 8px al seleccionarse en _chip.css)',
       'Tarjetas Interactivas & Kanban (Large 16px → Extra Large 28px al expandir o arrastrar)',
       'FAB a Extended FAB o Diálogo (Container Transform)'
@@ -1042,8 +1042,8 @@ export const COMPONENT_ELEVATION_MATRIX: readonly ComponentElevationMatrixRow[] 
   {
     component: 'Modal Dialog / Bottom Sheet',
     surfaceToken: 'surface-container-high',
-    restingLevel: 'Level 3 (6dp) + Scrim',
-    hoverOrFocusLevel: 'Level 3 (6dp)',
+    restingLevel: 'Level 4 (8dp, fallback Level 3) + Scrim',
+    hoverOrFocusLevel: 'Level 4 (8dp)',
     activeOrDraggedLevel: 'Level 5 (12dp) en Hero Expandido',
     reason: 'Bloquea el plano inferior mediante Stage Recess / Scrim y concentra todo el foco cognitivo.'
   }

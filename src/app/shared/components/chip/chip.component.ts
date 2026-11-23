@@ -22,7 +22,7 @@ export type M3ChipType = 'filter' | 'assist' | 'input' | 'suggestion';
         
         <!-- Leading Icon: Checkmark if selected Filter, or custom icon -->
         @if (type() === 'filter' && selected()) {
-          <span class="material-symbols-rounded text-base shrink-0 animate-in fade-in zoom-in-75 duration-150" aria-hidden="true">
+          <span class="material-symbols-rounded text-base shrink-0 m3-anim-item-in" aria-hidden="true">
             check
           </span>
         } @else if (icon()) {

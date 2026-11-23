@@ -192,7 +192,7 @@ export class CommandPaletteComponent {
       label: step.label,
       subtitle: step.route,
       icon: step.icon,
-      keywords: `design system ${step.label} ${step.path}`.toLowerCase(),
+      keywords: `design system biblia m3 ${step.label} ${step.navLabel} ${step.path}`.toLowerCase(),
       execute: () => this.navigate.emit(step.route)
     }));
 
