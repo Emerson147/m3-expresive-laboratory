@@ -1,5 +1,5 @@
 export type TriggerMode = 'menu-bottom-left';
-export type AppSection = 'overview' | 'agenda' | 'design-system' | 'pos' | 'inventory' | 'telemetry' | 'kanban' | 'campus' | 'clinic';
+export type AppSection = 'overview' | 'agenda' | 'design-system' | 'pos' | 'sales' | 'inventory' | 'telemetry' | 'kanban' | 'campus' | 'clinic';
 export type NavStyle = 'auto' | 'rail' | 'dock' | 'tunnel';
 export type NavChromeMode = 'bar' | 'rail-collapsed' | 'rail-expanded' | 'tunnel' | 'dock';
 export type NavGroupId = 'core' | 'workbenches';
@@ -82,6 +82,16 @@ export const APP_NAV_DESTINATIONS: readonly AppNavDestination[] = [
     keywords: ['caja', 'venta', 'ticket', 'yape']
   },
   {
+    section: 'sales',
+    group: 'workbenches',
+    route: '/sales',
+    icon: 'receipt_long',
+    label: 'Historial de Ventas',
+    shortLabel: 'Ventas',
+    tunnelLabel: 'Ventas & Auditoría',
+    keywords: ['historial', 'ventas', 'facturas', 'boletas', 'sunat', 'tabla', 'auditoria', 'caja']
+  },
+  {
     section: 'inventory',
     group: 'workbenches',
     route: '/inventory',
@@ -133,6 +143,7 @@ export const APP_NAV_DESTINATIONS: readonly AppNavDestination[] = [
 
 const WORKBENCH_SECTIONS: ReadonlySet<AppSection> = new Set<AppSection>([
   'pos',
+  'sales',
   'inventory',
   'telemetry',
   'kanban',

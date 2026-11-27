@@ -346,6 +346,7 @@ export class PosService {
   });
 
   // 6. Comprobante Emitido
+  readonly completedSales = signal<CompletedSale[]>([]);
   readonly lastCompletedSale = signal<CompletedSale | null>(null);
   readonly isReceiptOpen = signal<boolean>(false);
 
@@ -572,6 +573,7 @@ export class PosService {
       salesCountToday: info.salesCountToday + 1
     }));
 
+    this.completedSales.update(history => [sale, ...history]);
     this.lastCompletedSale.set(sale);
     this.isCheckoutOpen.set(false);
     this.isReceiptOpen.set(true);
