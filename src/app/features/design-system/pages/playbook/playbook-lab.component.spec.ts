@@ -82,6 +82,17 @@ describe('PlaybookLabComponent', () => {
       expect(host.querySelector('m3-snackbar [role="status"]')?.textContent).toContain(
         'Configuración vercel.json copiada'
       );
+
+      // Verify portable bash script excludes coupled DialogService and includes PostCSS + CDK deps
+      findButtonByText(archEl, '1. Bash Kit')!.click();
+      fixture.detectChanges();
+      findButtonByText(archEl, 'Copiar código')!.click();
+      await Promise.resolve();
+      fixture.detectChanges();
+      expect(writeText).toHaveBeenCalledTimes(2);
+      expect(writeText.mock.calls[1][0]).toContain('.postcssrc.json');
+      expect(writeText.mock.calls[1][0]).toContain('stage-overlay.service.ts');
+      expect(writeText.mock.calls[1][0]).toContain('@angular/cdk tailwindcss');
     } finally {
       if (originalClipboard) {
         Object.defineProperty(navigator, 'clipboard', originalClipboard);

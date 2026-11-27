@@ -175,11 +175,11 @@ export const PLAYBOOK_LAYERS: readonly PlaybookLayerCard[] = [
     ownsContract: 'Exporta resortes Spatial vs Effects, asimetría on-screen (500ms/250ms), ThemeService y Dialog/StageOverlayService.',
     consumesRule: 'Orquesta estados de UI entre Shared M3 y Features usando signals y view-transition-name dinámico.',
     forbiddenRule: 'Prohibido .transition-all, .animate-pulse, bordes 9999px animados o filter: blur() sobre ancestros de modales.',
-    copyRule: 'Copia _motion.css, _overlays.css y core/{theme,dialog}/.',
+    copyRule: 'Copia _motion.css, _overlays.css, core/theme/ y stage-overlay.service.ts.',
     files: [
       'src/styles/_motion.css + _overlays.css',
       'src/app/core/theme/theme.service.ts',
-      'src/app/core/dialog/{dialog,stage-overlay}.service.ts',
+      'src/app/core/dialog/stage-overlay.service.ts',
       'src/app/app.config.ts (RouteTransitionCoordinator)'
     ]
   }
@@ -257,9 +257,9 @@ export const PLAYBOOK_CHECKLIST: readonly PlaybookChecklistItem[] = [
   {
     id: 'chk-core',
     layer: '4. Motion',
-    title: 'Conectar ThemeService, DialogService y Motion (_motion.css + RouteTransitionCoordinator)',
-    whyItMatters: 'Habilita revelado circular oscuro, conmutación standard/expressive y modales sin filtro borroso heredado.',
-    path: 'src/app/core/{theme,dialog}/ + app.config.ts',
+    title: 'Conectar ThemeService, StageOverlayService y Motion (_motion.css + RouteTransitionCoordinator)',
+    whyItMatters: 'Habilita revelado circular oscuro, conmutación standard/expressive y portales modales sin acoplarse a ui.models.ts.',
+    path: 'src/app/core/theme/ + stage-overlay.service.ts',
     required: true
   },
   {
@@ -813,14 +813,19 @@ export const PLAYBOOK_TROUBLESHOOTING: readonly PlaybookTroubleshootItem[] = [
 ];
 
 export const PLAYBOOK_STARTER_SNIPPETS = {
-  copyScript: `# Desde tu repo semilla hacia un proyecto Angular nuevo (Kit Portable):
+  copyScript: `# 1. En tu proyecto Angular destino, instala las dependencias requeridas:
+# cd ../nuevo-cliente && npm install @angular/cdk tailwindcss @tailwindcss/postcss postcss
+
+# 2. Desde este repo semilla, copia solo el kit desacoplado (0% dependencia demo):
+cp .postcssrc.json vercel.json ../nuevo-cliente/
 cp -r src/styles/ ../nuevo-cliente/src/styles/
 echo '@import "./styles/m3-expressive.css";' > ../nuevo-cliente/src/styles.css
 cp -r src/app/shared/components/ ../nuevo-cliente/src/app/shared/components/
-mkdir -p ../nuevo-cliente/src/app/shared/utils ../nuevo-cliente/src/app/shared/models
+mkdir -p ../nuevo-cliente/src/app/shared/utils ../nuevo-cliente/src/app/core/dialog
 cp src/app/shared/utils/clipboard.util.ts ../nuevo-cliente/src/app/shared/utils/
-cp -r src/app/core/{theme,layout,dialog} ../nuevo-cliente/src/app/core/
-cp vercel.json ../nuevo-cliente/vercel.json`,
+cp -r src/app/core/{theme,layout} ../nuevo-cliente/src/app/core/
+cp src/app/core/dialog/stage-overlay.service.ts ../nuevo-cliente/src/app/core/dialog/
+# Nota: dialog.service.ts solo es necesario si replicas la barra Rail/Dock demo (ui.models.ts).`,
   stylesOrder: `/* En src/styles.css del proyecto destino basta importar el entry point portable: */
 @import "./styles/m3-expressive.css";
 
