@@ -18,14 +18,14 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-sub pb-3">
         <div>
           <span class="px-2.5 py-0.5 rounded-m3-full bg-success-box text-on-success-box text-[10px] font-bold uppercase tracking-wider">
-            Chunk &#64;defer Activo • Cierre de Turno
+            Cuadre de Caja • {{ periodLabel() }}
           </span>
           <h3 class="text-title-md-emphasized text-main mt-1">
             Consolidado por Medio de Pago y Cuadre Fiscal SUNAT
           </h3>
         </div>
         <span class="text-xs font-mono text-primary font-bold tabular-nums">
-          Total Bruto Activo: S/ {{ summary().totalNetRevenue.toFixed(2) }}
+          Venta Neta ({{ periodLabel() }}): S/ {{ summary().totalNetRevenue.toFixed(2) }}
         </span>
       </div>
 
@@ -59,4 +59,5 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
 })
 export class SalesFiscalDeferPanelComponent {
   readonly summary = input.required<SalesFiscalSummary>();
+  readonly periodLabel = input<string>('Últimos 30 días');
 }

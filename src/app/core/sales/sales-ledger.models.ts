@@ -1,6 +1,7 @@
 import { PaymentMethod, VoucherType } from '../pos/pos.service';
 
 export type SaleLedgerStatus = 'reconciled' | 'pending' | 'voided';
+export type SalesPeriodFilter = 'today' | 'week' | 'month';
 export type SalesStatusFilter = 'all' | SaleLedgerStatus;
 export type SalesPaymentFilter = 'all' | PaymentMethod;
 export type SalesVoucherFilter = 'all' | VoucherType;

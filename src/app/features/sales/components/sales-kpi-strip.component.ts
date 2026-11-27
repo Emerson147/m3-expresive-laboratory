@@ -26,7 +26,7 @@ import { M3CardComponent } from '../../../shared/components/card/card.component'
           S/ {{ summary().totalNetRevenue.toFixed(2) }}
         </div>
         <div class="text-label-sm text-muted">
-          {{ summary().activeCount }} comprobantes válidos emitidos
+          {{ summary().activeCount }} comprobantes válidos · {{ periodLabel() }}
         </div>
       </m3-card>
 
@@ -61,7 +61,7 @@ import { M3CardComponent } from '../../../shared/components/card/card.component'
           {{ summary().pendingCount }}
         </div>
         <div class="text-label-sm text-muted">
-          {{ summary().reconciledCount }} conciliados con cierre diario
+          {{ summary().reconciledCount }} conciliados con cierre · {{ periodLabel() }}
         </div>
       </m3-card>
 
@@ -76,7 +76,7 @@ import { M3CardComponent } from '../../../shared/components/card/card.component'
           {{ summary().voidedCount }}
         </div>
         <div class="text-label-sm text-muted">
-          Comprobantes anulados en auditoría
+          Comprobantes anulados · {{ periodLabel() }}
         </div>
       </m3-card>
     </section>
@@ -84,4 +84,5 @@ import { M3CardComponent } from '../../../shared/components/card/card.component'
 })
 export class SalesKpiStripComponent {
   readonly summary = input.required<SalesFiscalSummary>();
+  readonly periodLabel = input<string>('Últimos 30 días');
 }

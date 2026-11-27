@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, input, output } from '@angular/core';
 import {
   SaleLedgerRecord,
   SaleLedgerStatus,
@@ -52,6 +52,75 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
   ],
   host: { class: 'block min-w-0' },
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  styles: [`
+    app-sales-table .sales-table-scroll {
+      container: sales-table / inline-size;
+      max-inline-size: 100%;
+      overflow-x: auto;
+    }
+
+    app-sales-table .sales-date-part + .sales-date-part::before {
+      content: ' ';
+    }
+
+    @container sales-table (inline-size < 780px) {
+      app-sales-table .sales-table th,
+      app-sales-table .sales-table td {
+        padding-inline: 0.375rem;
+        padding-block: 0.5rem;
+      }
+
+      app-sales-table .sales-col-check {
+        inline-size: 2.25rem;
+      }
+
+      app-sales-table .sales-voucher-sub {
+        max-inline-size: 7.75rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      app-sales-table .sales-date-part {
+        display: block;
+        line-height: 1.2;
+      }
+
+      app-sales-table .sales-date-part + .sales-date-part {
+        font-size: 0.625rem;
+        opacity: 0.8;
+      }
+
+      app-sales-table .sales-date-part + .sales-date-part::before {
+        content: none;
+      }
+
+      app-sales-table .sales-client-cell {
+        max-inline-size: 7.25rem;
+      }
+
+      app-sales-table .sales-hide-narrow {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      app-sales-table .sales-table-scroll .sales-reconcile-btn.m3-btn {
+        padding-inline: 0.5rem;
+      }
+
+      app-sales-table .sales-table-scroll .sales-inspect-btn.m3-btn {
+        inline-size: 28px;
+        block-size: 28px;
+        padding: 0;
+        gap: 0;
+        justify-content: center;
+      }
+    }
+  `],
   template: `
     <m3-card variant="outlined" padding="md" shape="xl" customClass="space-y-4">
       <!-- TOOLBAR: BUSCADOR + CHIPS DE ESTADO + SELECTORES -->
@@ -253,11 +322,15 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
         </div>
 
         <!-- VISTA ESCRITORIO/TABLET (>= md): DATA TABLE ENTERPRISE SEMÁNTICA -->
-        <div class="hidden md:block overflow-x-auto m3-scrollbar rounded-m3-lg border border-outline-sub">
-          <table class="w-full text-left border-collapse text-xs">
+        <div
+          tabindex="0"
+          role="region"
+          aria-label="Tabla de comprobantes y conciliación"
+          class="sales-table-scroll hidden md:block m3-scrollbar rounded-m3-lg border border-outline-sub">
+          <table class="sales-table w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-surface-low border-b border-outline-sub text-label-sm-emphasized uppercase tracking-wider text-muted">
-                <th scope="col" class="py-2.5 px-3 w-12">
+                <th scope="col" class="sales-col-check py-2.5 px-3 w-12">
                   <m3-checkbox
                     ariaLabel="Seleccionar todos los comprobantes visibles"
                     [checked]="isAllSelected()"
@@ -312,7 +385,7 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
                   [class]="selectedRecordId() === row.id
                     ? 'bg-primary-box/30 border-b border-outline-sub transition-colors'
                     : 'hover:bg-surface-low border-b border-outline-sub/70 transition-colors'">
-                  <td class="py-2 px-3">
+                  <td class="sales-col-check py-2 px-3">
                     <m3-checkbox
                       [ariaLabel]="'Seleccionar ' + row.saleId"
                       [checked]="isRowSelected(row.id)"
@@ -327,21 +400,25 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
                         </span>
                       }
                     </div>
-                    <div class="text-[10px] text-muted">{{ voucherLabel(row.voucherType) }} · {{ row.orderCode }}</div>
+                    <div class="sales-voucher-sub text-[10px] text-muted">{{ voucherLabel(row.voucherType) }} · {{ row.orderCode }}</div>
                   </td>
                   <td class="py-2 px-3 font-mono text-muted whitespace-nowrap tabular-nums">
-                    {{ row.dateIso | date: 'dd/MM HH:mm' }}
+                    <span class="sales-date-part">{{ row.dateIso | date: 'dd/MM' }}</span><span class="sales-date-part">{{ row.dateIso | date: 'HH:mm' }}</span>
                   </td>
-                  <td class="py-2 px-3 max-w-[200px]">
-                    <div class="font-semibold text-main truncate">{{ row.customerName }}</div>
-                    <div class="text-[10px] font-mono text-muted truncate">{{ row.customerDoc }}</div>
+                  <td class="py-2 px-3">
+                    <div class="sales-client-cell max-w-[200px] min-w-0" [title]="row.customerName + ' · ' + row.customerDoc">
+                      <div class="font-semibold text-main truncate">{{ row.customerName }}</div>
+                      <div class="text-[10px] font-mono text-muted truncate">{{ row.customerDoc }}</div>
+                    </div>
                   </td>
                   <td class="py-2 px-3 whitespace-nowrap">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-sm bg-surface-high text-main font-medium">
+                    <span
+                      class="relative inline-flex items-center gap-1 px-2 py-0.5 rounded-m3-sm bg-surface-high text-main font-medium"
+                      [title]="paymentMeta(row.paymentMethod).label">
                       <span class="material-symbols-rounded text-sm text-primary" aria-hidden="true">
                         {{ paymentMeta(row.paymentMethod).icon }}
                       </span>
-                      <span>{{ paymentMeta(row.paymentMethod).label }}</span>
+                      <span class="sales-hide-narrow">{{ paymentMeta(row.paymentMethod).label }}</span>
                     </span>
                   </td>
                   <td class="py-2 px-3 text-end font-mono font-bold text-main tabular-nums whitespace-nowrap">
@@ -353,11 +430,12 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
                     </span>
                   </td>
                   <td class="py-2 px-3 text-end whitespace-nowrap">
-                    <div class="inline-flex items-center gap-1.5">
+                    <div class="inline-flex items-center gap-1">
                       @if (row.status !== 'voided') {
                         <m3-button
                           variant="text"
                           size="xs"
+                          customClass="sales-reconcile-btn"
                           [icon]="row.status === 'reconciled' ? 'undo' : 'check'"
                           [disabled]="!!row.syncing"
                           (action)="toggleReconcile.emit(row)">
@@ -368,8 +446,11 @@ const VOUCHER_LABEL: Record<VoucherType, string> = {
                         variant="tonal"
                         size="xs"
                         icon="visibility"
+                        customClass="sales-inspect-btn relative"
+                        [attr.title]="'Ver detalle de ' + row.saleId"
+                        [ariaLabel]="'Ver detalle de ' + row.saleId"
                         (action)="inspectRow.emit(row)">
-                        Ver
+                        <span class="sales-hide-narrow">Ver</span>
                       </m3-button>
                     </div>
                   </td>

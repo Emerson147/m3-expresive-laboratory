@@ -41,15 +41,44 @@ describe('SalesComponent', () => {
 
     expect(host.querySelector('.transition-all')).toBeNull();
     expect(host.querySelector('.animate-pulse')).toBeNull();
+    expect(host.querySelector('.sales-table-scroll[role="region"][tabindex="0"]')).toBeTruthy();
     expect(host.textContent).toContain('Historial de Ventas');
     expect(host.textContent).toContain('B001-000842');
     expect(host.textContent).toContain('POS');
+    expect(host.textContent).not.toContain('Simular 503');
+    expect(host.textContent).not.toContain('SalesLedgerPort');
+    expect(host.textContent).not.toContain('@defer');
 
     // Single primary Filled CTA outside dialogs
     const filledOutsideDialog = Array.from(host.querySelectorAll('.m3-btn-filled')).filter(
       (btn) => !btn.closest('dialog')
     );
     expect(filledOutsideDialog.length).toBe(1);
+  });
+
+  it('filters sales ledger, KPI summary, and reconciliation counts across Hoy, 7 días, and 30 días', async () => {
+    const { fixture, host } = await setup();
+
+    // Default 30 días shows all 11 seeded records (4 pending)
+    expect(fixture.componentInstance.salesService.periodFilter()).toBe('month');
+    expect(fixture.componentInstance.salesService.periodScopedRecords().length).toBe(11);
+    expect(fixture.componentInstance.salesService.fiscalSummary().pendingCount).toBe(4);
+    expect(host.textContent).toContain('F001-000831');
+
+    // Switch to 7 días -> 8 records, 3 pending
+    findButtonByText(host, '7 días')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.salesService.periodFilter()).toBe('week');
+    expect(fixture.componentInstance.salesService.periodScopedRecords().length).toBe(8);
+    expect(fixture.componentInstance.salesService.fiscalSummary().pendingCount).toBe(3);
+
+    // Switch to Hoy -> 4 records, 2 pending, older month record excluded
+    findButtonByText(host, 'Hoy')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.salesService.periodFilter()).toBe('today');
+    expect(fixture.componentInstance.salesService.periodScopedRecords().length).toBe(4);
+    expect(fixture.componentInstance.salesService.fiscalSummary().pendingCount).toBe(2);
+    expect(host.textContent).not.toContain('F001-000831');
   });
 
   it('supports ARIA column sorting, filtering, tri-state master checkbox, and bulk reconcile with Undo', async () => {
@@ -95,11 +124,10 @@ describe('SalesComponent', () => {
     expect(fixture.componentInstance.salesService.fiscalSummary().pendingCount).toBe(4);
   });
 
-  it('executes automatic snapshot Rollback when Simulate 503 is active', async () => {
+  it('executes automatic snapshot Rollback when ledger adapter fails', async () => {
     const { fixture, host } = await setup();
 
-    const simSwitch = host.querySelector('app-sales-header m3-switch button[role="switch"]') as HTMLButtonElement;
-    simSwitch.click();
+    fixture.componentInstance.salesService.simulateError503.set(true);
     fixture.detectChanges();
     expect(fixture.componentInstance.salesService.simulateError503()).toBe(true);
 
@@ -114,7 +142,7 @@ describe('SalesComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.salesService.fiscalSummary().pendingCount).toBe(pendingBefore);
-    expect(host.querySelector('m3-snackbar [role="status"]')?.textContent).toContain('Rollback aplicado');
+    expect(host.querySelector('m3-snackbar [role="status"]')?.textContent).toContain('cambio revertido');
   });
 
   it('hydrates lazy @defer Fiscal Summary panel and voids a sale via Top-Layer M3 Dialog', async () => {

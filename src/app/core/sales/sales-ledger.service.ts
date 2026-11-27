@@ -7,6 +7,7 @@ import {
   SaleSortField,
   SalesFiscalSummary,
   SalesPaymentFilter,
+  SalesPeriodFilter,
   SalesStatusFilter,
   SalesVoucherFilter,
   SortDirection
@@ -31,10 +32,25 @@ const STATUS_RANK: Record<SaleLedgerStatus, number> = {
   voided: 2
 };
 
+function matchesPeriod(dateIso: string, period: SalesPeriodFilter, now: Date): boolean {
+  const dt = new Date(dateIso);
+  if (period === 'today') {
+    return (
+      dt.getFullYear() === now.getFullYear() &&
+      dt.getMonth() === now.getMonth() &&
+      dt.getDate() === now.getDate()
+    );
+  }
+  const dayMs = 86_400_000;
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const daysBack = period === 'week' ? 7 : 30;
+  return dt.getTime() >= startToday - (daysBack - 1) * dayMs;
+}
+
 /**
- * Feature-scoped reactive Signal Store for the Sales History & Audit module.
- * Coordinates sorting, filtering, tri-state selection, fiscal computations, and Optimistic UI
- * backed exclusively by the abstract `SalesLedgerPort`.
+ * Feature-scoped reactive Signal Store for the Sales History & Audit Ledger.
+ * Derives daily/weekly/monthly fiscal metrics, cash drawer reconciliation totals,
+ * sortable/filterable table rows, tri-state selection, and Optimistic UI Rollbacks.
  */
 @Injectable()
 export class SalesLedgerService {
@@ -45,6 +61,7 @@ export class SalesLedgerService {
   readonly netError = signal<string | null>(null);
   readonly simulateError503 = signal<boolean>(false);
 
+  readonly periodFilter = signal<SalesPeriodFilter>('month');
   readonly searchQuery = signal<string>('');
   readonly statusFilter = signal<SalesStatusFilter>('all');
   readonly paymentFilter = signal<SalesPaymentFilter>('all');
@@ -56,13 +73,20 @@ export class SalesLedgerService {
   readonly selectedSaleId = signal<string | null>(null);
   readonly toastRequest = signal<SalesToastPayload | null>(null);
 
+  /** Records scoped by the active period selector (Hoy / 7 días / 30 días). */
+  readonly periodScopedRecords = computed<readonly SaleLedgerRecord[]>(() => {
+    const period = this.periodFilter();
+    const now = new Date();
+    return this.records().filter((row) => matchesPeriod(row.dateIso, period, now));
+  });
+
   readonly filteredRecords = computed<readonly SaleLedgerRecord[]>(() => {
     const query = this.searchQuery().trim().toLowerCase();
     const status = this.statusFilter();
     const payment = this.paymentFilter();
     const voucher = this.voucherFilter();
 
-    return this.records().filter((row) => {
+    return this.periodScopedRecords().filter((row) => {
       if (status !== 'all' && row.status !== status) return false;
       if (payment !== 'all' && row.paymentMethod !== payment) return false;
       if (voucher !== 'all' && row.voucherType !== voucher) return false;
@@ -110,14 +134,14 @@ export class SalesLedgerService {
 
   readonly selectedReconcilableIds = computed<readonly string[]>(() => {
     const selected = this.selectedIds();
-    return this.records()
+    return this.periodScopedRecords()
       .filter((row) => selected.has(row.id) && row.status === 'pending')
       .map((row) => row.id);
   });
 
   readonly fiscalSummary = computed<SalesFiscalSummary>(() => {
-    const all = this.records();
-    const active = all.filter((r) => r.status !== 'voided');
+    const scoped = this.periodScopedRecords();
+    const active = scoped.filter((r) => r.status !== 'voided');
 
     let totalNetRevenue = 0;
     let totalTaxCollected = 0;
@@ -132,7 +156,7 @@ export class SalesLedgerService {
       ['cash', { count: 0, total: 0 }]
     ]);
 
-    for (const row of all) {
+    for (const row of scoped) {
       if (row.status === 'reconciled') reconciledCount++;
       else if (row.status === 'pending') pendingCount++;
       else voidedCount++;
@@ -188,10 +212,15 @@ export class SalesLedgerService {
         this.selectedSaleId.set(loaded[0].id);
       }
     } catch {
-      this.netError.set('No se pudieron cargar los comprobantes desde SalesLedgerPort.');
+      this.netError.set('No se pudieron cargar los comprobantes de ventas.');
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  setPeriodFilter(period: SalesPeriodFilter): void {
+    this.periodFilter.set(period);
+    this.clearSelection();
   }
 
   toggleSort(field: SaleSortField): void {
@@ -266,7 +295,7 @@ export class SalesLedgerService {
     } catch {
       this.records.set(snapshot);
       this.toastRequest.set({
-        message: `Error 503 al actualizar ${record.saleId}: Rollback aplicado`,
+        message: `No se pudo confirmar ${record.saleId} (servicio no disponible): cambio revertido`,
         actionLabel: 'Reintentar',
         onAction: () => {
           void this.toggleReconcile(record);
@@ -280,12 +309,12 @@ export class SalesLedgerService {
       targetIds ??
       (this.selectedReconcilableIds().length > 0
         ? this.selectedReconcilableIds()
-        : this.records()
+        : this.periodScopedRecords()
             .filter((r) => r.status === 'pending')
             .map((r) => r.id));
 
     if (ids.length === 0) {
-      this.toastRequest.set({ message: 'No hay comprobantes pendientes por conciliar' });
+      this.toastRequest.set({ message: 'No hay comprobantes pendientes en este período' });
       return;
     }
 
@@ -313,7 +342,7 @@ export class SalesLedgerService {
     } catch {
       this.records.set(snapshot);
       this.toastRequest.set({
-        message: 'Error 503 en conciliación masiva: se restauró el estado previo',
+        message: 'Falló la conciliación masiva: se restauró el estado previo',
         actionLabel: 'Reintentar',
         onAction: () => {
           void this.bulkReconcilePending(ids);
@@ -353,7 +382,7 @@ export class SalesLedgerService {
     } catch {
       this.records.set(snapshot);
       this.toastRequest.set({
-        message: `Error 503 al anular ${record.saleId}: Rollback aplicado`,
+        message: `Error al anular ${record.saleId}: se restauró el comprobante`,
         actionLabel: 'Reintentar',
         onAction: () => {
           void this.voidSale(record, cleanReason);

@@ -28,7 +28,7 @@ import { M3TabItem, M3TabsComponent } from '../../shared/components/tabs/tabs.co
 import { copyTextWithFeedback } from '../../shared/utils/clipboard.util';
 import { SalesDetailSheetComponent } from './components/sales-detail-sheet.component';
 import { SalesFiscalDeferPanelComponent } from './components/sales-fiscal-defer-panel.component';
-import { SalesHeaderComponent } from './components/sales-header.component';
+import { SalesHeaderComponent, getSalesPeriodSummaryLabel } from './components/sales-header.component';
 import { SalesKpiStripComponent } from './components/sales-kpi-strip.component';
 import { SalesTableComponent } from './components/sales-table.component';
 import { SalesVoidDialogComponent } from './components/sales-void-dialog.component';
@@ -77,16 +77,18 @@ type VoidMorphOwner = 'detail' | 'modal' | null;
 
       <!-- 1. Command Header -->
       <app-sales-header
-        [totalCount]="salesService.records().length"
+        [totalCount]="salesService.periodScopedRecords().length"
         [pendingCount]="salesService.fiscalSummary().pendingCount"
         [selectedReconcilableCount]="salesService.selectedReconcilableIds().length"
-        [simulateError503]="salesService.simulateError503()"
-        (toggleSimulate503)="salesService.simulateError503.set($event)"
+        [periodFilter]="salesService.periodFilter()"
+        (periodChange)="salesService.setPeriodFilter($event)"
         (exportCsv)="onExportCsv()"
         (reconcileAction)="salesService.bulkReconcilePending()" />
 
       <!-- 2. Analytical Fiscal KPI Strip -->
-      <app-sales-kpi-strip [summary]="salesService.fiscalSummary()" />
+      <app-sales-kpi-strip
+        [summary]="salesService.fiscalSummary()"
+        [periodLabel]="periodSummaryLabel()" />
 
       <!-- 3. Adaptive Mobile/Tablet Split-Pane Switcher (< xl) -->
       <div class="xl:hidden shrink-0 rounded-m3-lg overflow-hidden bg-surface-low">
@@ -100,8 +102,8 @@ type VoidMorphOwner = 'detail' | 'modal' | null;
       </div>
 
       <!-- 4. Canonical List-Detail Workspace (24dp spacer = gap-6) -->
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        <div [class]="(mobilePane() === 'ledger' ? 'block' : 'hidden') + ' xl:block xl:col-span-8 min-w-0'">
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_370px] gap-6 items-start">
+        <div [class]="(mobilePane() === 'ledger' ? 'block' : 'hidden') + ' xl:block min-w-0'">
           <app-sales-table
             [records]="salesService.sortedRecords()"
             [selectedIds]="salesService.selectedIds()"
@@ -133,7 +135,7 @@ type VoidMorphOwner = 'detail' | 'modal' | null;
 
         <aside
           aria-label="Detalle del comprobante seleccionado"
-          [class]="(mobilePane() === 'detail' ? 'block' : 'hidden') + ' xl:block xl:col-span-4 xl:sticky xl:top-0 min-w-0'">
+          [class]="(mobilePane() === 'detail' ? 'block' : 'hidden') + ' xl:block xl:sticky xl:top-0 min-w-0'">
           <app-sales-detail-sheet
             [record]="salesService.selectedRecord()"
             [isVoidOriginActive]="voidMorphOwner() === 'detail'"
@@ -147,18 +149,20 @@ type VoidMorphOwner = 'detail' | 'modal' | null;
       <!-- 5. @defer Lazy Shift Fiscal Breakdown -->
       <section aria-label="Cierre fiscal diferido">
         @defer (when fiscalReportExpanded(); prefetch on hover) {
-          <app-sales-fiscal-defer-panel [summary]="salesService.fiscalSummary()" />
+          <app-sales-fiscal-defer-panel
+            [summary]="salesService.fiscalSummary()"
+            [periodLabel]="periodSummaryLabel()" />
         } @loading (minimum 200ms) {
           <m3-card variant="outlined" surface="low" padding="lg" customClass="flex items-center justify-center gap-3 min-h-36">
-            <m3-loading-indicator [contained]="true" ariaLabel="Cargando desglose fiscal diferido..." />
-            <span class="text-xs font-medium text-muted">Cargando chunk &#64;defer de cierre fiscal...</span>
+            <m3-loading-indicator [contained]="true" ariaLabel="Calculando arqueo de caja..." />
+            <span class="text-xs font-medium text-muted">Calculando arqueo de caja y medios de pago...</span>
           </m3-card>
         } @placeholder {
           <m3-card variant="outlined" surface="low" padding="md" shape="xl" customClass="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="space-y-1">
                 <span class="px-2.5 py-0.5 rounded-m3-full bg-surface-high text-main text-[10px] font-bold uppercase tracking-wider">
-                  &#64;placeholder Activo • Reporte Pesado Fuera del Bundle Inicial
+                  Arqueo Bajo Demanda · {{ periodSummaryLabel() }}
                 </span>
                 <h2 class="text-title-sm-emphasized text-main">
                   Consolidado por Medio de Pago &amp; Cuadre SUNAT
@@ -170,7 +174,7 @@ type VoidMorphOwner = 'detail' | 'modal' | null;
                 size="sm"
                 icon="analytics"
                 (action)="fiscalReportExpanded.set(true)">
-                Cargar Resumen Fiscal (&#64;defer)
+                Cargar Resumen Fiscal
               </m3-button>
             </div>
 
@@ -233,6 +237,10 @@ export class SalesComponent implements OnInit {
   readonly snackbarActionLabel = signal<string | null>(null);
   private pendingSnackbarCallback: (() => void) | null = null;
   private isDestroyed = false;
+
+  readonly periodSummaryLabel = computed(() =>
+    getSalesPeriodSummaryLabel(this.salesService.periodFilter())
+  );
 
   readonly mobileTabs = computed<M3TabItem[]>(() => [
     {
