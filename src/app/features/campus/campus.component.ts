@@ -274,7 +274,7 @@ import { CampusTeacherKpiRibbonComponent } from './components/campus-teacher-kpi
     @if (campus.currentRole() === 'teacher') {
       <div
         id="campus-mobile-fab-announcement"
-        class="lg:hidden fixed bottom-6 right-5 z-30"
+        class="lg:hidden fixed bottom-24 right-4 sm:right-5 z-30"
         [style.visibility]="
           campus.isAnyDialogOpen() &&
           campus.activeDialogTrigger() === 'campus-mobile-fab-announcement'
@@ -300,7 +300,7 @@ import { CampusTeacherKpiRibbonComponent } from './components/campus-teacher-kpi
     } @else {
       <div
         id="campus-mobile-fab-classroom"
-        class="lg:hidden fixed bottom-6 right-5 z-30"
+        class="lg:hidden fixed bottom-24 right-4 sm:right-5 z-30"
         [style.visibility]="
           campus.isAnyDialogOpen() &&
           campus.activeDialogTrigger() === 'campus-mobile-fab-classroom'

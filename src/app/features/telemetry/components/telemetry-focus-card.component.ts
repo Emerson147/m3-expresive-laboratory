@@ -104,7 +104,7 @@ import { M3SliderComponent } from '../../../shared/components/slider/slider.comp
             </span>
             <div class="h-1.5 w-full rounded-m3-full bg-surface-high overflow-hidden" aria-hidden="true">
               <div
-                [class]="'h-full rounded-m3-full transition-all ' +
+                [class]="'h-full rounded-m3-full transition-[width] m3-transition-standard ' +
                   (vehicle().telemetry.fuelLevelPercent < 45 ? 'bg-warning' : 'bg-primary')"
                 [style.width.%]="vehicle().telemetry.fuelLevelPercent">
               </div>

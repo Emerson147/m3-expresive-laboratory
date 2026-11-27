@@ -163,7 +163,7 @@ import { INVENTORY_SELECT_STYLES } from './inventory-select.styles';
 
                 <div class="flex flex-col gap-2">
                   <span class="text-label-sm-emphasized text-muted uppercase tracking-wider block">Foto de Lookbook</span>
-                  <div class="grid grid-cols-5 gap-2">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                     @for (preset of lookbookPresets; track preset.label) {
                       <button
                         type="button"

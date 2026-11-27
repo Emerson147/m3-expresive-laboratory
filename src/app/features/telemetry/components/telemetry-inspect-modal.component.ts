@@ -127,7 +127,7 @@ import { M3LinearProgressComponent } from '../../../shared/components/progress';
                 </div>
               </div>
 
-              <div class="grid grid-cols-3 gap-2 font-mono tabular-nums">
+              <div class="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2 font-mono tabular-nums">
                 <div class="p-2.5 rounded-m3-lg bg-surface-low">
                   <span class="text-label-sm text-muted block font-sans">Motor</span>
                   <span class="text-title-sm-emphasized text-main">{{ vehicle().telemetry.engineRpm }}</span>

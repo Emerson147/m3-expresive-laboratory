@@ -94,7 +94,7 @@ import { SUBJECT_CATEGORY_META } from './campus-ui.tokens';
               [ariaLabel]="'Progreso de ' + c.subject"
             />
 
-            <div class="grid grid-cols-3 gap-2 pt-0.5" aria-label="Fases de la sesión">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5" aria-label="Fases de la sesión">
               @for (stage of sessionMilestones(); track stage.id) {
                 <div
                   class="flex items-center gap-2 px-2.5 py-1.5 rounded-m3-md text-label-sm-emphasized transition-colors"

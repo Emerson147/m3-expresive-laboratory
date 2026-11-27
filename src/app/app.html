@@ -49,6 +49,7 @@
     [activeTrigger]="dialogService.activeTrigger()"
     [activeTransition]="dialogService.activeTransition()"
     [navStyle]="dialogService.navStyle()"
+    [chromeMode]="dialogService.effectiveChrome()"
     (closeDialog)="dialogService.closeDialog()"
     (navStyleChange)="dialogService.setNavStyle($event)" />
 

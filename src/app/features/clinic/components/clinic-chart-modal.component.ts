@@ -271,7 +271,7 @@ const QUICK_ORDER_PRESETS: readonly string[] = [
                               Meta: {{ triageMeta.targetWaitLabel }}
                             </span>
                           </div>
-                          <div role="group" aria-label="Reclasificar prioridad Manchester" class="grid grid-cols-5 gap-1.5">
+                          <div role="group" aria-label="Reclasificar prioridad Manchester" class="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                             @for (level of levelOrder; track level) {
                               @let meta = triageMetaFor(level);
                               @let isCurrent = pt.triageLevel === level;

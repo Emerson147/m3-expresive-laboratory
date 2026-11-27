@@ -93,7 +93,7 @@ import { CATEGORY_MODIFIERS } from '../pos-modifiers.data';
               <span class="text-xs font-bold text-main block uppercase tracking-wide">
                 {{ modifiers().baseLabel }}
               </span>
-              <div class="grid grid-cols-2 gap-2" role="group" [attr.aria-label]="modifiers().baseLabel">
+              <div class="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2" role="group" [attr.aria-label]="modifiers().baseLabel">
                 @for (base of modifiers().bases; track base.id) {
                   <button
                     type="button"

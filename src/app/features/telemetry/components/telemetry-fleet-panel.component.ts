@@ -120,7 +120,7 @@ import { M3LinearProgressComponent, M3ProgressColor } from '../../../shared/comp
                     </span>
                   </div>
 
-                  <div class="grid grid-cols-3 gap-2 text-label-sm">
+                  <div class="grid grid-cols-2 min-[420px]:grid-cols-3 gap-2 text-label-sm">
                     <div class="min-w-0">
                       <span [class]="'block ' + (isSelected ? 'opacity-75' : 'text-muted')">Operador</span>
                       <span class="font-medium truncate block">{{ v.driver }}</span>

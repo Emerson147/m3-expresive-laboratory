@@ -86,7 +86,7 @@ import {
               </p>
 
               <!-- Semantic 4-Metric Vitals Snapshot -->
-              <div class="grid grid-cols-4 gap-2 text-center font-mono tabular-nums">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono tabular-nums">
                 @for (metric of summaryVitals(); track metric.key) {
                   <div
                     [class]="
@@ -131,7 +131,7 @@ import {
               }
 
               <!-- Quick Manchester Re-Triage -->
-              <div role="group" aria-label="Reclasificar nivel de triaje Manchester" class="grid grid-cols-5 gap-1.5">
+              <div role="group" aria-label="Reclasificar nivel de triaje Manchester" class="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                 @for (level of levelOrder; track level) {
                   @let meta = triageMetaFor(level);
                   @let isCurrent = pt.triageLevel === level;

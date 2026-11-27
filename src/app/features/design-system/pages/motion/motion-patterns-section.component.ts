@@ -383,7 +383,7 @@ interface DynamicVtCardSpec {
                 @if (demoSkeletonSimulated()) {
                   <div class="space-y-3" aria-label="Cargando métricas de operación">
                     <div class="m3-skeleton m3-skeleton-shimmer h-5 w-44 rounded-m3-sm"></div>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div class="m3-skeleton m3-skeleton-shimmer h-14 rounded-m3-md"></div>
                       <div class="m3-skeleton m3-skeleton-shimmer h-14 rounded-m3-md"></div>
                       <div class="m3-skeleton m3-skeleton-shimmer h-14 rounded-m3-md"></div>
@@ -395,7 +395,7 @@ interface DynamicVtCardSpec {
                       <span class="text-xs font-bold text-main">Métricas Consolidadas en Línea</span>
                       <span class="text-[10px] font-mono text-success">CLS = 0.00</span>
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div class="h-14 p-2.5 rounded-m3-md bg-surface-box border border-outline-sub flex flex-col justify-center">
                         <span class="text-[10px] text-muted">Latencia</span>
                         <span class="text-xs font-bold font-mono text-main">14 ms</span>

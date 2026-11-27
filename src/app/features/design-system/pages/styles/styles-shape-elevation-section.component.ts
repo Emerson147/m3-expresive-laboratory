@@ -135,13 +135,13 @@ type ElevationSimMode = 'tonal' | 'hover' | 'modal';
                 <m3-loading-indicator size="md" [contained]="true" color="primary" ariaLabel="Demo loading indicator contained" />
                 <m3-loading-indicator size="md" [contained]="false" color="tertiary" ariaLabel="Demo loading indicator uncontained" />
               </div>
-              <div class="grid grid-cols-7 gap-1 pt-1.5 border-t border-outline-sub/60 text-center">
+              <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5 pt-1.5 border-t border-outline-sub/60 text-center">
                 @for (poly of canonicalPolygons; track poly.name) {
                   <button
                     type="button"
                     (click)="copyToken.emit({ text: poly.constant, message: 'Copiada constante ' + poly.constant })"
                     [attr.aria-label]="'Copiar polígono ' + poly.constant"
-                    class="focus-ring-m3 flex flex-col items-center p-0.5 rounded hover:bg-surface-high cursor-pointer">
+                    class="focus-ring-m3 min-h-11 flex flex-col items-center justify-center p-1 rounded hover:bg-surface-high cursor-pointer">
                     <svg viewBox="0 0 48 48" aria-hidden="true" class="w-5 h-5 text-primary fill-current">
                       <path [attr.d]="poly.path" />
                     </svg>

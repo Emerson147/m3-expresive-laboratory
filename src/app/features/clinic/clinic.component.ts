@@ -199,7 +199,7 @@ export type ClinicMobileTab = 'queue' | 'detail' | 'boxes';
     <!-- Mobile Quick Admission FAB (< lg) -->
     <div
       id="clinic-mobile-fab-admit"
-      class="lg:hidden fixed bottom-6 right-5 z-30"
+      class="lg:hidden fixed bottom-24 right-4 sm:right-5 z-30"
       [style.visibility]="
         clinicService.isAdmissionDialogOpen() &&
         clinicService.activeDialogTrigger() === 'clinic-mobile-fab-admit'

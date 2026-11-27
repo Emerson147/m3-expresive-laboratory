@@ -74,7 +74,7 @@ import { ModulePulseCard, OverviewModuleFilter, moduleBadgeClass } from '../over
               ariaLabel="Progreso total de tareas" />
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <m3-card variant="outlined" surface="surface" padding="sm" shape="lg" customClass="backdrop-blur-md">
               <span class="text-label-sm text-muted block">Finalizadas</span>
               <div class="text-headline-sm font-extrabold text-primary tabular-nums mt-1">

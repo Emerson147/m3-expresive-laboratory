@@ -132,7 +132,7 @@ import {
 
       <!-- Compact/Medium Floating Action Button (< lg) -->
       <div
-        class="lg:hidden fixed bottom-5 right-5 z-30"
+        class="lg:hidden fixed bottom-24 right-4 sm:right-5 z-30"
         [class.invisible]="inventoryService.isCreateModalOpen() && createTriggerOrigin() === 'fab'"
         [style.view-transition-name]="createMorphOwner() === 'fab' ? 'dialog-transform' : null">
         <m3-fab

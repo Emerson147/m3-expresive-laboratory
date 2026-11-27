@@ -185,7 +185,7 @@ const GENDER_BUTTON_OPTIONS: M3ButtonGroupOption[] = [
                   {{ triageMetaFor(triageLevel()).fullLabel }} · {{ triageMetaFor(triageLevel()).targetWaitLabel }}
                 </span>
               </div>
-              <div role="group" aria-label="Prioridad Manchester" class="grid grid-cols-5 gap-2">
+              <div role="group" aria-label="Prioridad Manchester" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 @for (lvl of triageOrder; track lvl) {
                   @let meta = triageMetaFor(lvl);
                   @let selected = triageLevel() === lvl;

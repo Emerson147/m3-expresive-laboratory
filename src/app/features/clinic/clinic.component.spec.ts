@@ -286,7 +286,7 @@ describe('ClinicComponent', () => {
     // Semantic vital tiles + Current Box highlight in right Decision Hub, plus Fade Through on patient swap
     const detailEl = hostEl.querySelector('app-clinic-patient-detail') as HTMLElement;
     expect(detailEl.textContent).toContain('Box Actual: ST-01');
-    const fcTile = Array.from(detailEl.querySelectorAll('.grid-cols-4 > div')).find((el) =>
+    const fcTile = Array.from(detailEl.querySelectorAll('[class*="grid-cols-4"] > div')).find((el) =>
       el.textContent?.includes('FC') && el.textContent?.includes('124')
     );
     expect(fcTile?.classList.contains('bg-warning-box')).toBe(true);

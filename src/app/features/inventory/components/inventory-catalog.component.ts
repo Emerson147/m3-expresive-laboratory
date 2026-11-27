@@ -83,7 +83,7 @@ export interface InventoryCategoryOption {
 
                 <div
                   [style.view-transition-name]="transitionPhase() === 'before' && transitioningProductId() === prod.id ? 'product-hero-image' : null"
-                  [class]="'w-14 h-14 overflow-hidden bg-surface-high shrink-0 relative transition-all m3-transition-emphasized ' +
+                  [class]="'w-14 h-14 overflow-hidden bg-surface-high shrink-0 relative transition-[border-radius,transform] m3-transition-emphasized ' +
                     (isSelected ? 'rounded-m3-lg' : 'rounded-m3-md')">
                   @if (failedImages()[prod.id]) {
                     <div class="w-full h-full flex items-center justify-center">

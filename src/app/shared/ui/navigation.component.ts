@@ -430,7 +430,7 @@ export type NavPopoverKind = 'compact-more' | 'rail-ds' | 'dock-more' | 'tunnel-
           </div>
         </div>
 
-        <ul role="list" class="list-none m-0 p-0 grid grid-cols-2 gap-1.5">
+        <ul role="list" class="list-none m-0 p-0 grid grid-cols-1 min-[360px]:grid-cols-2 gap-1.5">
           @for (item of compactSecondaryDestinations; track item.section) {
             <li>
               <a
@@ -458,7 +458,7 @@ export type NavPopoverKind = 'compact-more' | 'rail-ds' | 'dock-more' | 'tunnel-
             [routerLinkActiveOptions]="{ exact: !!item.exact }"
             [ariaCurrentWhenActive]="'page'"
             (click)="closeAnyPopover(compactMorePopover)"
-            class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-1 text-muted hover:text-main cursor-pointer relative">
+            class="flex-1 min-w-0 min-h-12 flex flex-col items-center justify-center gap-0.5 py-1 text-muted hover:text-main cursor-pointer relative">
             <span class="nav-bar-pill w-14 h-7 rounded-full grid place-items-center transition-colors">
               <span class="material-symbols-rounded text-xl" aria-hidden="true">{{ item.icon }}</span>
             </span>
@@ -481,7 +481,7 @@ export type NavPopoverKind = 'compact-more' | 'rail-ds' | 'dock-more' | 'tunnel-
           [class]="isSecondarySectionActive() || openPopover() === 'compact-more'
             ? 'text-on-sec-box font-semibold [&_.nav-bar-pill]:bg-sec-box'
             : 'text-muted hover:text-main'"
-          class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 py-1 cursor-pointer">
+          class="flex-1 min-w-0 min-h-12 flex flex-col items-center justify-center gap-0.5 py-1 cursor-pointer">
           <span class="nav-bar-pill w-14 h-7 rounded-full grid place-items-center transition-colors">
             <span class="material-symbols-rounded text-xl" aria-hidden="true">apps</span>
           </span>
@@ -506,7 +506,7 @@ export type NavPopoverKind = 'compact-more' | 'rail-ds' | 'dock-more' | 'tunnel-
             <p class="px-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
               {{ group.label }}
             </p>
-            <ul role="list" class="list-none m-0 p-0 grid grid-cols-2 gap-1.5">
+            <ul role="list" class="list-none m-0 p-0 grid grid-cols-1 min-[360px]:grid-cols-2 gap-1.5">
               @for (item of destinationsByGroup(group.id); track item.section) {
                 <li>
                   <a
