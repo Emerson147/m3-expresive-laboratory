@@ -209,10 +209,10 @@ type ElevationSimMode = 'tonal' | 'hover' | 'modal';
               [(value)]="concentricPadding" />
 
             <div
-              class="bg-surface border-2 border-primary/50 rounded-[28px] transition-all"
+              class="bg-surface border-2 border-primary/50 rounded-[28px] transition-[padding] m3-transition-standard"
               [style.padding.px]="concentricPadding()">
               <div
-                class="bg-sec-box text-on-sec-box p-3 text-center space-y-0.5 transition-all"
+                class="bg-sec-box text-on-sec-box p-3 text-center space-y-0.5 transition-[border-radius] m3-transition-standard"
                 [style.border-radius.px]="concentricInnerRadius()">
                 <div class="text-xs font-bold">R_outer: 28px − Padding: {{ concentricPadding() }}px</div>
                 <div class="text-[11px] font-mono">R_inner recomendado = {{ concentricInnerRadius() }}px</div>
@@ -296,7 +296,7 @@ type ElevationSimMode = 'tonal' | 'hover' | 'modal';
 
           <div class="lg:col-span-5 p-4 rounded-m3-lg bg-surface-dim border border-outline-sub/60 flex items-center justify-center">
             <div
-              [class]="'w-full max-w-xs p-4 rounded-m3-xl transition-all duration-300 border ' + elevationSimCardClass()">
+              [class]="'w-full max-w-xs p-4 rounded-m3-xl transition-[background-color,box-shadow,border-color] duration-300 border ' + elevationSimCardClass()">
               <div class="flex items-center justify-between text-xs font-bold text-main">
                 <span>Tarjeta Specimen</span>
                 <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-primary-box text-on-primary-box">

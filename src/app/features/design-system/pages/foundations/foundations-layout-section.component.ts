@@ -277,7 +277,7 @@ import {
                   class="relative flex gap-3 min-h-[220px] bg-surface-dim/40">
                   @if (activeSimBreakpoint() !== 'compact') {
                     <aside
-                      [class]="'shrink-0 rounded-m3-lg bg-surface-low border border-outline-sub p-2.5 flex flex-col justify-between transition-all ' + (isExpandedRail() ? 'w-36' : 'w-16')">
+                      [class]="'shrink-0 rounded-m3-lg bg-surface-low border border-outline-sub p-2.5 flex flex-col justify-between transition-[width] m3-transition-standard ' + (isExpandedRail() ? 'w-36' : 'w-16')">
                       <div class="space-y-2">
                         <div class="flex items-center gap-1.5">
                           <span class="material-symbols-rounded text-base text-primary" aria-hidden="true">diamond</span>
@@ -372,7 +372,7 @@ import {
                             (keydown)="handleSpacerKeydown($event)"
                             [class]="'focus-ring-m3 shrink-0 flex flex-col items-center justify-center cursor-col-resize select-none group rounded-m3-sm transition-colors ' + (simulateFold() ? 'w-8 bg-sec-box/45 border-x border-dashed border-primary' : 'w-6')">
                             <span
-                              [class]="'rounded-full transition-all ' + (isDraggingSpacer() ? 'bg-primary h-12 w-1.5' : 'bg-outline-sub group-hover:bg-primary h-10 w-1')"></span>
+                              [class]="'rounded-full transition-[width,height,background-color] m3-transition-standard ' + (isDraggingSpacer() ? 'bg-primary h-12 w-1.5' : 'bg-outline-sub group-hover:bg-primary h-10 w-1')"></span>
                             <span class="text-[8px] font-mono text-primary font-bold mt-1">
                               {{ simulateFold() ? 'FOLD' : '24dp' }}
                             </span>
@@ -544,7 +544,7 @@ import {
               </div>
 
               <div
-                [class]="'relative rounded-m3-md p-3 border border-outline-sub/80 transition-all ' + (selectedLayoutPart() === 'margin'
+                [class]="'relative rounded-m3-md p-3 border border-outline-sub/80 transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'margin'
                   ? 'ring-2 ring-primary bg-primary-box/25'
                   : 'bg-surface-dim')">
                 <div class="text-[9px] font-mono mb-1.5 flex items-center justify-between gap-2">
@@ -566,7 +566,7 @@ import {
                   <button
                     type="button"
                     (click)="selectedLayoutPart.set('nav-rail-drawer')"
-                    [class]="'focus-ring-m3 w-16 shrink-0 rounded-m3-md p-2 flex flex-col justify-between text-start cursor-pointer transition-all ' + (selectedLayoutPart() === 'nav-rail-drawer'
+                    [class]="'focus-ring-m3 w-16 shrink-0 rounded-m3-md p-2 flex flex-col justify-between text-start cursor-pointer transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'nav-rail-drawer'
                       ? 'border-2 border-primary bg-primary-box/55 text-on-primary-box'
                       : 'border border-outline-sub bg-surface-low text-muted')">
                     <span class="text-[9px] font-mono font-bold">Nav Rail</span>
@@ -574,7 +574,7 @@ import {
                   </button>
 
                   <div
-                    [class]="'flex-1 rounded-m3-md border border-outline-sub p-2 flex flex-col justify-between gap-2 transition-all ' + (selectedLayoutPart() === 'body-region'
+                    [class]="'flex-1 rounded-m3-md border border-outline-sub p-2 flex flex-col justify-between gap-2 transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'body-region'
                       ? 'ring-2 ring-primary bg-primary-box/20'
                       : 'bg-surface')">
                     <div class="flex items-center justify-between text-[9px] font-mono">
@@ -591,7 +591,7 @@ import {
                       <button
                         type="button"
                         (click)="selectedLayoutPart.set('pane')"
-                        [class]="'focus-ring-m3 w-2/5 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-all ' + (selectedLayoutPart() === 'pane'
+                        [class]="'focus-ring-m3 w-2/5 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'pane'
                           ? 'border-2 border-primary bg-primary-box/45'
                           : 'border border-outline-sub bg-surface-low')">
                         <span class="text-[10px] font-bold text-main">Fixed Pane</span>
@@ -601,7 +601,7 @@ import {
                       <button
                         type="button"
                         (click)="selectedLayoutPart.set(selectedLayoutPart() === 'spacer' ? 'drag-handle' : 'spacer')"
-                        [class]="'touch-target-48 focus-ring-m3 w-7 shrink-0 rounded-m3-sm flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ' + (selectedLayoutPart() === 'spacer' || selectedLayoutPart() === 'drag-handle' || selectedLayoutPart() === 'column-fold'
+                        [class]="'touch-target-48 focus-ring-m3 w-7 shrink-0 rounded-m3-sm flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'spacer' || selectedLayoutPart() === 'drag-handle' || selectedLayoutPart() === 'column-fold'
                           ? 'border-2 border-primary bg-primary-box/65'
                           : 'border border-dashed border-outline-sub bg-surface-dim')"
                         aria-label="Inspeccionar Spacer 24dp y Drag Handle">
@@ -612,7 +612,7 @@ import {
                       <button
                         type="button"
                         (click)="selectedLayoutPart.set('pane')"
-                        [class]="'focus-ring-m3 flex-1 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-all ' + (selectedLayoutPart() === 'pane'
+                        [class]="'focus-ring-m3 flex-1 rounded-m3-sm p-2 text-start flex flex-col justify-between cursor-pointer transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'pane'
                           ? 'border-2 border-primary bg-primary-box/45'
                           : 'border border-outline-sub bg-surface-low')">
                         <span class="text-[10px] font-bold text-main">Flexible Pane</span>
@@ -625,7 +625,7 @@ import {
                 <button
                   type="button"
                   (click)="selectedLayoutPart.set('nav-bar')"
-                  [class]="'touch-target-48 focus-ring-m3 mt-2 w-full h-7 rounded-full px-3 flex items-center justify-between text-[9px] font-mono cursor-pointer transition-all ' + (selectedLayoutPart() === 'nav-bar'
+                  [class]="'touch-target-48 focus-ring-m3 mt-2 w-full h-7 rounded-full px-3 flex items-center justify-between text-[9px] font-mono cursor-pointer transition-colors m3-transition-standard ' + (selectedLayoutPart() === 'nav-bar'
                     ? 'border-2 border-primary bg-primary-box/55 text-main font-bold'
                     : 'border border-outline-sub bg-surface text-muted')">
                   <span>Navigation Bar (Compact &lt;600dp)</span>

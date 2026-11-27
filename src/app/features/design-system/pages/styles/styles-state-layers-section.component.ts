@@ -350,7 +350,7 @@ export function computeSimulatedStateOverlay(mode: ForcedStateMode, colorExpr: s
                 [attr.aria-current]="demoListActive() === 1 ? 'true' : null"
                 [style.background-image]="overlay(demoListActive() === 1 ? 'var(--md-sys-color-on-secondary-container)' : 'var(--md-sys-color-on-surface)')"
                 [style.border-radius]="demoListActive() === 1 ? 'var(--md-sys-shape-corner-medium, 12px)' : 'var(--md-comp-button-shape-pill, 24px)'"
-                [class]="'state-layer focus-ring-m3 w-full text-left px-3.5 py-2 border border-outline-sub/60 flex items-center justify-between text-xs transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none ' + (demoListActive() === 1
+                [class]="'state-layer focus-ring-m3 w-full text-left px-3.5 py-2 border border-outline-sub/60 flex items-center justify-between text-xs transition-[background-color,border-color,border-radius,color] duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none ' + (demoListActive() === 1
                   ? 'bg-sec-box text-on-sec-box font-bold'
                   : 'bg-surface text-main')">
                 <span class="flex items-center gap-2">
@@ -367,7 +367,7 @@ export function computeSimulatedStateOverlay(mode: ForcedStateMode, colorExpr: s
                 [attr.aria-current]="demoListActive() === 2 ? 'true' : null"
                 [style.background-image]="overlay(demoListActive() === 2 ? 'var(--md-sys-color-on-secondary-container)' : 'var(--md-sys-color-on-surface)')"
                 [style.border-radius]="demoListActive() === 2 ? 'var(--md-sys-shape-corner-medium, 12px)' : 'var(--md-comp-button-shape-pill, 24px)'"
-                [class]="'state-layer focus-ring-m3 w-full text-left px-3.5 py-2 border border-outline-sub/60 flex items-center justify-between text-xs transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none ' + (demoListActive() === 2
+                [class]="'state-layer focus-ring-m3 w-full text-left px-3.5 py-2 border border-outline-sub/60 flex items-center justify-between text-xs transition-[background-color,border-color,border-radius,color] duration-200 cursor-pointer disabled:opacity-40 disabled:pointer-events-none ' + (demoListActive() === 2
                   ? 'bg-sec-box text-on-sec-box font-bold'
                   : 'bg-surface text-main')">
                 <span class="flex items-center gap-2">

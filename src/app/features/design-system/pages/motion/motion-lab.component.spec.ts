@@ -25,7 +25,7 @@ describe('MotionLabComponent', () => {
     ) as HTMLButtonElement | undefined;
   }
 
-  it('renders M3 Kit primitives without .transition-all, div[role="button"], or .animate-pulse', async () => {
+  it('renders M3 Kit primitives with block hosts and zero .transition-all, nested interactive controls, or .animate-pulse', async () => {
     const { host } = await setup();
 
     expect(host.querySelector('m3-card')).toBeTruthy();
@@ -36,16 +36,35 @@ describe('MotionLabComponent', () => {
     expect(host.querySelector('m3-switch')).toBeTruthy();
     expect(host.querySelector('m3-snackbar')).toBeTruthy();
 
+    expect(host.querySelector('app-motion-physics-section')?.classList.contains('block')).toBe(true);
+    expect(host.querySelector('app-motion-patterns-section')?.classList.contains('block')).toBe(true);
+    expect(host.querySelector('app-motion-theater-tokens-section')?.classList.contains('block')).toBe(true);
+    expect(host.querySelector('app-motion-playbook-a11y-section')?.classList.contains('block')).toBe(true);
+
     expect(host.querySelector('.transition-all')).toBeNull();
     expect(host.querySelectorAll('div[role="button"]').length).toBe(0);
+    expect(host.querySelectorAll('m3-card[role="button"] button, m3-card[role="button"] a').length).toBe(0);
     expect(host.querySelector('.animate-pulse')).toBeNull();
   });
 
-  it('switches Pillar 1 asymmetry between On-Screen and Disposable timing rules', async () => {
+  it('switches Pillar 1 asymmetry with bounded h/2 corners (zero 9999px) and Morph button', async () => {
     const { fixture, host } = await setup();
 
     expect(host.textContent).toContain('long2 • 500ms');
     expect(host.textContent).toContain('medium1 • 250ms');
+
+    const panelBtn = findButtonByText(host, 'Panel En Pantalla');
+    expect(panelBtn).toBeTruthy();
+    expect(panelBtn!.style.borderRadius).toBe('16px');
+    panelBtn!.click();
+    fixture.detectChanges();
+    expect(panelBtn!.style.borderRadius).toBe('24px');
+
+    const morphBtn = findButtonByText(host, 'Guardar (Pill 9999px)');
+    expect(morphBtn).toBeTruthy();
+    morphBtn!.click();
+    fixture.detectChanges();
+    expect(host.textContent).toContain('Squircle 12px');
 
     const disposableBtn = findButtonByText(host, 'Descartable (400ms / 200ms)');
     expect(disposableBtn).toBeTruthy();
@@ -56,13 +75,18 @@ describe('MotionLabComponent', () => {
     expect(host.textContent).toContain('short4 • 200ms');
   });
 
-  it('switches Pillar 2 springs and disables linear() multi-bounce under Standard scheme', async () => {
+  it('switches Pillar 2 springs, target marker, slow-mo 3x, and disables linear() under Standard scheme', async () => {
     const { fixture, host } = await setup();
 
+    expect(host.textContent).toContain('Meta 100%');
     expect(host.textContent).toContain('Damping 0.6 • Stiffness 800');
     const linearBtn = findButtonByText(host, 'linear() Multi-Rebote');
     expect(linearBtn).toBeTruthy();
     expect(linearBtn!.disabled).toBe(false);
+
+    findButtonByText(host, 'Ver en Cámara Lenta (3x)')!.click();
+    fixture.detectChanges();
+    expect(host.textContent).toContain('1050ms (3x)');
 
     const standardSpringBtn = host.querySelector(
       'm3-button-group [aria-label="Estilo del resorte"] button:nth-child(2)'
@@ -76,7 +100,7 @@ describe('MotionLabComponent', () => {
     expect(linearBtnAfterStandard!.disabled).toBe(true);
   });
 
-  it('navigates all Pattern tabs including bidirectional Lateral, Enter/Exit, Skeleton shimmer, and Stagger cascade', async () => {
+  it('navigates all Pattern tabs including bidirectional Lateral, Enter/Exit inert toggle, Skeleton shimmer, and Stagger cascade', async () => {
     const { fixture, host } = await setup();
 
     const tabs = Array.from(host.querySelectorAll('m3-tabs [role="tab"]')) as HTMLButtonElement[];
@@ -92,12 +116,20 @@ describe('MotionLabComponent', () => {
     fixture.detectChanges();
     expect(host.textContent).toContain('← Retrocede');
 
-    // Tab 5: Enter & Exit sheet
+    // Tab 5: Enter & Exit keeps inert/aria-hidden transition clean
     tabs[4].click();
     fixture.detectChanges();
-    findButtonByText(host, 'Abrir Bottom Sheet')!.click();
+    const sheetBtn = findButtonByText(host, 'Abrir Bottom Sheet')!;
+    const sheetPanel = Array.from(host.querySelectorAll('#motion-patterns div[aria-hidden]')).find(el =>
+      (el.textContent ?? '').includes('Sheet de Acciones')
+    ) as HTMLElement | undefined;
+    expect(sheetPanel).toBeTruthy();
+    expect(sheetPanel!.getAttribute('aria-hidden')).toBe('true');
+    expect(sheetPanel!.hasAttribute('inert')).toBe(true);
+    sheetBtn.click();
     fixture.detectChanges();
-    expect(host.textContent).toContain('Sheet de Acciones');
+    expect(sheetPanel!.getAttribute('aria-hidden')).toBe('false');
+    expect(sheetPanel!.hasAttribute('inert')).toBe(false);
 
     // Tab 6: Skeleton loader uses .m3-skeleton without .animate-pulse
     tabs[5].click();
@@ -107,7 +139,7 @@ describe('MotionLabComponent', () => {
     expect(host.querySelector('.m3-skeleton.m3-skeleton-shimmer')).toBeTruthy();
     expect(host.querySelector('.animate-pulse')).toBeNull();
 
-    // Tab 7: Stagger cascade + dynamic view-transition-name origin
+    // Tab 7: Stagger cascade + real View Transitions card->detail expansion
     tabs[6].click();
     fixture.detectChanges();
     expect(host.textContent).toContain('+120ms');
@@ -118,9 +150,14 @@ describe('MotionLabComponent', () => {
     bentoVtCard!.click();
     fixture.detectChanges();
     expect(bentoVtCard!.textContent).toContain('vt-name: hero-detail');
+    expect(host.textContent).toContain('VISTA EXPANDIDA');
+    expect(host.textContent).toContain('12.1 ms latency');
+    findButtonByText(host, 'Volver a Grilla')!.click();
+    fixture.detectChanges();
+    expect(host.textContent).not.toContain('VISTA EXPANDIDA');
   });
 
-  it('validates easing × duration pairings and keeps calibrated SVG curve specs', async () => {
+  it('validates easing × duration pairings, 3x slow-mo track, slides 1000ms carousel, and keeps calibrated SVG curve specs', async () => {
     const { fixture, host } = await setup();
 
     expect(MOTION_THEATER_SETS.emphasized.cards.length).toBe(3);
@@ -139,9 +176,19 @@ describe('MotionLabComponent', () => {
     findButtonByText(durationGroup!, 'long2 • 500ms')!.click();
     fixture.detectChanges();
     expect(host.textContent).toContain('Emparejamiento M3 Canónico Válido');
+
+    findButtonByText(host, 'Ver en 3x Lento')!.click();
+    fixture.detectChanges();
+    expect(host.textContent).toContain('1500ms = 3x');
+
+    // Advance 1000ms Hero Carousel slide
+    expect(host.textContent).toContain('Slide 1 / 3');
+    findButtonByText(host, 'Siguiente Escena')!.click();
+    fixture.detectChanges();
+    expect(host.textContent).toContain('Slide 2 / 3');
   });
 
-  it('covers 3 Silent Traps, native popover @starting-style, Reduced Motion switch, filtering, and Snackbar copy', async () => {
+  it('covers 3 Silent Traps, native popover @starting-style surface, Reduced Motion switch, filtering, and Snackbar copy', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     const previousClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
     Object.defineProperty(navigator, 'clipboard', {
@@ -157,7 +204,10 @@ describe('MotionLabComponent', () => {
       expect(host.textContent).toContain('html.vt-running');
       expect(host.textContent).toContain('.m3-aurora-orb');
       expect(host.textContent).toContain('transition-property: transform, opacity;');
-      expect(host.querySelector('[id="motion-top-layer-demo"][popover="auto"]')).toBeTruthy();
+
+      const popoverDemo = host.querySelector('[id="motion-top-layer-demo"][popover="auto"]');
+      expect(popoverDemo).toBeTruthy();
+      expect(popoverDemo!.classList.contains('m3-popover-surface')).toBe(true);
 
       // Toggle Reduced Motion simulator switch
       const a11ySwitch = host.querySelector('#motion-playbook m3-switch button[role="switch"]') as HTMLButtonElement | null;

@@ -250,6 +250,7 @@
 @media (prefers-reduced-motion: reduce) {
   .m3-popover-menu,
   .m3-nav-popover,
+  .m3-popover-surface,
   .m3-snackbar {
     transform: none;
     transition-duration: 0.1s;
@@ -259,10 +260,31 @@
     :is(
       [popover].m3-popover-menu:is(:popover-open, .\:popover-open),
       [popover].m3-nav-popover:is(:popover-open, .\:popover-open),
+      [popover].m3-popover-surface:is(:popover-open, .\:popover-open),
       [popover].m3-snackbar:is(:popover-open, .\:popover-open)
     ) {
       transform: none;
     }
+  }
+}
+
+/* --- 4. GENERIC TOP-LAYER POPOVER SURFACE (@starting-style + allow-discrete) --- */
+.m3-popover-surface {
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--md-sys-motion-duration-medium1, 250ms);
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-decelerate, cubic-bezier(0.05, 0.7, 0.1, 1.0));
+  transition-behavior: allow-discrete;
+}
+
+[popover].m3-popover-surface:is(:popover-open, .\:popover-open) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
   }
 }
 
