@@ -2,6 +2,49 @@ import { PaymentMethod, VoucherType } from '../pos/pos.service';
 
 export type SaleLedgerStatus = 'reconciled' | 'pending' | 'voided';
 export type SalesPeriodFilter = 'today' | 'week' | 'month';
+
+export interface SalesPeriodOption {
+  readonly value: SalesPeriodFilter;
+  readonly label: string;
+  readonly summaryLabel: string;
+}
+
+export const SALES_PERIOD_OPTIONS: readonly SalesPeriodOption[] = [
+  { value: 'today', label: 'Hoy', summaryLabel: 'Hoy' },
+  { value: 'week', label: '7 días', summaryLabel: 'Últimos 7 días' },
+  { value: 'month', label: '30 días', summaryLabel: 'Últimos 30 días' }
+];
+
+export function getSalesPeriodSummaryLabel(period: SalesPeriodFilter): string {
+  return SALES_PERIOD_OPTIONS.find((opt) => opt.value === period)?.summaryLabel ?? 'Últimos 30 días';
+}
+
+export function matchesPeriodWindow(dateIso: string, period: SalesPeriodFilter, now: Date = new Date()): boolean {
+  const dt = new Date(dateIso);
+  if (period === 'today') {
+    return (
+      dt.getFullYear() === now.getFullYear() &&
+      dt.getMonth() === now.getMonth() &&
+      dt.getDate() === now.getDate()
+    );
+  }
+  const dayMs = 86_400_000;
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const daysBack = period === 'week' ? 7 : 30;
+  return dt.getTime() >= startToday - (daysBack - 1) * dayMs;
+}
+
+export function shiftMinutesAgoTodayIso(minutesAgo: number): string {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const candidate = Math.max(startOfDay + 60_000, now.getTime() - minutesAgo * 60_000);
+  return new Date(Math.min(now.getTime(), candidate)).toISOString();
+}
+
+export function shiftDaysAgoIso(daysAgo: number, hour = 14, minute = 20): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, hour, minute, 0, 0).toISOString();
+}
 export type SalesStatusFilter = 'all' | SaleLedgerStatus;
 export type SalesPaymentFilter = 'all' | PaymentMethod;
 export type SalesVoucherFilter = 'all' | VoucherType;

@@ -1,24 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { SalesPeriodFilter } from '../../../core/sales/sales-ledger.models';
+import {
+  SALES_PERIOD_OPTIONS,
+  SalesPeriodFilter,
+  SalesPeriodOption,
+  getSalesPeriodSummaryLabel
+} from '../../../core/sales/sales-ledger.models';
 import { M3ButtonAnchorComponent, M3ButtonComponent } from '../../../shared/components/button/button.component';
 import { M3ChipComponent } from '../../../shared/components/chip/chip.component';
 
-export interface SalesPeriodOption {
-  readonly value: SalesPeriodFilter;
-  readonly label: string;
-  readonly summaryLabel: string;
-}
-
-export const SALES_PERIOD_OPTIONS: readonly SalesPeriodOption[] = [
-  { value: 'today', label: 'Hoy', summaryLabel: 'Hoy' },
-  { value: 'week', label: '7 días', summaryLabel: 'Últimos 7 días' },
-  { value: 'month', label: '30 días', summaryLabel: 'Últimos 30 días' }
-];
-
-export function getSalesPeriodSummaryLabel(period: SalesPeriodFilter): string {
-  return SALES_PERIOD_OPTIONS.find((opt) => opt.value === period)?.summaryLabel ?? 'Últimos 30 días';
-}
+export { SALES_PERIOD_OPTIONS, getSalesPeriodSummaryLabel };
+export type { SalesPeriodOption };
 
 /**
  * Command header for the Sales History & Audit workbench.

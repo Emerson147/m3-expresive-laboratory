@@ -1,24 +1,17 @@
 import { InjectionToken, Injectable, inject } from '@angular/core';
 import { CompletedSale, PosService } from '../pos/pos.service';
-import { SaleLedgerRecord, SaleLedgerStatus } from './sales-ledger.models';
+import {
+  SaleLedgerRecord,
+  SaleLedgerStatus,
+  shiftDaysAgoIso,
+  shiftMinutesAgoTodayIso
+} from './sales-ledger.models';
 import { SalesLedgerPort } from './sales-ledger.port';
 
 export const SALES_LEDGER_LATENCY_MS = new InjectionToken<number>('SALES_LEDGER_LATENCY_MS', {
   providedIn: 'root',
   factory: () => 85
 });
-
-function minutesAgoTodayIso(minutesAgo: number): string {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const candidate = Math.max(startOfDay + 60_000, now.getTime() - minutesAgo * 60_000);
-  return new Date(Math.min(now.getTime(), candidate)).toISOString();
-}
-
-function daysAgoIso(daysAgo: number, hour = 14, minute = 20): string {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, hour, minute, 0, 0).toISOString();
-}
 
 function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
   return [
@@ -27,7 +20,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-841',
       saleId: 'F001-000841',
       orderCode: '#ORD-2026-0841',
-      dateIso: minutesAgoTodayIso(12),
+      dateIso: shiftMinutesAgoTodayIso(12),
       voucherType: 'factura',
       customerName: 'INVERSIONES GASTRONOMICAS S.A.C.',
       customerDoc: 'RUC 20601234567',
@@ -49,7 +42,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-840',
       saleId: 'B001-000840',
       orderCode: '#ORD-2026-0840',
-      dateIso: minutesAgoTodayIso(28),
+      dateIso: shiftMinutesAgoTodayIso(28),
       voucherType: 'boleta',
       customerName: 'Valeria Quispe Paredes',
       customerDoc: 'DNI 72849103',
@@ -71,7 +64,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-839',
       saleId: 'B001-000839',
       orderCode: '#ORD-2026-0839',
-      dateIso: minutesAgoTodayIso(54),
+      dateIso: shiftMinutesAgoTodayIso(54),
       voucherType: 'boleta',
       customerName: 'Público General',
       customerDoc: 'DNI 00000000',
@@ -93,7 +86,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-838',
       saleId: 'F001-000838',
       orderCode: '#ORD-2026-0838',
-      dateIso: minutesAgoTodayIso(95),
+      dateIso: shiftMinutesAgoTodayIso(95),
       voucherType: 'factura',
       customerName: 'ESTUDIO ANDINO ARQUITECTURA E.I.R.L.',
       customerDoc: 'RUC 20548811209',
@@ -116,7 +109,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-837',
       saleId: 'T001-000837',
       orderCode: '#ORD-2026-0837',
-      dateIso: daysAgoIso(2, 19, 15),
+      dateIso: shiftDaysAgoIso(2, 19, 15),
       voucherType: 'ticket',
       customerName: 'Diego Salcedo Rojas',
       customerDoc: 'DNI 45912044',
@@ -137,7 +130,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-836',
       saleId: 'B001-000836',
       orderCode: '#ORD-2026-0836',
-      dateIso: daysAgoIso(3, 16, 40),
+      dateIso: shiftDaysAgoIso(3, 16, 40),
       voucherType: 'boleta',
       customerName: 'Andrea Huamán Torres',
       customerDoc: 'DNI 70194822',
@@ -160,7 +153,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-835',
       saleId: 'B001-000835',
       orderCode: '#ORD-2026-0835',
-      dateIso: daysAgoIso(4, 11, 5),
+      dateIso: shiftDaysAgoIso(4, 11, 5),
       voucherType: 'boleta',
       customerName: 'Público General',
       customerDoc: 'DNI 00000000',
@@ -181,7 +174,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-834',
       saleId: 'F001-000834',
       orderCode: '#ORD-2026-0834',
-      dateIso: daysAgoIso(5, 18, 25),
+      dateIso: shiftDaysAgoIso(5, 18, 25),
       voucherType: 'factura',
       customerName: 'NEXUS CLOUD PERU S.A.C.',
       customerDoc: 'RUC 20608832114',
@@ -203,7 +196,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-833',
       saleId: 'B001-000833',
       orderCode: '#ORD-2026-0833',
-      dateIso: daysAgoIso(11, 15, 10),
+      dateIso: shiftDaysAgoIso(11, 15, 10),
       voucherType: 'boleta',
       customerName: 'Mateo Herrera Chávez',
       customerDoc: 'DNI 47812093',
@@ -225,7 +218,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-832',
       saleId: 'T001-000832',
       orderCode: '#ORD-2026-0832',
-      dateIso: daysAgoIso(15, 10, 45),
+      dateIso: shiftDaysAgoIso(15, 10, 45),
       voucherType: 'ticket',
       customerName: 'Sofía Paredes León',
       customerDoc: 'DNI 74129834',
@@ -246,7 +239,7 @@ function buildSeededSalesHistory(): readonly SaleLedgerRecord[] {
       id: 'sale-seed-831',
       saleId: 'F001-000831',
       orderCode: '#ORD-2026-0831',
-      dateIso: daysAgoIso(21, 13, 30),
+      dateIso: shiftDaysAgoIso(21, 13, 30),
       voucherType: 'factura',
       customerName: 'CORPORACION HORIZONTE S.A.',
       customerDoc: 'RUC 20512984321',
