@@ -1,5 +1,5 @@
 export type TriggerMode = 'menu-bottom-left';
-export type AppSection = 'overview' | 'agenda' | 'design-system' | 'pos' | 'sales' | 'inventory' | 'telemetry' | 'kanban' | 'campus' | 'clinic';
+export type AppSection = 'overview' | 'agenda' | 'design-system' | 'pos' | 'sales' | 'finance' | 'inventory' | 'telemetry' | 'kanban' | 'campus' | 'clinic';
 export type NavStyle = 'auto' | 'rail' | 'dock' | 'tunnel';
 export type NavChromeMode = 'bar' | 'rail-collapsed' | 'rail-expanded' | 'tunnel' | 'dock';
 export type NavGroupId = 'core' | 'workbenches';
@@ -92,6 +92,16 @@ export const APP_NAV_DESTINATIONS: readonly AppNavDestination[] = [
     keywords: ['historial', 'ventas', 'facturas', 'boletas', 'sunat', 'tabla', 'auditoria', 'caja']
   },
   {
+    section: 'finance',
+    group: 'workbenches',
+    route: '/finance',
+    icon: 'monitoring',
+    label: 'Finanzas & P&L',
+    shortLabel: 'Finanzas',
+    tunnelLabel: 'Finanzas & Rentabilidad',
+    keywords: ['finanzas', 'pnl', 'ganancias', 'perdidas', 'rentabilidad', 'costos', 'gastos', 'margen']
+  },
+  {
     section: 'inventory',
     group: 'workbenches',
     route: '/inventory',
@@ -144,6 +154,7 @@ export const APP_NAV_DESTINATIONS: readonly AppNavDestination[] = [
 const WORKBENCH_SECTIONS: ReadonlySet<AppSection> = new Set<AppSection>([
   'pos',
   'sales',
+  'finance',
   'inventory',
   'telemetry',
   'kanban',

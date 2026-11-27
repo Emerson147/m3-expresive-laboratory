@@ -10,7 +10,8 @@ import {
   SalesPeriodFilter,
   SalesStatusFilter,
   SalesVoucherFilter,
-  SortDirection
+  SortDirection,
+  matchesPeriodWindow
 } from './sales-ledger.models';
 import { SalesLedgerPort } from './sales-ledger.port';
 
@@ -31,21 +32,6 @@ const STATUS_RANK: Record<SaleLedgerStatus, number> = {
   reconciled: 1,
   voided: 2
 };
-
-function matchesPeriod(dateIso: string, period: SalesPeriodFilter, now: Date): boolean {
-  const dt = new Date(dateIso);
-  if (period === 'today') {
-    return (
-      dt.getFullYear() === now.getFullYear() &&
-      dt.getMonth() === now.getMonth() &&
-      dt.getDate() === now.getDate()
-    );
-  }
-  const dayMs = 86_400_000;
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const daysBack = period === 'week' ? 7 : 30;
-  return dt.getTime() >= startToday - (daysBack - 1) * dayMs;
-}
 
 /**
  * Feature-scoped reactive Signal Store for the Sales History & Audit Ledger.
@@ -77,7 +63,7 @@ export class SalesLedgerService {
   readonly periodScopedRecords = computed<readonly SaleLedgerRecord[]>(() => {
     const period = this.periodFilter();
     const now = new Date();
-    return this.records().filter((row) => matchesPeriod(row.dateIso, period, now));
+    return this.records().filter((row) => matchesPeriodWindow(row.dateIso, period, now));
   });
 
   readonly filteredRecords = computed<readonly SaleLedgerRecord[]>(() => {
