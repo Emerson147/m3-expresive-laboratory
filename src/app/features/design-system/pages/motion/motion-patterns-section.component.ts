@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, computed, inject, output, signal } from '@angular/core';
 import { M3ButtonComponent } from '../../../../shared/components/button/button.component';
 import { M3ButtonGroupComponent, M3ButtonGroupOption } from '../../../../shared/components/button/button-group.component';
 import { M3CardComponent } from '../../../../shared/components/card/card.component';
@@ -30,18 +30,20 @@ interface DynamicVtCardSpec {
   readonly title: string;
   readonly badge: string;
   readonly summary: string;
+  readonly metric: string;
 }
 
 /**
  * Interactive laboratory for M3 Canonical Transition Patterns (Pillar 3):
  * 6 official patterns (Container Transform, Forward & Backward, Lateral, Top-Level, Enter & Exit, Skeleton)
- * plus a practical Applied Examples lab (Stagger Waterfall, Morph vs Effects, Dynamic view-transition-name)
+ * plus working Applied Examples (Stagger Waterfall with Slow-Mo + real interactive View Transitions origin->detail)
  * and the 8 Applying Transitions quality principles.
  */
 @Component({
   selector: 'app-motion-patterns-section',
   standalone: true,
   imports: [M3ButtonComponent, M3ButtonGroupComponent, M3CardComponent, M3ChipComponent, M3TabsComponent],
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <m3-card id="motion-patterns" variant="outlined" padding="md" customClass="space-y-6">
@@ -64,7 +66,8 @@ interface DynamicVtCardSpec {
         idPrefix="motion-patterns"
         ariaLabel="Patrones de transición M3 y ejemplos en vivo"
         [tabs]="patternTabs"
-        [(value)]="activePattern" />
+        [(value)]="activePattern"
+        (tabChange)="onPatternTabActivated($event)" />
 
       <!-- ESCENARIO ACTIVO DEL PATRÓN -->
       <div class="p-4 sm:p-5 rounded-m3-xl bg-surface border border-outline-sub space-y-5">
@@ -77,7 +80,7 @@ interface DynamicVtCardSpec {
                 </span>
                 <h4 class="text-title-md-emphasized text-main">Continuidad Física Persistente (Surface Morph)</h4>
                 <p class="text-xs text-muted leading-relaxed">
-                  Conecta un origen (Card KPI, Search Pill o FAB) con su estado expandido morphando la superficie compartida sin cortar ni recrear bordes falsos. Usa <code class="font-mono text-primary">long2 (500ms)</code> al expandir y <code class="font-mono text-main">medium1 (250ms)</code> al regresar.
+                  Conecta un origen (Card KPI, Search Pill o FAB) con su estado expandido morphando la superficie compartida con esquinas acotadas (<code class="font-mono text-primary">16px ↔ 24px</code>). Usa <code class="font-mono text-primary">long2 (500ms)</code> al expandir y <code class="font-mono text-main">medium1 (250ms)</code> al regresar.
                 </p>
                 <div class="flex flex-wrap gap-2">
                   <m3-button variant="filled" size="sm" [icon]="demoContainerExpanded() ? 'collapse_content' : 'open_in_full'" (action)="demoContainerExpanded.set(!demoContainerExpanded())">
@@ -90,31 +93,31 @@ interface DynamicVtCardSpec {
               </div>
 
               <div class="lg:col-span-7 space-y-4">
-                <!-- Ejemplo 1A: Tarjeta KPI a Detalle -->
-                <m3-card
-                  [interactive]="true"
-                  variant="outlined"
-                  surface="low"
-                  padding="none"
-                  customClass="overflow-hidden max-w-full cursor-pointer"
-                  [style.width]="demoContainerExpanded() ? '100%' : '288px'"
+                <!-- Ejemplo 1A: Tarjeta KPI a Detalle con límites px acotados + max-w-full -->
+                <button
+                  type="button"
+                  [attr.aria-expanded]="demoContainerExpanded()"
+                  class="m3-card m3-card-outlined m3-card-surface-low state-layer focus-ring-m3 block text-start overflow-hidden max-w-full cursor-pointer"
+                  [style.border-radius]="demoContainerExpanded() ? '24px' : '16px'"
+                  [style.width]="demoContainerExpanded() ? '420px' : '288px'"
                   [style.height]="demoContainerExpanded() ? '184px' : '72px'"
-                  style="transition-property: width, height, border-radius, background-color, box-shadow;"
+                  style="transition-property: width, height, border-radius, background-color, border-color, box-shadow;"
                   [style.transition-duration]="demoContainerExpanded() ? 'var(--md-sys-motion-duration-long2)' : 'var(--md-sys-motion-duration-medium1)'"
                   [style.transition-timing-function]="'var(--md-sys-motion-easing-emphasized)'"
-                  (action)="demoContainerExpanded.set(!demoContainerExpanded())">
+                  (click)="demoContainerExpanded.set(!demoContainerExpanded())">
                   <div class="p-4 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2.5 min-w-0">
                       <span class="material-symbols-rounded text-primary text-lg shrink-0" aria-hidden="true">analytics</span>
                       <div class="min-w-0">
                         <span class="text-xs font-bold text-main block truncate">Caja Principal #01</span>
-                        <span class="text-[10px] text-muted block">Clic para morfar estado</span>
+                        <span class="text-[10px] text-muted block">Clic para morfar estado (288px ↔ 420px)</span>
                       </div>
                     </div>
                     <span class="text-xs font-mono font-bold text-primary shrink-0">$14,820</span>
                   </div>
                   <div
                     class="px-4 pb-4 space-y-2"
+                    [attr.aria-hidden]="!demoContainerExpanded()"
                     style="transition-property: opacity;"
                     [style.transition-duration]="demoContainerExpanded() ? 'var(--md-sys-motion-duration-medium2)' : 'var(--md-sys-motion-duration-short2)'"
                     [style.transition-delay]="demoContainerExpanded() ? '80ms' : '0ms'"
@@ -135,22 +138,25 @@ interface DynamicVtCardSpec {
                       </div>
                     </div>
                   </div>
-                </m3-card>
+                </button>
 
                 <!-- Ejemplo 1B: Search Pill morphing -->
                 <div class="p-3 rounded-m3-lg bg-surface-high border border-outline-sub/60 flex items-center justify-between gap-3 flex-wrap">
-                  <span class="text-[11px] text-muted">Search Pill acotado (max-w-full invariante):</span>
-                  <div
-                    class="h-10 rounded-m3-full bg-surface-box border border-outline flex items-center gap-2 px-3 max-w-full overflow-hidden"
+                  <span class="text-[11px] text-muted">Search Pill acotado (<code class="font-mono">20px h/2 ↔ 14px</code>):</span>
+                  <button
+                    type="button"
+                    (click)="demoSearchPillExpanded.set(!demoSearchPillExpanded())"
+                    class="h-10 bg-surface-box border border-outline flex items-center gap-2 px-3 max-w-full overflow-hidden cursor-pointer state-layer focus-ring-m3"
+                    [style.border-radius]="demoSearchPillExpanded() ? '14px' : '20px'"
                     [style.width]="demoSearchPillExpanded() ? '288px' : '156px'"
-                    style="transition-property: width, border-color, box-shadow;"
+                    style="transition-property: width, border-radius, border-color, box-shadow;"
                     [style.transition-duration]="demoSearchPillExpanded() ? 'var(--md-sys-motion-duration-medium4)' : 'var(--md-sys-motion-duration-short4)'"
                     [style.transition-timing-function]="'var(--md-sys-motion-easing-emphasized)'">
                     <span class="material-symbols-rounded text-base text-primary shrink-0" aria-hidden="true">search</span>
                     <span class="text-xs text-muted truncate">
                       {{ demoSearchPillExpanded() ? 'Buscar tokens, curvas o specs...' : 'Buscar...' }}
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -312,7 +318,7 @@ interface DynamicVtCardSpec {
                 </span>
                 <h4 class="text-title-md-emphasized text-main">Menús, Dialogs y Bottom Sheets Desde Su Borde Real</h4>
                 <p class="text-xs text-muted leading-relaxed">
-                  Un menú desplegable nace hacia abajo desde su botón activador (<code class="font-mono text-primary">m3EnterFromTop</code>); un Bottom Sheet o Snackbar emerge desde el borde inferior (<code class="font-mono text-primary">m3EnterFromBottom</code>).
+                  Un menú desplegable nace hacia abajo desde su botón activador; un Bottom Sheet o Snackbar emerge desde el borde inferior con <code class="font-mono text-primary">decelerate</code> al entrar y <code class="font-mono text-main">accelerate</code> al salir.
                 </p>
 
                 <div class="flex flex-wrap gap-2">
@@ -325,28 +331,34 @@ interface DynamicVtCardSpec {
                 </div>
               </div>
 
-              <div class="lg:col-span-7 p-4 rounded-m3-lg bg-surface-high border border-outline-sub min-h-[168px] flex flex-col justify-between gap-3">
-                <div>
-                  @if (demoEnterExitMenuOpen()) {
-                    <div
-                      class="w-56 p-3 rounded-m3-md bg-surface-box border border-outline shadow-md space-y-1"
-                      style="animation: m3EnterFromTop var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate) both;">
-                      <span class="text-xs font-bold text-main block">Menú Contextual (200ms)</span>
-                      <span class="text-[11px] text-muted block">Anclado al botón superior (origin-top).</span>
-                    </div>
-                  } @else {
-                    <span class="text-[11px] text-muted">Activá "Abrir Menú Top" para observar la caída desde su origen.</span>
-                  }
+              <div class="lg:col-span-7 p-4 rounded-m3-lg bg-surface-high border border-outline-sub min-h-[168px] flex flex-col justify-between gap-3 overflow-hidden">
+                <div class="min-h-[58px]">
+                  <div
+                    [attr.inert]="!demoEnterExitMenuOpen() ? '' : null"
+                    [attr.aria-hidden]="!demoEnterExitMenuOpen()"
+                    class="w-60 p-3 rounded-m3-md bg-surface-box border border-outline shadow-md space-y-1 origin-top"
+                    style="transition-property: transform, opacity;"
+                    [style.transition-duration]="demoEnterExitMenuOpen() ? 'var(--md-sys-motion-duration-short4)' : 'var(--md-sys-motion-duration-short3)'"
+                    [style.transition-timing-function]="demoEnterExitMenuOpen() ? 'var(--md-sys-motion-easing-emphasized-decelerate)' : 'var(--md-sys-motion-easing-emphasized-accelerate)'"
+                    [style.transform]="demoEnterExitMenuOpen() ? 'translateY(0) scale(1)' : 'translateY(-10px) scale(0.95)'"
+                    [style.opacity]="demoEnterExitMenuOpen() ? '1' : '0'">
+                    <span class="text-xs font-bold text-main block">Menú Contextual (Entra 200ms / Sale 150ms)</span>
+                    <span class="text-[11px] text-muted block">Anclado al botón superior (origin-top).</span>
+                  </div>
                 </div>
 
-                @if (demoEnterExitSnackbarOpen()) {
-                  <div
-                    class="p-3 rounded-m3-lg bg-inverse-surface text-on-inverse-surface shadow-lg flex items-center justify-between gap-2"
-                    style="animation: m3EnterFromBottom var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-emphasized-decelerate) both;">
-                    <span class="text-xs font-semibold">Sheet de Acciones • Emerge desde el borde inferior (250ms)</span>
-                    <span class="text-[10px] font-mono opacity-80">allow-discrete</span>
-                  </div>
-                }
+                <div
+                  [attr.inert]="!demoEnterExitSnackbarOpen() ? '' : null"
+                  [attr.aria-hidden]="!demoEnterExitSnackbarOpen()"
+                  class="p-3 rounded-m3-lg bg-inverse-surface text-on-inverse-surface shadow-lg flex items-center justify-between gap-2"
+                  style="transition-property: transform, opacity;"
+                  [style.transition-duration]="demoEnterExitSnackbarOpen() ? 'var(--md-sys-motion-duration-medium1)' : 'var(--md-sys-motion-duration-short4)'"
+                  [style.transition-timing-function]="demoEnterExitSnackbarOpen() ? 'var(--md-sys-motion-easing-emphasized-decelerate)' : 'var(--md-sys-motion-easing-emphasized-accelerate)'"
+                  [style.transform]="demoEnterExitSnackbarOpen() ? 'translateY(0)' : 'translateY(24px)'"
+                  [style.opacity]="demoEnterExitSnackbarOpen() ? '1' : '0'">
+                  <span class="text-xs font-semibold">Sheet de Acciones • Borde inferior (250ms in / 200ms out)</span>
+                  <span class="text-[10px] font-mono opacity-80">emphasized</span>
+                </div>
               </div>
             </div>
           }
@@ -405,53 +417,61 @@ interface DynamicVtCardSpec {
 
           @case ('applied-examples') {
             <div class="space-y-5">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="space-y-0.5">
-                  <span class="px-2.5 py-0.5 rounded-m3-full bg-primary-box text-on-primary-box text-[10px] font-bold uppercase tracking-wider inline-block">
-                    Patrón 7 • Ejemplos Compuestos En Vivo
-                  </span>
-                  <h4 class="text-title-md-emphasized text-main">
-                    Cascada Stagger, Origen Dinámico de View Transition y Recetas de Producción
-                  </h4>
-                </div>
+              <div class="space-y-0.5">
+                <span class="px-2.5 py-0.5 rounded-m3-full bg-primary-box text-on-primary-box text-[10px] font-bold uppercase tracking-wider inline-block">
+                  Patrón 7 • Ejemplos Compuestos En Vivo
+                </span>
+                <h4 class="text-title-md-emphasized text-main">
+                  Cascada Stagger Real (Con Cámara Lenta) y Transición View Transitions Hero → Detalle
+                </h4>
               </div>
 
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <!-- Ejemplo 7A: Lista Cascada Stagger -->
+                <!-- Ejemplo 7A: Lista Cascada Stagger con transición real CSS (slide + fade escalonados) -->
                 <m3-card variant="filled" surface="high" padding="md" shape="lg" customClass="space-y-3">
                   <div class="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <span class="text-xs font-bold text-main block">Ejemplo A: Cascada Stagger (--stagger-index × 40ms)</span>
-                      <span class="text-[11px] text-muted">Capeado máximo a 6 pasos para no frenar listas largas.</span>
+                      <span class="text-xs font-bold text-main block">Ejemplo A: Cascada Stagger (--stagger-index × paso)</span>
+                      <span class="text-[11px] text-muted">Cada fila espera un paso incremental (capeado máximo a ~240ms totales).</span>
                     </div>
-                    <m3-button variant="tonal" size="sm" icon="replay" (action)="replayStaggerDemo()">
+                    <m3-button variant="filled" size="sm" icon="replay" (action)="replayStaggerDemo()">
                       Reproducir Cascada
                     </m3-button>
                   </div>
 
-                  <div class="flex items-center gap-2 flex-wrap">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <m3-button-group
+                      variant="connected"
+                      selectionMode="single"
+                      size="xs"
+                      ariaLabel="Modo de cascada"
+                      [options]="staggerModeOptions"
+                      [value]="[staggerCalmMode() ? 'calm' : 'expressive']"
+                      (selectionChange)="onStaggerModeChange($event)" />
+
                     <m3-chip
                       type="filter"
-                      icon="accessibility_new"
-                      [selected]="staggerCalmMode()"
-                      (action)="toggleStaggerCalmMode()">
-                      {{ staggerCalmMode() ? 'Reduced Motion Activo (150ms Fade)' : 'Modo Expressive Stagger (40ms)' }}
+                      icon="slow_motion_video"
+                      [selected]="staggerSlowMo()"
+                      (action)="toggleStaggerSlowMo()">
+                      {{ staggerSlowMo() ? 'Cámara Lenta (3x)' : 'Ver en Cámara Lenta (3x)' }}
                     </m3-chip>
                   </div>
 
-                  <div class="space-y-2">
+                  <div class="space-y-2 overflow-hidden">
                     @for (row of staggerRows; track row.id) {
                       <div
                         class="p-2.5 rounded-m3-md bg-surface-box border border-outline-sub flex items-center justify-between gap-2"
-                        [style.--stagger-index]="row.index"
-                        [style.animation]="
+                        style="transition-property: transform, opacity;"
+                        [style.transition-duration]="staggerCalmMode() ? (staggerSlowMo() ? '450ms' : '150ms') : (staggerSlowMo() ? '600ms' : '220ms')"
+                        [style.transition-timing-function]="staggerCalmMode() ? 'linear' : 'var(--md-sys-motion-easing-emphasized-decelerate)'"
+                        [style.transition-delay]="staggerReplay.active() && !staggerCalmMode() ? (row.index * (staggerSlowMo() ? 140 : 40)) + 'ms' : '0ms'"
+                        [style.transform]="
                           staggerReplay.active()
-                            ? (staggerCalmMode()
-                                ? 'm3ReducedFadeIn 150ms linear both'
-                                : 'm3ContainerContentIn var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate) both')
-                            : 'none'
+                            ? 'translateX(0)'
+                            : (staggerCalmMode() ? 'translateX(0)' : 'translateX(32px)')
                         "
-                        [style.animation-delay]="staggerReplay.active() && !staggerCalmMode() ? row.index * 40 + 'ms' : '0ms'">
+                        [style.opacity]="staggerReplay.active() ? '1' : '0.08'">
                         <div class="flex items-center gap-2 min-w-0">
                           <span class="w-5 h-5 rounded-m3-full bg-primary-box text-on-primary-box text-[10px] font-bold flex items-center justify-center shrink-0">
                             {{ row.index + 1 }}
@@ -469,26 +489,47 @@ interface DynamicVtCardSpec {
                   </div>
                 </m3-card>
 
-                <!-- Ejemplo 7B: Origen Dinámico de View Transition -->
+                <!-- Ejemplo 7B: View Transition REAL de Card Origen -> Panel Detalle -->
                 <m3-card variant="filled" surface="high" padding="md" shape="lg" customClass="space-y-3">
                   <div class="space-y-0.5">
-                    <span class="text-xs font-bold text-main block">Ejemplo B: Binding Dinámico de view-transition-name</span>
+                    <span class="text-xs font-bold text-main block">Ejemplo B: View Transition API Real (Card Origen ↔ Detalle)</span>
                     <span class="text-[11px] text-muted">
-                      Tocá cualquier tarjeta: SOLO la activa recibe <code class="font-mono text-primary">hero-detail</code>; las demás reciben <code class="font-mono text-main">null</code> para evitar colisiones en Top Layer.
+                      Tocá cualquier tarjeta: dispara <code class="font-mono text-primary">startViewTransition</code> asignando <code class="font-mono text-primary">hero-detail</code> dinámicamente y ocultando la tarjeta origen sin mover la grilla.
                     </span>
                   </div>
+
+                  @if (expandedVtCard(); as detailCard) {
+                    <!-- Panel Detalle morphing con view-transition-name: hero-detail -->
+                    <div
+                      class="p-4 rounded-m3-lg bg-surface-box border-2 border-primary shadow-md space-y-3"
+                      [style.view-transition-name]="'hero-detail'">
+                      <div class="flex items-center justify-between gap-2">
+                        <div>
+                          <span class="text-[10px] font-mono text-primary font-bold block">{{ detailCard.badge }} • VISTA EXPANDIDA</span>
+                          <h5 class="text-sm font-bold text-main">{{ detailCard.title }}</h5>
+                        </div>
+                        <m3-button variant="tonal" size="xs" icon="arrow_back" (action)="closeVtDetail()">
+                          Volver a Grilla (250ms)
+                        </m3-button>
+                      </div>
+                      <p class="text-xs text-muted leading-relaxed">
+                        Métrica activa: <strong class="text-main font-mono">{{ detailCard.metric }}</strong>. La tarjeta original en la grilla permanece montada con <code class="font-mono">invisible</code> + <code class="font-mono text-primary">view-transition-name: null</code> para cero salto de layout al regresar.
+                      </p>
+                    </div>
+                  }
 
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     @for (card of dynamicVtCards; track card.id) {
                       <m3-card
                         [interactive]="true"
+                        [invisible]="expandedVtCardId() === card.id"
                         [variant]="activeVtCardId() === card.id ? 'elevated' : 'outlined'"
                         [surface]="activeVtCardId() === card.id ? 'box' : 'low'"
                         padding="sm"
                         shape="md"
                         customClass="space-y-1 text-start"
-                        [style.view-transition-name]="activeVtCardId() === card.id ? 'hero-detail' : null"
-                        (action)="activeVtCardId.set(card.id)">
+                        [style.view-transition-name]="expandedVtCardId() === null && activeVtCardId() === card.id ? 'hero-detail' : null"
+                        (action)="openVtCardDetail(card.id)">
                         <span class="text-[10px] font-mono text-primary block">{{ card.badge }}</span>
                         <span class="text-xs font-bold text-main block">{{ card.title }}</span>
                         <span class="text-[10px] font-mono block" [class.text-success]="activeVtCardId() === card.id" [class.text-muted]="activeVtCardId() !== card.id">
@@ -554,6 +595,7 @@ interface DynamicVtCardSpec {
   `
 })
 export class MotionPatternsSectionComponent {
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
   private skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -610,6 +652,12 @@ export class MotionPatternsSectionComponent {
   readonly demoSkeletonSimulated = signal<boolean>(false);
 
   readonly staggerCalmMode = signal<boolean>(false);
+  readonly staggerSlowMo = signal<boolean>(false);
+  readonly staggerModeOptions: M3ButtonGroupOption[] = [
+    { id: 'expressive', label: 'Expressive (+40ms/fila)' },
+    { id: 'calm', label: 'Reduced Motion (0ms Fade)' }
+  ];
+
   readonly staggerRows: readonly StaggerOrderRow[] = [
     { index: 0, id: 'ord-1', title: 'Mesa #04 • Expressive Combo', detail: 'Impreso en Cocina KDS', status: '0ms' },
     { index: 1, id: 'ord-2', title: 'Pedido #18 • Take Away', detail: 'Validando pago QR', status: '40ms' },
@@ -618,11 +666,15 @@ export class MotionPatternsSectionComponent {
   ];
 
   readonly activeVtCardId = signal<string>('vt-1');
+  readonly expandedVtCardId = signal<string | null>(null);
   readonly dynamicVtCards: readonly DynamicVtCardSpec[] = [
-    { id: 'vt-1', badge: 'CARD 01', title: 'Hero Expressive', summary: 'Activa' },
-    { id: 'vt-2', badge: 'CARD 02', title: 'Bento Telemetría', summary: 'Inactiva' },
-    { id: 'vt-3', badge: 'CARD 03', title: 'Detalle Clínico', summary: 'Inactiva' }
+    { id: 'vt-1', badge: 'CARD 01', title: 'Hero Expressive', summary: 'Activa', metric: '98.4 FPS composited' },
+    { id: 'vt-2', badge: 'CARD 02', title: 'Bento Telemetría', summary: 'Inactiva', metric: '12.1 ms latency' },
+    { id: 'vt-3', badge: 'CARD 03', title: 'Detalle Clínico', summary: 'Inactiva', metric: '0.00 CLS score' }
   ];
+  readonly expandedVtCard = computed(
+    () => this.dynamicVtCards.find(c => c.id === this.expandedVtCardId()) ?? null
+  );
 
   constructor() {
     this.destroyRef.onDestroy(() => {
@@ -630,6 +682,18 @@ export class MotionPatternsSectionComponent {
         clearTimeout(this.skeletonTimer);
       }
     });
+  }
+
+  onPatternTabActivated(tabId: string): void {
+    if (tabId === 'forward-backward') {
+      this.hierarchicalReplay.replay();
+    } else if (tabId === 'lateral') {
+      this.lateralReplay.replay();
+    } else if (tabId === 'top-level') {
+      this.topLevelReplay.replay();
+    } else if (tabId === 'applied-examples') {
+      this.staggerReplay.replay();
+    }
   }
 
   onHierarchicalStepSelection(ids: string[]): void {
@@ -700,9 +764,43 @@ export class MotionPatternsSectionComponent {
     this.staggerReplay.replay();
   }
 
-  toggleStaggerCalmMode(): void {
-    this.staggerCalmMode.update(v => !v);
+  onStaggerModeChange(ids: string[]): void {
+    const picked = ids[0];
+    if (picked === 'calm' || picked === 'expressive') {
+      this.staggerCalmMode.set(picked === 'calm');
+      this.staggerReplay.replay();
+    }
+  }
+
+  toggleStaggerSlowMo(): void {
+    this.staggerSlowMo.update(v => !v);
     this.staggerReplay.replay();
+  }
+
+  openVtCardDetail(id: string): void {
+    this.activeVtCardId.set(id);
+    this.cdr.detectChanges();
+    this.runOptionalViewTransition(() => {
+      this.expandedVtCardId.set(id);
+    });
+  }
+
+  closeVtDetail(): void {
+    this.runOptionalViewTransition(() => {
+      this.expandedVtCardId.set(null);
+    });
+  }
+
+  private runOptionalViewTransition(mutate: () => void): void {
+    const doc = typeof document !== 'undefined' ? (document as Document & { startViewTransition?: (cb: () => void) => unknown }) : null;
+    if (doc && typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => {
+        mutate();
+        this.cdr.detectChanges();
+      });
+    } else {
+      mutate();
+    }
   }
 
   emitCopy(text: string, label: string): void {

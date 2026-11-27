@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, output, signal } from '@angular/core';
 import { M3ButtonComponent } from '../../../../shared/components/button/button.component';
 import { M3CardComponent } from '../../../../shared/components/card/card.component';
+import { M3ChipComponent } from '../../../../shared/components/chip/chip.component';
 import { M3SwitchComponent } from '../../../../shared/components/switch/switch.component';
 import { ClipboardCopyPayload } from '../../../../shared/utils/clipboard.util';
+import { MotionReplayHandle } from './motion-replay.util';
 import {
   CONTAINER_TRANSFORM_TRAPS,
   MODERN_WEB_MOTION_PRIMITIVES,
@@ -12,14 +14,15 @@ import {
 /**
  * Interactive engineering guide covering:
  * - The 3-Filter Motion Playbook (DOM lifecycle, Physics family, Tokens/GPU)
- * - Las 3 Trampas Silenciosas of local Container Transform + live fix demo
+ * - Las 3 Trampas Silenciosas of local Container Transform + interactive trap comparison demo
  * - Pillar 5: Accessibility (`prefers-reduced-motion` Calm Fade vs 1ms trap),
  *   Native Top-Layer `@starting-style` + `allow-discrete` popover, and Modern Web Primitives.
  */
 @Component({
   selector: 'app-motion-playbook-a11y-section',
   standalone: true,
-  imports: [M3ButtonComponent, M3CardComponent, M3SwitchComponent],
+  imports: [M3ButtonComponent, M3CardComponent, M3ChipComponent, M3SwitchComponent],
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div id="motion-playbook" class="space-y-6">
@@ -72,7 +75,7 @@ import {
         </div>
 
         <!-- Las 3 Trampas Silenciosas del Container Transform Local -->
-        <div class="space-y-3 pt-2 border-t border-outline-sub">
+        <div class="space-y-4 pt-2 border-t border-outline-sub">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <span class="material-symbols-rounded text-warning text-base" aria-hidden="true">bug_report</span>
@@ -104,6 +107,52 @@ import {
               </m3-card>
             }
           </div>
+
+          <!-- Demo vivo Trampa vs Solución M3 -->
+          <div class="p-4 rounded-m3-lg bg-surface-high border border-outline-sub flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-2">
+              <span class="text-xs font-bold text-main block">Simulador Trampa 2: Contenido Interno al Cerrar Container (500ms)</span>
+              <p class="text-[11px] text-muted max-w-xl leading-snug">
+                Alterná abrir/cerrar observando cómo en la <strong>Solución M3</strong> el detalle desvanece en <code class="font-mono text-primary">100ms (0ms delay)</code> antes de comprimir la caja, evitando ver texto cortado o cajas huecas.
+              </p>
+              <div class="flex flex-wrap items-center gap-2">
+                <m3-chip
+                  type="filter"
+                  [selected]="!trapBadMode()"
+                  (action)="trapBadMode.set(false)">
+                  Solución M3 (short2 fade asimétrico)
+                </m3-chip>
+                <m3-chip
+                  type="filter"
+                  [selected]="trapBadMode()"
+                  (action)="trapBadMode.set(true)">
+                  Anti-patrón (desmonte lento sin delay)
+                </m3-chip>
+                <m3-button variant="tonal" size="sm" [icon]="trapDemoOpen() ? 'compress' : 'expand'" (action)="trapDemoOpen.set(!trapDemoOpen())">
+                  {{ trapDemoOpen() ? 'Cerrar Caja (500ms)' : 'Abrir Caja (500ms)' }}
+                </m3-button>
+              </div>
+            </div>
+
+            <div
+              class="w-72 max-w-full rounded-m3-lg bg-surface-box border border-outline-sub overflow-hidden p-3 space-y-1.5 shrink-0"
+              style="transition-property: height, border-color; transition-duration: var(--md-sys-motion-duration-long2); transition-timing-function: var(--md-sys-motion-easing-emphasized);"
+              [style.height]="trapDemoOpen() ? '104px' : '44px'">
+              <div class="flex items-center justify-between text-xs font-bold text-main">
+                <span>Resumen Fiscal #42</span>
+                <span class="text-[10px] font-mono text-primary">{{ trapDemoOpen() ? 'Abierto' : 'Cerrado' }}</span>
+              </div>
+              <p
+                class="text-[11px] text-muted"
+                style="transition-property: opacity;"
+                [style.transition-duration]="trapBadMode() ? 'var(--md-sys-motion-duration-long2)' : (trapDemoOpen() ? 'var(--md-sys-motion-duration-medium2)' : 'var(--md-sys-motion-duration-short2)')"
+                [style.transition-delay]="trapBadMode() ? '0ms' : (trapDemoOpen() ? '90ms' : '0ms')"
+                [class.opacity-100]="trapDemoOpen()"
+                [class.opacity-0]="!trapDemoOpen()">
+                Detalle secundario sincronizado sin recortes ni ghosting.
+              </p>
+            </div>
+          </div>
         </div>
       </m3-card>
 
@@ -130,12 +179,12 @@ import {
             <div class="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <span class="text-xs font-bold text-main block">Simulador En Vivo: prefers-reduced-motion</span>
-                <span class="text-[11px] text-muted">Activá el switch M3 para degradar traslaciones y pausar orbes ambientales.</span>
+                <span class="text-[11px] text-muted">Activá el switch M3 y probá la diferencia entre salto espacial y Calm Fade.</span>
               </div>
               <m3-switch
                 label="Reducir Movimiento"
                 [checked]="reducedMotionSim()"
-                (checkedChange)="reducedMotionSim.set($event)" />
+                (checkedChange)="onReducedMotionToggle($event)" />
             </div>
 
             <div class="p-4 rounded-m3-lg bg-surface-high border border-outline-sub space-y-3">
@@ -143,24 +192,34 @@ import {
                 <span class="text-xs font-bold text-main">
                   {{ reducedMotionSim() ? 'Calm Fade (150ms linear fade — zero traslación espacial)' : 'Expressive Spring (350ms con desplazamiento + escala)' }}
                 </span>
-                <span class="text-[10px] font-mono text-primary">
-                  {{ reducedMotionSim() ? 'prefers-reduced-motion: reduce' : 'motion: normal' }}
-                </span>
+                <m3-button variant="tonal" size="xs" icon="replay" (action)="replayA11yDemo()">
+                  Probar Entrada A11y
+                </m3-button>
               </div>
 
-              <div class="flex items-center gap-3 flex-wrap">
+              <div class="h-20 rounded-m3-md bg-surface-box border border-outline-sub px-3 flex items-center justify-between overflow-hidden">
                 <div
                   class="px-3.5 py-2 rounded-m3-lg bg-primary-box border border-primary/40 text-xs font-semibold text-main"
                   style="transition-property: transform, opacity;"
                   [style.transition-duration]="reducedMotionSim() ? '150ms' : 'var(--md-sys-motion-spring-expressive-fast-spatial-duration)'"
                   [style.transition-timing-function]="reducedMotionSim() ? 'linear' : 'var(--md-sys-motion-spring-expressive-fast-spatial)'"
-                  [style.transform]="reducedMotionSim() ? 'translateY(0) scale(1)' : 'translateY(-2px) scale(1.02)'">
+                  [style.transform]="
+                    a11yReplay.active()
+                      ? 'translateX(0) scale(1)'
+                      : (reducedMotionSim() ? 'translateX(0) scale(1)' : 'translateX(44px) scale(0.86)')
+                  "
+                  [style.opacity]="a11yReplay.active() ? '1' : '0.12'">
                   Estado Estabilizado A11y
                 </div>
-                <span class="text-[11px] text-muted">
-                  Las esferas <code class="font-mono text-main">.m3-aurora-orb</code> quedan estáticas y <code class="font-mono text-main">html.vt-running</code> congela la vista durante cambios de ruta.
+
+                <span class="text-[10px] font-mono text-primary">
+                  {{ reducedMotionSim() ? 'prefers-reduced-motion: reduce' : 'motion: normal' }}
                 </span>
               </div>
+
+              <p class="text-[11px] text-muted">
+                Las esferas <code class="font-mono text-main">.m3-aurora-orb</code> quedan estáticas y <code class="font-mono text-main">html.vt-running</code> congela la vista durante cambios de ruta.
+              </p>
 
               <div class="p-2.5 rounded-m3-md bg-surface border border-outline-sub text-[10px] font-mono text-primary">
                 transition-property: transform, opacity;
@@ -168,12 +227,12 @@ import {
             </div>
           </div>
 
-          <!-- Top Layer Nativo Popover + @starting-style -->
+          <!-- Top Layer Nativo Popover + @starting-style REAL -->
           <div class="lg:col-span-6 p-4 rounded-m3-xl bg-surface border border-outline-sub space-y-4">
             <div class="space-y-1">
               <span class="text-xs font-bold text-main block">Top Layer Nativo sin JavaScript: [popover="auto"] + @starting-style</span>
               <p class="text-[11px] text-muted leading-snug">
-                El botón inferior usa <code class="font-mono text-primary">popovertarget="motion-top-layer-demo"</code> nativo HTML: el navegador promueve el panel por encima de cualquier overflow o z-index y anima desde <code class="font-mono text-main">display: none</code> con <code class="font-mono text-main">allow-discrete</code>.
+                El botón inferior usa <code class="font-mono text-primary">popovertarget="motion-top-layer-demo"</code> nativo HTML y la clase <code class="font-mono text-main">.m3-popover-surface</code> (<code class="font-mono text-primary">src/styles/_overlays.css</code>) con <code class="font-mono text-main">allow-discrete</code> + <code class="font-mono text-main">&#64;starting-style</code> reales al abrir y cerrar.
               </p>
             </div>
 
@@ -196,11 +255,11 @@ import {
               </m3-button>
             </div>
 
-            <!-- Elemento Top-Layer Popover real -->
+            <!-- Elemento Top-Layer Popover real con @starting-style + allow-discrete -->
             <div
               id="motion-top-layer-demo"
               popover="auto"
-              class="m-auto p-5 rounded-m3-xl bg-surface-box border border-primary/50 shadow-2xl max-w-md text-main space-y-2 m3-anim-spring-pop">
+              class="m-auto p-5 rounded-m3-xl bg-surface-box border border-primary/50 shadow-2xl max-w-md text-main space-y-2 m3-popover-surface">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-bold text-main">Panel Top-Layer Nativo ([popover="auto"])</span>
                 <button
@@ -212,7 +271,7 @@ import {
                 </button>
               </div>
               <p class="text-xs text-muted leading-relaxed">
-                Renderizado fuera de cualquier stacking context padre usando atributos declarativos HTML5 + <code class="font-mono text-primary">allow-discrete</code>, con soporte Light Dismiss automático al hacer clic fuera o presionar Escape.
+                Renderizado fuera de cualquier stacking context padre usando atributos declarativos HTML5 + <code class="font-mono text-primary">allow-discrete</code> + <code class="font-mono text-primary">&#64;starting-style</code>, con soporte Light Dismiss automático al hacer clic fuera o presionar Escape.
               </p>
             </div>
           </div>
@@ -250,14 +309,29 @@ import {
   `
 })
 export class MotionPlaybookA11ySectionComponent {
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly copyToken = output<ClipboardCopyPayload>();
 
+  readonly a11yReplay = new MotionReplayHandle(this.destroyRef, true);
+
   readonly reducedMotionSim = signal<boolean>(false);
+  readonly trapDemoOpen = signal<boolean>(true);
+  readonly trapBadMode = signal<boolean>(false);
 
   readonly playbookFilters = MOTION_PLAYBOOK_FILTERS;
   readonly containerTraps = CONTAINER_TRANSFORM_TRAPS;
   readonly modernPrimitives = MODERN_WEB_MOTION_PRIMITIVES;
   readonly startingStyleSnippet = MODERN_WEB_MOTION_PRIMITIVES[0].snippet;
+
+  onReducedMotionToggle(enabled: boolean): void {
+    this.reducedMotionSim.set(enabled);
+    this.a11yReplay.replay();
+  }
+
+  replayA11yDemo(): void {
+    this.a11yReplay.replay();
+  }
 
   emitCopy(text: string, label: string): void {
     this.copyToken.emit({

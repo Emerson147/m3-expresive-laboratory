@@ -1,12 +1,14 @@
 import { DestroyRef, Signal, signal } from '@angular/core';
 
 /**
- * Replays keyframe animations on persistent DOM nodes via requestAnimationFrame
- * without destroying and recreating wrapper nodes in single-item @for blocks (prevents NG0956).
+ * Replays keyframe and CSS transition animations on persistent DOM nodes via double
+ * requestAnimationFrame (ensuring frame 1 paints the reset pose before frame 2 activates),
+ * avoiding destroy/recreate churn and NG0956 warnings.
  */
 export class MotionReplayHandle {
   private readonly _active = signal<boolean>(false);
-  private rafId: number | null = null;
+  private outerRafId: number | null = null;
+  private innerRafId: number | null = null;
 
   readonly active: Signal<boolean> = this._active.asReadonly();
 
@@ -22,16 +24,28 @@ export class MotionReplayHandle {
       return;
     }
     this._active.set(false);
-    this.rafId = requestAnimationFrame(() => {
-      this.rafId = null;
-      this._active.set(true);
+    this.outerRafId = requestAnimationFrame(() => {
+      this.outerRafId = null;
+      this.innerRafId = requestAnimationFrame(() => {
+        this.innerRafId = null;
+        this._active.set(true);
+      });
     });
   }
 
   private cancel(): void {
-    if (this.rafId !== null && typeof cancelAnimationFrame === 'function') {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+    if (typeof cancelAnimationFrame !== 'function') {
+      this.outerRafId = null;
+      this.innerRafId = null;
+      return;
+    }
+    if (this.outerRafId !== null) {
+      cancelAnimationFrame(this.outerRafId);
+      this.outerRafId = null;
+    }
+    if (this.innerRafId !== null) {
+      cancelAnimationFrame(this.innerRafId);
+      this.innerRafId = null;
     }
   }
 }
